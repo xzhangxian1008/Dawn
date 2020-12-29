@@ -4,8 +4,7 @@
 
 namespace dawn {
 
-TEST(DiskManagerTest, ) {
-    DiskManager d;
+TEST(DiskManagerTest, TEST) {
 
 }
 
