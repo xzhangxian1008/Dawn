@@ -1,6 +1,9 @@
+#pragma once
+
 #include <iostream>
 #include <string>
 
+namespace dawn {
 #define PRINT(...) print__(__VA_ARGS__)
 
 // TODO let log receives random number of parameters
@@ -19,3 +22,6 @@ void log__(std::string func_name, int line, std::string info) {
     std::string out = func_name + ", line " + std::to_string(line) + ": " + info;
     std::cout << out << std::endl;
 }
+
+char* string2char(const std::string &str);
+} // namespace dawn

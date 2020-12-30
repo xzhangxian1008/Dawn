@@ -1,4 +1,0 @@
-namespace dawn {
-
-
-} // namespace dawn

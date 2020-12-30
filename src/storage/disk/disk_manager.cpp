@@ -2,110 +2,247 @@
 
 namespace dawn {
 
-DiskManager::DiskManager(std::string &db_name, bool create) : status(false), next_page_id(-1) {
-    db_name_ = db_name + ".db";
-    log_name_ = db_name + ".log";
-
-    db_io_.open(db_name_, std::ios::in);
-    if ((create && db_io_.is_open()) || (!create && !db_io_.is_open())) {
-        // FIXME may be we can handle this in other ways
-        if (create)
-            PRINT("CREATE DB FILE FAIL:", db_name_, "exists");
-        else
-            PRINT("READ DB FILE FAIL:", "can not find", db_name_);
-        db_io_.close();
-        return;
+DiskManager::DiskManager(const string_t &meta_name, bool create) : status_(false) {
+    if (create) {
+        from_scratch(meta_name);
+    } else {
+        from_mtd(meta_name);
     }
 
-    log_io_.open(log_name_, std::ios::in);
-    if ((create && log_io_.is_open()) || (!create && !log_io_.is_open())) {
-        // FIXME may be we can handle this in other ways
-        if (create)
-            PRINT("CREATE LOG FILE FAIL:", log_name_, "exists");
-        else
-            PRINT("READ LOG FILE FAIL:", "can not find", db_name_);
-        log_io_.close();
-        return;
-    }
+    // db_io_.open(db_name_, std::ios::in);
+    // if ((create && db_io_.is_open()) || (!create && !db_io_.is_open())) {
+    //     // FIXME may be we can handle this in other ways
+    //     if (create)
+    //         PRINT("CREATE DB FILE FAIL:", db_name_, "exists");
+    //     else
+    //         PRINT("READ DB FILE FAIL:", "can not find", db_name_);
+    //     db_io_.close();
+    //     return;
+    // }
 
-    // no more need to be done, if the mode is open
-    if (!create) {
-        db_io_.seekp(0, std::ios::end);
-        long pos = db_io_.tellp();
-        next_page_id = (pos - PAGE_SIZE) / PAGE_SIZE + 1;
-        status = true;
-        return;
-    }
+    // log_io_.open(log_name_, std::ios::in);
+    // if ((create && log_io_.is_open()) || (!create && !log_io_.is_open())) {
+    //     // FIXME may be we can handle this in other ways
+    //     if (create)
+    //         PRINT("CREATE LOG FILE FAIL:", log_name_, "exists");
+    //     else
+    //         PRINT("READ LOG FILE FAIL:", "can not find", db_name_);
+    //     log_io_.close();
+    //     return;
+    // }
+
+    // // no more need to be done, if the mode is open
+    // if (!create) {
+    //     db_io_.seekp(0, std::ios::end);
+    //     long pos = db_io_.tellp();
+    //     next_page_id = (pos - PAGE_SIZE) / PAGE_SIZE + 1;
+    //     status_ = true;
+    //     return;
+    // }
     
-    db_io_.clear();
-    log_io_.clear();
+    // db_io_.clear();
+    // log_io_.clear();
 
-    db_io_.open(db_name_, std::ios::out);
-    if (!db_io_.is_open()) {
-        // FIXME may be we can handle this in other ways
-        PRINT("CREATE DB FILE FAIL!");
+    // db_io_.open(db_name_, std::ios::out);
+    // if (!db_io_.is_open()) {
+    //     // FIXME may be we can handle this in other ways
+    //     PRINT("CREATE DB FILE FAIL!");
+    //     return;
+    // }
+
+    // log_io_.open(log_name_, std::ios::out);
+    // if (!log_io_.is_open()) {
+    //     // FIXME may be we can handle this in other ways
+    //     PRINT("CREATE LOG FILE FAIL!");
+    //     return;
+    // }
+
+    // next_page_id = 0;
+    // status_ = true;
+}
+
+void DiskManager::from_scratch(const string_t &meta_name) {
+    meta_name_ = meta_name + ".mtd";
+    db_name_ = meta_name + ".db";
+    log_name_ = meta_name + ".log";
+    
+    // ensure the files are inexistent
+    if (!check_inexistence(meta_name_)) {
+        string_t info("ERROR! ");
+        info += meta_name_ + " exists";
+        LOG(info);
         return;
     }
 
-    log_io_.open(log_name_, std::ios::out);
-    if (!log_io_.is_open()) {
-        // FIXME may be we can handle this in other ways
-        PRINT("CREATE LOG FILE FAIL!");
+    if (!check_inexistence(db_name_)) {
+        string_t info("ERROR! ");
+        info += db_name_ + " exists";
+        LOG(info);
         return;
     }
 
-    next_page_id = 0;
-    status = true;
+    if (!check_inexistence(log_name_)) {
+        string_t info("ERROR! ");
+        info += log_name_ + " exists";
+        LOG(info);
+        return;
+    }
+
+    // create corresponding files
+    std::ios_base::openmode om = std::ios::in | std::ios::out | std::ios::trunc;
+
+    if (!open_file(meta_name_, meta_io_, om)) {
+        string_t info("ERROR! Open ");
+        info += meta_name_ + " fail";
+        LOG(info);
+        return;
+    }
+
+    if (!open_file(db_name_, db_io_, om)) {
+        string_t info("ERROR! Open ");
+        info += db_name_ + " fail";
+        char *rm_file = string2char(meta_name_);
+        remove(rm_file);
+        delete rm_file;
+        LOG(info);
+        return;
+    }
+
+    if (!open_file(log_name_, log_io_, om)) {
+        string_t info("ERROR! Open ");
+        info += log_name_ + " fail";
+        char *rm_file = string2char(meta_name_);
+        remove(rm_file);
+        delete rm_file;
+        rm_file = string2char(db_name_);
+        remove(rm_file);
+        delete rm_file;
+        return;
+    }
+
+    // initialize the meta data
+    max_ava_pgid_ = 100; // 0~99
+    max_alloced_pgid_ = -1;
+    for (int i = 0; i < 100; i++)
+        free_pgid_.insert(i);
+    
+    // TODO
+
+    // write meta data to the meta file
+
+
+    status_ = true;
+}
+
+void DiskManager::from_mtd(const string_t &meta_name) {
+    // TODO
 }
 
 /**
  * Ensure that we write data with the size of PAGE_SIZE
  */
 bool DiskManager::write_page(page_id_t page_id, const char *data) {
-    if (page_id >= next_page_id) {
-        return false;
-    }
+    // if (page_id >= next_page_id) {
+    //     return false;
+    // }
 
-    long offset = static_cast<long>(page_id) * PAGE_SIZE;
-    db_io_.seekg(offset);
-    db_io_.write(data, PAGE_SIZE);
-    if (db_io_.fail()) {
-        LOG("WRITE FAIL!!!");
-        return false;
-    }
+    // if (!db_io_.is_open()) {
+    //     string_t info("WRITE ERROR: can't open the ");
+    //     info += db_name_;
+    //     status_ = false;
+    //     LOG(info);
+    //     return false;
+    // }
 
-    db_io_.flush();
+    // long offset = static_cast<long>(page_id) * PAGE_SIZE;
+    // db_io_.seekg(offset);
+    // db_io_.write(data, PAGE_SIZE);
+    // if (db_io_.fail()) {
+    //     LOG("WRITE FAIL!!!");
+    //     return false;
+    // }
+
+    // db_io_.flush();
     return true;
 }
 
 /**
- * We can only read the PAGE_SIZE
+ * Each time, we can only read PAGE_SIZE
  */
 bool DiskManager::read_page(page_id_t page_id, char *dst) {
-    if (page_id >= next_page_id) {
-        return false;
-    }
+    // if (page_id >= next_page_id) {
+    //     return false;
+    // }
 
-    long offset = static_cast<long>(page_id) * PAGE_SIZE;
-    db_io_.seekp(offset);
-    db_io_.read(dst, PAGE_SIZE);
-    if (db_io_.gcount() != PAGE_SIZE) {
-        std::string info("Get Error Data Size: ");
-        info += std::to_string(db_io_.gcount());
-        LOG(info);
-        return false;
-    }
+    // if (!db_io_.is_open()) {
+    //     string_t info("READ ERROR: can't open the ");
+    //     info += db_name_;
+    //     status_ = false;
+    //     LOG(info);
+    //     return false;
+    // }
+
+    // long offset = static_cast<long>(page_id) * PAGE_SIZE;
+    // db_io_.seekp(offset);
+    // db_io_.read(dst, PAGE_SIZE);
+    // if (db_io_.gcount() != PAGE_SIZE) {
+    //     string_t info("Get Error Data Size: ");
+    //     info += std::to_string(db_io_.gcount());
+    //     LOG(info);
+    //     return false;
+    // }
     
     return true;
 }
 
-page_id_t DiskManager::alloc_page(char *dst) {
-    // TODO write something into file to fill the space
+page_id_t DiskManager::alloc_page() {
+    // page_id_t new_page_id = -1;
+
+    // if (!db_io_.is_open()) {
+    //     string_t info("ALLOC ERROR: can't open the ");
+    //     info += db_name_;
+    //     status_ = false;
+    //     LOG(info);
+    //     return -1;
+    // }
+
+    // new_page_id = next_page_id++;
+    // char c = 'c';
+    // db_io_.seekg(((new_page_id+1)*PAGE_SIZE) - 1);
+    // db_io_.write(&c, 1);
+    // if (db_io_.fail()) {
+    //     string_t info("ALLOC ERROR: can't alloc new space");
+    //     LOG(info);
+    //     next_page_id = -1;
+    // }
+
+    // return new_page_id;
 }
 
-void DiskManager::shutdown() {
-    db_io_.close();
-    log_io_.close();
+inline bool DiskManager::check_inexistence(const string_t &file_name) {
+    std::fstream f;
+    f.open(file_name, std::ios::in);
+    if (f.is_open()) {
+        return false;
+    }
+    return true;
 }
+
+inline bool DiskManager::open_file(const string_t &file_name, std::fstream &io, std::ios_base::openmode &om) {
+    io.open(file_name, om);
+    if (!io.is_open()) {
+        return false;
+    }
+    return true;
+}
+
+bool DiskManager::write_meta_data() {
+
+}
+
+bool DiskManager::read_meta_data() {
+
+}
+
 
 } // namespace dawn
