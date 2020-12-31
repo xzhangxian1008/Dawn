@@ -12,8 +12,6 @@ DiskManager::DiskManager(const string_t &meta_name, bool create) : status_(false
     } else {
         from_mtd(meta_name);
     }
-
- 
 }
 
 void DiskManager::from_scratch() {    
@@ -358,10 +356,5 @@ page_id_t DiskManager::alloc_page() {
 bool DiskManager::write_meta_data() {
 
 }
-
-bool DiskManager::read_meta_data() {
-
-}
-
 
 } // namespace dawn

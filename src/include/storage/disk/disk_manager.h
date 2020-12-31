@@ -27,7 +27,7 @@ namespace dawn {
  * --------------------------------------------------------------------
  */
 class DiskManager {
-friend class DiskManagerTest;
+friend class DiskManager_T;
 public:
     /**
      * 
@@ -67,7 +67,6 @@ private:
     void from_mtd(const string_t &meta_name);
 
     bool write_meta_data();
-    bool read_meta_data();
 
     offset_t db_name_sz_offset;
     offset_t db_name_offset;
