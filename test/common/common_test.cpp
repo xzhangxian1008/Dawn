@@ -16,7 +16,8 @@ using std::ends;
 namespace dawn {
 
 TEST(CommonTest, CommonTEST) {
-
+    char c[10];
+    PRINT(sizeof(c));
 }
 
 } // namespace dawn

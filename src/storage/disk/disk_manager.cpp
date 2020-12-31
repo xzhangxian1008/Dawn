@@ -126,11 +126,52 @@ void DiskManager::from_scratch(const string_t &meta_name) {
     for (int i = 0; i < 100; i++)
         free_pgid_.insert(i);
     
-    // TODO
+    // initialize the buffer with size 1024 byte
+    meta_buffer = new char[512];
+    buffer_size = 512;
+
+    // write meta data to the buffer and set the offset
+    int *p;
+    
+    db_name_sz_offset = 0;
+    p = reinterpret_cast<int*>(meta_buffer + db_name_sz_offset);
+    *p = db_name_.length();
+    
+    db_name_offset = db_name_sz_offset + sizeof(int);
+    for (int i = 0; i < db_name_.length(); i++)
+        meta_buffer[db_name_offset+i] = db_name_[i];
+    db_name_[db_name_offset+db_name_.length()] = '\0';
+
+    log_name_sz_offset = db_name_offset + db_name_.length() + 1;
+    p = reinterpret_cast<int*>(meta_buffer+log_name_sz_offset);
+    *p = log_name_.length();
+
+    log_name_offset = log_name_sz_offset + sizeof(int);
+    for (int i = 0; i < log_name_.length(); i++)
+        meta_buffer[log_name_offset+i] = log_name_[i];
+    meta_buffer[log_name_offset+log_name_.length()] = '\0';
+
+    max_ava_pgid_offset = log_name_offset + log_name_.length() + 1;
+    page_id_t *pt;
+    pt = reinterpret_cast<page_id_t*>(meta_buffer+max_ava_pgid_offset);
+    *pt = max_ava_pgid_;
+
+    max_alloced_pgid_offset = max_ava_pgid_offset + sizeof(page_id_t);
+    pt = reinterpret_cast<page_id_t*>(meta_buffer+max_alloced_pgid_offset);
+    *pt = max_alloced_pgid_;
+
+    reserved_offset = max_alloced_pgid_offset + sizeof(page_id_t);
+    memset(meta_buffer + reserved_offset, 0, 128);
 
     // write meta data to the meta file
+    meta_io_.seekg(0);
+    meta_io_.write(meta_buffer, buffer_size);
+    if (meta_io_.fail()) {
+        // FIXME need other ways to handle the exception
+        LOG("Write to meta data file fail.");
+    }
 
-
+    meta_io_.flush();
     status_ = true;
 }
 
@@ -217,23 +258,6 @@ page_id_t DiskManager::alloc_page() {
     // }
 
     // return new_page_id;
-}
-
-inline bool DiskManager::check_inexistence(const string_t &file_name) {
-    std::fstream f;
-    f.open(file_name, std::ios::in);
-    if (f.is_open()) {
-        return false;
-    }
-    return true;
-}
-
-inline bool DiskManager::open_file(const string_t &file_name, std::fstream &io, std::ios_base::openmode &om) {
-    io.open(file_name, om);
-    if (!io.is_open()) {
-        return false;
-    }
-    return true;
 }
 
 bool DiskManager::write_meta_data() {

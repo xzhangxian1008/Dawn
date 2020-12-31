@@ -8,97 +8,99 @@
 #include <string>
 #include <atomic>
 
-using std::fstream;
-using std::string;
 using std::ios;
 
 namespace dawn {
 
+class DiskManagerTest : public DiskManager {
+public:
+    DiskManagerTest(const string_t &meta_name, bool create = false) : DiskManager(meta_name, create) {}
+
+    offset_t get_db_name_sz_offset() const { return db_name_sz_offset; }
+    offset_t get_db_name_offset() const { return db_name_offset; }
+    offset_t get_log_name_sz_offset() const { return log_name_sz_offset; }
+    offset_t get_log_name_offset() const { return log_name_offset; }
+    offset_t get_max_ava_pgid_offset() const { return max_ava_pgid_offset; }
+    offset_t get_max_alloced_pgid_offset() const { return max_alloced_pgid_offset; }
+    offset_t get_reserved_offset() const { return reserved_offset; }
+};
+
 /**
  * Test List:
- *   1. create mode should fail when file exists
- *   2. create mode should success when file doesn't exist with "next_page_id == 0"
- *   3. read mode should success when file exists with "next_page_id == xxx"
- *   4. read mode should fail when file doesn't exist
+ *   1. create mode: check files have been created and values have been written into the .mtd
+ *   2. 
  */
-TEST(DiskManagerTest, DISABLED_ConstructorTEST) {
+TEST(DMTest, ConstructorTEST) {
+    const char *mtdf = "test.mtd";
     const char *dbf = "test.db";
     const char *logf = "test.log";
+
+    string_t mtdf_s(mtdf);
+    string_t dbf_s(dbf);
+    string_t logf_s(logf);
     
+    remove(mtdf);
     remove(dbf);
     remove(logf);
 
-    fstream db_io;
-    fstream log_io;
-    string f_name("test");
-    
-    // test 1
     {
-        db_io.open(dbf, ios::out);
-        ASSERT_TRUE(db_io.is_open());
-        log_io.open(logf, std::ios::out);
-        ASSERT_TRUE(log_io.is_open());
+        // test 1
+        DiskManagerTest dmt("test", true);
+        EXPECT_TRUE(dmt.get_status());
 
-        DiskManager dm(f_name);
-        ASSERT_FALSE(dm.get_status());
+        // check files have been created successfully
+        EXPECT_FALSE(check_inexistence(mtdf));
+        EXPECT_FALSE(check_inexistence(dbf));
+        EXPECT_FALSE(check_inexistence(logf));
 
-        db_io.close();
-        log_io.close();
-        db_io.clear();
-        log_io.clear();
-    }
+        // check values have been written into the file
+        fstream_t f;
+        EXPECT_TRUE(open_file(mtdf, f, ios::in));
 
-    // test 2
-    {
+        char *buf = new char[512];
+        int buf_sz = 512;
+
+        f.seekp(0);
+        f.read(buf, buf_sz);
+        EXPECT_EQ(f.gcount(), 512);
+
+        int *p;
+        p = reinterpret_cast<int*>(buf + dmt.get_db_name_sz_offset());
+        EXPECT_EQ(*p, dbf_s.length());
+
+        char *str;
+        str = reinterpret_cast<char*>(buf + dmt.get_db_name_offset());
+        for (int i = 0; i < dbf_s.length(); i++)
+            EXPECT_EQ(dbf_s[i], str[i]);
+        EXPECT_EQ('\0', str[dbf_s.length()]);
+
+        p = reinterpret_cast<int*>(buf + dmt.get_log_name_sz_offset());
+        EXPECT_EQ(*p, logf_s.length());
+
+        str = reinterpret_cast<char*>(buf + dmt.get_log_name_offset());
+        for (int i = 0; i < logf_s.length(); i++)
+            EXPECT_EQ(logf_s[i], str[i]);
+        EXPECT_EQ('\0', str[logf_s.length()]);
+        
+        page_id_t *pg;
+        pg = reinterpret_cast<page_id_t*>(buf + dmt.get_max_ava_pgid_offset());
+        EXPECT_EQ(dmt.get_max_ava_pgid(), *pg);
+
+        pg = reinterpret_cast<page_id_t*>(buf + dmt.get_max_alloced_pgid_offset());
+        EXPECT_EQ(dmt.get_max_alloced_pgid(), *pg);
+
+        remove(mtdf);
         remove(dbf);
         remove(logf);
-
-        DiskManager dm(f_name);
-        ASSERT_TRUE(dm.get_status());
-
-        db_io.close();
-        log_io.close();
-        db_io.clear();
-        log_io.clear();
+        delete buf;
     }
 
-    // test 3
     {
-        db_io.open(dbf, ios::out);
-        ASSERT_TRUE(db_io.is_open());
-        log_io.open(logf, ios::out);
-        ASSERT_TRUE(log_io.is_open());
-
-        char c = 'c';
-        db_io.seekg(40959);
-        db_io.write(&c, 1); // write 9 pages into file
-        db_io.flush();
-
-        DiskManager dm(f_name, false);
-        ASSERT_TRUE(dm.get_status());
-
-        db_io.close();
-        log_io.close();
-        db_io.clear();
-        log_io.clear();
-    }
-
-    // test 4
-    {
-        remove(dbf);
-        remove(logf);
-
-        DiskManager dm(f_name, false);
-        ASSERT_FALSE(dm.get_status());
-
-        db_io.close();
-        log_io.close();
-        db_io.clear();
-        log_io.clear();
+        // test 2
     }
 }
 
-TEST(DiskManagerTest, cTest) {
+TEST(DMTest, cTest) {
 }
 
 } // namespace dawn

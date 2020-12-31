@@ -6,4 +6,6 @@ namespace dawn {
 using page_id_t = __INT32_TYPE__;
 using offset_t = __INT32_TYPE__;
 using string_t = std::string;
+using fstream_t = std::fstream;
+
 } // namespace dawn

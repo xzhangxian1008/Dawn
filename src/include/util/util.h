@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <fstream>
 
 namespace dawn {
 #define PRINT(...) print__(__VA_ARGS__)
@@ -24,4 +25,31 @@ void log__(std::string func_name, int line, std::string info) {
 }
 
 char* string2char(const std::string &str);
+
+/**
+ * ensure the file is inexistent
+ * @return true: not exist  false: exist
+ */
+inline bool check_inexistence(const std::string &file_name) {
+    std::fstream f;
+    f.open(file_name, std::ios::in);
+    if (f.is_open()) {
+        f.close();
+        return false;
+    }
+    return true;
+}
+
+/**
+ * open file with given open mode
+ * @return true: successful  false: unsuccessful
+ */
+inline bool open_file(const std::string &file_name, std::fstream &io, std::ios_base::openmode om) {
+    io.open(file_name, om);
+    if (!io.is_open()) {
+        return false;
+    }
+    return true;
+}
+
 } // namespace dawn
