@@ -52,8 +52,8 @@ public:
     page_id_t get_max_alloced_pgid() const { return max_alloced_pgid_; }
 
 private:
-    void from_scratch(const string_t &meta_name);
-    void from_mtd(const string_t &meta_name);
+    void from_scratch();
+    void from_mtd();
 
     bool write_meta_data();
     bool read_meta_data();

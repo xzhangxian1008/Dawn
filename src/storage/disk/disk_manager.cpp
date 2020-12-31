@@ -3,10 +3,14 @@
 namespace dawn {
 
 DiskManager::DiskManager(const string_t &meta_name, bool create) : status_(false) {
+    meta_name_ = meta_name + ".mtd";
+    db_name_ = meta_name + ".db";
+    log_name_ = meta_name + ".log";
+    
     if (create) {
-        from_scratch(meta_name);
+        from_scratch();
     } else {
-        from_mtd(meta_name);
+        from_mtd();
     }
 
     // db_io_.open(db_name_, std::ios::in);
@@ -61,11 +65,7 @@ DiskManager::DiskManager(const string_t &meta_name, bool create) : status_(false
     // status_ = true;
 }
 
-void DiskManager::from_scratch(const string_t &meta_name) {
-    meta_name_ = meta_name + ".mtd";
-    db_name_ = meta_name + ".db";
-    log_name_ = meta_name + ".log";
-    
+void DiskManager::from_scratch() {    
     // ensure the files are inexistent
     if (!check_inexistence(meta_name_)) {
         string_t info("ERROR! ");
@@ -175,8 +175,40 @@ void DiskManager::from_scratch(const string_t &meta_name) {
     status_ = true;
 }
 
-void DiskManager::from_mtd(const string_t &meta_name) {
-    // TODO
+void DiskManager::from_mtd() {
+    // Firstly, open the meta data file, read it and initialize the data
+    if (!open_file(meta_name_, meta_io_, std::ios::in | std::ios::out)) {
+        string_t info("ERROR! ");
+        info += "Open " + meta_name_ + " Fail!";
+        LOG(info);
+        return;
+    }
+
+    {
+        // initialize the data with the info in meta data file
+        meta_io_.seekp(0, std::ios::beg);
+        int beg = meta_io_.tellp();
+        
+        meta_io_.seekp(0, std::ios::end);
+        int end = meta_io_.tellp();
+
+        buffer_size = end - beg;
+        meta_buffer = new char[buffer_size];
+
+        meta_io_.seekg(0);
+        meta_io_.read(meta_buffer, buffer_size);
+        if (meta_io_.fail() || (meta_io_.gcount() != buffer_size)) {
+            string_t info("ERROR! ");
+            info += "Read " + meta_name_ + " Fail!";
+            LOG(info);
+            meta_io_.close();
+            delete meta_buffer;
+            buffer_size = -1;
+            return;
+        }
+
+        
+    }
 }
 
 /**

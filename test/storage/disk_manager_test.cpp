@@ -62,6 +62,7 @@ TEST(DMTest, ConstructorTEST) {
 
         f.seekp(0);
         f.read(buf, buf_sz);
+        EXPECT_FALSE(f.fail());
         EXPECT_EQ(f.gcount(), 512);
 
         int *p;
