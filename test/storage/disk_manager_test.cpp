@@ -28,9 +28,9 @@ public:
 /**
  * Test List:
  *   1. create mode: check files have been created and values have been written into the .mtd
- *   2. 
+ *   2. read mode: read all files successfully and initialize data correctly
  */
-TEST(DMTest, ConstructorTEST) {
+TEST(DMTest, DISABLED_ConstructorTEST) {
     const char *mtdf = "test.mtd";
     const char *dbf = "test.db";
     const char *logf = "test.log";
@@ -98,10 +98,12 @@ TEST(DMTest, ConstructorTEST) {
 
     {
         // test 2
+        
     }
 }
 
 TEST(DMTest, cTest) {
+
 }
 
 } // namespace dawn

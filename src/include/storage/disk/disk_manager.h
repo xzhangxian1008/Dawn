@@ -15,6 +15,10 @@ namespace dawn {
  * meta data file layout:
  * the reserved filed is placed just for notification not to forget to
  * maintain a reserved field when I plan to add other fields.
+ * 
+ * we can add a field for the check purpose to ensure it's a valid
+ * .mtd file, but now, it's unnecessary.
+ * 
  * --------------------------------------------------------------------
  * | db_name size (4) | db_name... | log_name size (4) | log_name ... |
  * --------------------------------------------------------------------
@@ -33,12 +37,7 @@ public:
     explicit DiskManager(const string_t &meta_name, bool create = false);
 
     ~DiskManager() {
-        meta_io_.close();
-        db_io_.close();
-        log_io_.close();
-        if (meta_buffer != nullptr) {
-            delete meta_buffer;
-        }
+        shutdown();
     }
 
     bool write_page(page_id_t page_id, const char *data);
@@ -51,9 +50,21 @@ public:
     page_id_t get_max_ava_pgid() const { return max_ava_pgid_; }
     page_id_t get_max_alloced_pgid() const { return max_alloced_pgid_; }
 
+    void shutdown() {
+        meta_io_.close();
+        db_io_.close();
+        log_io_.close();
+        status_ = false;
+        if (meta_buffer != nullptr) {
+            delete meta_buffer;
+            buffer_size = -1;
+            meta_buffer = nullptr;
+        }
+    }
+
 private:
     void from_scratch();
-    void from_mtd();
+    void from_mtd(const string_t &meta_name);
 
     bool write_meta_data();
     bool read_meta_data();
@@ -75,6 +86,7 @@ private:
 
     /**
      * check if manager works normally.
+     * Only when it works normally, can we trust the data in it.
      *   true: yes
      *   false: no
      */
@@ -109,6 +121,8 @@ private:
 
     // when buffer is insufficient, multiply it by 2.
     int buffer_size = -1;
+
+    char page_buf[PAGE_SIZE];
 
     ReaderWriterLatch latch_;
 };

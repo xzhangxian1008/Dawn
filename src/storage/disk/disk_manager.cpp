@@ -10,59 +10,10 @@ DiskManager::DiskManager(const string_t &meta_name, bool create) : status_(false
     if (create) {
         from_scratch();
     } else {
-        from_mtd();
+        from_mtd(meta_name);
     }
 
-    // db_io_.open(db_name_, std::ios::in);
-    // if ((create && db_io_.is_open()) || (!create && !db_io_.is_open())) {
-    //     // FIXME may be we can handle this in other ways
-    //     if (create)
-    //         PRINT("CREATE DB FILE FAIL:", db_name_, "exists");
-    //     else
-    //         PRINT("READ DB FILE FAIL:", "can not find", db_name_);
-    //     db_io_.close();
-    //     return;
-    // }
-
-    // log_io_.open(log_name_, std::ios::in);
-    // if ((create && log_io_.is_open()) || (!create && !log_io_.is_open())) {
-    //     // FIXME may be we can handle this in other ways
-    //     if (create)
-    //         PRINT("CREATE LOG FILE FAIL:", log_name_, "exists");
-    //     else
-    //         PRINT("READ LOG FILE FAIL:", "can not find", db_name_);
-    //     log_io_.close();
-    //     return;
-    // }
-
-    // // no more need to be done, if the mode is open
-    // if (!create) {
-    //     db_io_.seekp(0, std::ios::end);
-    //     long pos = db_io_.tellp();
-    //     next_page_id = (pos - PAGE_SIZE) / PAGE_SIZE + 1;
-    //     status_ = true;
-    //     return;
-    // }
-    
-    // db_io_.clear();
-    // log_io_.clear();
-
-    // db_io_.open(db_name_, std::ios::out);
-    // if (!db_io_.is_open()) {
-    //     // FIXME may be we can handle this in other ways
-    //     PRINT("CREATE DB FILE FAIL!");
-    //     return;
-    // }
-
-    // log_io_.open(log_name_, std::ios::out);
-    // if (!log_io_.is_open()) {
-    //     // FIXME may be we can handle this in other ways
-    //     PRINT("CREATE LOG FILE FAIL!");
-    //     return;
-    // }
-
-    // next_page_id = 0;
-    // status_ = true;
+ 
 }
 
 void DiskManager::from_scratch() {    
@@ -175,24 +126,26 @@ void DiskManager::from_scratch() {
     status_ = true;
 }
 
-void DiskManager::from_mtd() {
+void DiskManager::from_mtd(const string_t &meta_name) {
     // Firstly, open the meta data file, read it and initialize the data
     if (!open_file(meta_name_, meta_io_, std::ios::in | std::ios::out)) {
         string_t info("ERROR! ");
         info += "Open " + meta_name_ + " Fail!";
         LOG(info);
+        shutdown();
         return;
     }
 
     {
-        // initialize the data with the info in meta data file
-        meta_io_.seekp(0, std::ios::beg);
-        int beg = meta_io_.tellp();
-        
-        meta_io_.seekp(0, std::ios::end);
-        int end = meta_io_.tellp();
-
-        buffer_size = end - beg;
+        // initialize the data with info in meta data file
+        buffer_size = get_file_sz(meta_io_);
+        if (buffer_size == -1) {
+            string_t info("ERROR! ");
+            info += "Get Invalid File Size!";
+            LOG(info);
+            shutdown();
+            return;
+        }
         meta_buffer = new char[buffer_size];
 
         meta_io_.seekg(0);
@@ -201,41 +154,135 @@ void DiskManager::from_mtd() {
             string_t info("ERROR! ");
             info += "Read " + meta_name_ + " Fail!";
             LOG(info);
-            meta_io_.close();
-            delete meta_buffer;
-            buffer_size = -1;
+            shutdown();
             return;
         }
 
+        // get .db and .log file and open them
+        int *p;
+        db_name_sz_offset = 0;
+        p = reinterpret_cast<int*>(meta_buffer + db_name_sz_offset); // get db_name size
+
+        db_name_offset = db_name_sz_offset + sizeof(int);
+        db_name_ = meta_buffer + db_name_offset;
+
+        if (!open_file(db_name_, db_io_, std::ios::in | std::ios::out)) {
+            string_t info("ERROR! ");
+            info += "Open " + db_name_ + " Fail!";
+            LOG(info);
+            shutdown();
+            return;
+        }
         
+        log_name_sz_offset = db_name_offset + *p + 1;
+        p = reinterpret_cast<int*>(meta_buffer + log_name_sz_offset); // get log_name size
+
+        log_name_offset = log_name_sz_offset + sizeof(int);
+        log_name_ = meta_buffer + log_name_offset;
+
+        if (!open_file(log_name_, db_io_, std::ios::in | std::ios::out)) {
+            string_t info("ERROR! ");
+            info += "Open " + log_name_ + " Fail!";
+            LOG(info);
+            shutdown();
+            return;
+        }
+        
+        // get some more data
+        page_id_t *pg;
+        max_ava_pgid_offset = log_name_offset + *p + 1;
+        pg = reinterpret_cast<page_id_t*>(meta_buffer + max_ava_pgid_offset);
+        max_ava_pgid_ = *pg;
+
+        max_alloced_pgid_offset = max_ava_pgid_offset + sizeof(page_id_t);
+        pg = reinterpret_cast<page_id_t*>(meta_buffer + max_alloced_pgid_offset);
+        max_alloced_pgid_ = *pg;
     }
+
+    // FIXME one thread operation is slow when the file is big
+    // initialize the alloced_pgid_ and free_pgid_
+    // Read through the .db file to check every page's status。
+    // If one page is in use, we put it's page id into alloced_pgid
+    // and update the max_alloced_pgid_ or put it into free_pgid.
+    // When we are at the file's end, put rest of the page id into
+    // free_pgid according to the max_ava_pgid_.
+
+    int db_file_sz = get_file_sz(db_io_);
+
+    if (db_file_sz == -1 || (db_file_sz % PAGE_SIZE != 0)) {
+        string_t info("ERROR! ");
+        info += "Get Invalid File Size! size:" + std::to_string(db_file_sz);
+        shutdown();
+        return;
+    }
+
+    if (db_file_sz == 0) {
+        for (int i = 0; i < max_ava_pgid_; i++)
+            free_pgid_.insert(i);
+        status_ = true;
+        return;
+    }
+
+    char *tmp_buf = new char[READ_DB_BUF_SZ];
+    int read_cnt = db_file_sz / READ_DB_BUF_SZ + 1;
+    if (db_file_sz % READ_DB_BUF_SZ != 0)
+        read_cnt++;
+    
+    // read the full .db file to initialize data
+    page_id_t page_id;
+    for (int i = 0; i < read_cnt; i++) {
+        db_io_.read(tmp_buf, READ_DB_BUF_SZ);
+        if (db_io_.fail()) {
+            string_t info("ERROR! ");
+            info += "Read Fail!";
+            LOG(info);
+            shutdown();
+            return;
+        }
+
+        int read_sz = db_io_.gcount();
+        char *p_status;
+        for (int offset = 0; offset < read_sz; offset += PAGE_SIZE) {
+            page_id = i * READ_DB_PG_NUM + (offset / PAGE_SIZE);
+
+            p_status = reinterpret_cast<char*>(tmp_buf);
+            if (*p_status == 1) {
+                max_alloced_pgid_ = page_id;
+                alloced_pgid_.insert(page_id);
+            } else {
+                free_pgid_.insert(page_id);
+            }
+        }
+    }
+
+    while (page_id < max_ava_pgid_)
+        free_pgid_.insert(page_id++);
+
+    delete tmp_buf;
+    status_ = true;
 }
 
 /**
  * Ensure that we write data with the size of PAGE_SIZE
  */
 bool DiskManager::write_page(page_id_t page_id, const char *data) {
-    // if (page_id >= next_page_id) {
-    //     return false;
-    // }
+    if (!db_io_.is_open()) {
+        string_t info("WRITE ERROR: can't open the ");
+        info += db_name_;
+        status_ = false;
+        LOG(info);
+        return false;
+    }
 
-    // if (!db_io_.is_open()) {
-    //     string_t info("WRITE ERROR: can't open the ");
-    //     info += db_name_;
-    //     status_ = false;
-    //     LOG(info);
-    //     return false;
-    // }
+    long offset = static_cast<long>(page_id) * PAGE_SIZE;
+    db_io_.seekg(offset);
+    db_io_.write(data, PAGE_SIZE);
+    if (db_io_.fail()) {
+        LOG("WRITE FAIL!!!");
+        return false;
+    }
 
-    // long offset = static_cast<long>(page_id) * PAGE_SIZE;
-    // db_io_.seekg(offset);
-    // db_io_.write(data, PAGE_SIZE);
-    // if (db_io_.fail()) {
-    //     LOG("WRITE FAIL!!!");
-    //     return false;
-    // }
-
-    // db_io_.flush();
+    db_io_.flush();
     return true;
 }
 
@@ -243,53 +290,69 @@ bool DiskManager::write_page(page_id_t page_id, const char *data) {
  * Each time, we can only read PAGE_SIZE
  */
 bool DiskManager::read_page(page_id_t page_id, char *dst) {
-    // if (page_id >= next_page_id) {
-    //     return false;
-    // }
+    if (!db_io_.is_open()) {
+        string_t info("READ ERROR: can't open the ");
+        info += db_name_;
+        status_ = false;
+        LOG(info);
+        return false;
+    }
 
-    // if (!db_io_.is_open()) {
-    //     string_t info("READ ERROR: can't open the ");
-    //     info += db_name_;
-    //     status_ = false;
-    //     LOG(info);
-    //     return false;
-    // }
-
-    // long offset = static_cast<long>(page_id) * PAGE_SIZE;
-    // db_io_.seekp(offset);
-    // db_io_.read(dst, PAGE_SIZE);
-    // if (db_io_.gcount() != PAGE_SIZE) {
-    //     string_t info("Get Error Data Size: ");
-    //     info += std::to_string(db_io_.gcount());
-    //     LOG(info);
-    //     return false;
-    // }
+    long offset = static_cast<long>(page_id) * PAGE_SIZE;
+    db_io_.seekp(offset);
+    db_io_.read(dst, PAGE_SIZE);
+    if (db_io_.gcount() != PAGE_SIZE) {
+        string_t info("Get Error Data Size: ");
+        info += std::to_string(db_io_.gcount());
+        LOG(info);
+        return false;
+    }
     
     return true;
 }
 
 page_id_t DiskManager::alloc_page() {
-    // page_id_t new_page_id = -1;
+    if (!db_io_.is_open()) {
+        string_t info("ALLOC ERROR: can't open the ");
+        info += db_name_;
+        status_ = false;
+        LOG(info);
+        return -1;
+    }
 
-    // if (!db_io_.is_open()) {
-    //     string_t info("ALLOC ERROR: can't open the ");
-    //     info += db_name_;
-    //     status_ = false;
-    //     LOG(info);
-    //     return -1;
-    // }
+    // get new page id, extract from free_pgid_ and insert into alloced_pgid_
+    latch_.w_lock();
+    page_id_t new_page_id;
+    auto iter = free_pgid_.begin();
+    if (iter == free_pgid_.end()) {
+        int tmp = max_ava_pgid_;
+        max_ava_pgid_ = max_ava_pgid_ * 2;
+        for (int id = tmp; id > max_ava_pgid_; id++)
+            free_pgid_.insert(id);
+        iter = free_pgid_.begin();
+    }
+    new_page_id = *iter;
+    free_pgid_.erase(iter);
+    alloced_pgid_.insert(new_page_id);
+    latch_.w_unlock();
 
-    // new_page_id = next_page_id++;
-    // char c = 'c';
-    // db_io_.seekg(((new_page_id+1)*PAGE_SIZE) - 1);
-    // db_io_.write(&c, 1);
-    // if (db_io_.fail()) {
-    //     string_t info("ALLOC ERROR: can't alloc new space");
-    //     LOG(info);
-    //     next_page_id = -1;
-    // }
+    db_io_.seekg(new_page_id * PAGE_SIZE);
+    db_io_.write(page_buf, PAGE_SIZE);
 
-    // return new_page_id;
+    if (db_io_.fail()) {
+        string_t info("ALLOC ERROR: can't alloc new space");
+        LOG(info);
+        latch_.w_lock();
+        free_pgid_.insert(new_page_id);
+        iter = alloced_pgid_.find(new_page_id);
+        alloced_pgid_.erase(iter);
+        new_page_id = -1;
+        latch_.w_unlock();
+    } else {
+        db_io_.flush();
+    }
+
+    return new_page_id;
 }
 
 bool DiskManager::write_meta_data() {

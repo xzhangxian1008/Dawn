@@ -2,7 +2,7 @@
 
 #include <climits>
 #include <condition_variable>
-#include <mutex>             
+#include <mutex>
 
 namespace dawn {
 
