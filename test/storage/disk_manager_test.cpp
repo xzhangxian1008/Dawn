@@ -2,11 +2,14 @@
 #include "util/config.h"
 #include "util/util.h"
 #include "storage/disk/disk_manager.h"
+#include "storage/page/page.h"
 
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <atomic>
+#include <unordered_set>
+
 
 using std::ios;
 
@@ -14,6 +17,47 @@ namespace dawn {
 
 char buf[1024];
 int buf_sz = 1024;
+
+bool create_meta_file(const char *name, page_id_t max_ava_pgid, page_id_t max_alloced_pgid);
+
+class DiskManager_T : public DiskManager {
+public:
+    DiskManager_T(const string_t &meta_name, bool create = false) : DiskManager(meta_name, create) {}
+
+    offset_t get_db_name_sz_offset() const { return db_name_sz_offset; }
+    offset_t get_db_name_offset() const { return db_name_offset; }
+    offset_t get_log_name_sz_offset() const { return log_name_sz_offset; }
+    offset_t get_log_name_offset() const { return log_name_offset; }
+    offset_t get_max_ava_pgid_offset() const { return max_ava_pgid_offset; }
+    offset_t get_max_alloced_pgid_offset() const { return max_alloced_pgid_offset; }
+    offset_t get_reserved_offset() const { return reserved_offset; }
+};
+
+class DiskManagerTest : public ::testing::Test {
+public:
+    const char *meta1 = "read_mode1";
+    const char *meta_name1 = "read_mode1.mtd";
+    const char *db_name1 = "read_mode1.db";
+    const char *log_name1 = "read_mode1.log";
+    const page_id_t max_ava_pgid1 = 300;
+    const page_id_t max_alloced_pgid1 = 100;
+
+    void SetUp() override {
+        remove(meta_name1);
+        remove(db_name1);
+        remove(log_name1);
+        if (!create_meta_file(meta1, max_ava_pgid1, max_alloced_pgid1)) {
+            LOG("create file fail");
+            exit(-1);
+        }
+    }
+
+    void TearDown() override {
+        remove(meta_name1);
+        remove(db_name1);
+        remove(log_name1);
+    }
+};
 
 bool create_meta_file(const char *name, page_id_t max_ava_pgid, page_id_t max_alloced_pgid) {
     string_t meta_name(name);
@@ -27,15 +71,15 @@ bool create_meta_file(const char *name, page_id_t max_ava_pgid, page_id_t max_al
     fstream_t db_io;
     fstream_t log_io;
     if (!open_file(meta_name, meta_io, ios::in | ios::out | ios::trunc)) {
-        LOG("can't open");
+        LOG("can't create");
         return false;
     }
     if (!open_file(db_name_, db_io, ios::out)) {
-        LOG("can't open");
+        LOG("can't create");
         return false;
     }
     if (!open_file(log_name_, log_io, ios::out)) {
-        LOG("can't open");
+        LOG("can't create");
         return false;
     }
     offset_t db_name_sz_offset;
@@ -89,53 +133,69 @@ bool create_meta_file(const char *name, page_id_t max_ava_pgid, page_id_t max_al
     return true;
 }
 
-class DiskManager_T : public DiskManager {
-public:
-    DiskManager_T(const string_t &meta_name, bool create = false) : DiskManager(meta_name, create) {}
+bool read_write_pages_check(DiskManager_T &dmt, int page_num) {
+    std::unordered_set<page_id_t> s;
+    int num = 100;
 
-    offset_t get_db_name_sz_offset() const { return db_name_sz_offset; }
-    offset_t get_db_name_offset() const { return db_name_offset; }
-    offset_t get_log_name_sz_offset() const { return log_name_sz_offset; }
-    offset_t get_log_name_offset() const { return log_name_offset; }
-    offset_t get_max_ava_pgid_offset() const { return max_ava_pgid_offset; }
-    offset_t get_max_alloced_pgid_offset() const { return max_alloced_pgid_offset; }
-    offset_t get_reserved_offset() const { return reserved_offset; }
-};
-
-class DiskManagerTest : public ::testing::Test {
-public:
-    const char *meta1 = "read_mode";
-    const char *meta_name1 = "read_mode.mtd";
-    const char *db_name1 = "read_mode.db";
-    const char *log_name1 = "read_mode.log";
-    const page_id_t max_ava_pgid1 = 300;
-    const page_id_t max_alloced_pgid1 = 100;
-
-    void SetUp() override {
-        remove(meta_name1);
-        remove(db_name1);
-        remove(log_name1);
-        if (!create_meta_file(meta1, max_ava_pgid1, max_alloced_pgid1)) {
-            LOG("create file fail");
-            exit(-1);
+    // write something
+    for (int i = 0; i < page_num; i++) {
+        page_id_t new_pgid = dmt.get_new_page();
+        if (new_pgid == INVALID_PAGE_ID)
+            return false;
+        s.insert(new_pgid);
+        Page pg(new_pgid);
+        char *data = pg.get_data();
+        page_id_t *pt;
+        for (int j = 0; j < num; j++) {
+            pt = reinterpret_cast<page_id_t*>
+                    (data + PG_COM_HEADER_SZ + j * sizeof(page_id_t));
+            *pt = new_pgid;
         }
+        if (!dmt.write_page(new_pgid, data))
+            return false;
     }
 
-    void TearDown() override {
-        remove(meta_name1);
-        remove(db_name1);
-        remove(log_name1);
+    // read
+    char read_buf[4096];
+    bool ok = true;
+    for (auto iter = s.begin(); iter != s.end(); iter++) {
+        if (!dmt.read_page(*iter, read_buf))
+            return false;
+
+        // check status
+        if (*reinterpret_cast<char*>(read_buf) != 1)
+            ok = false;
+        // check LSN
+        if (*reinterpret_cast<lsn_t*>(read_buf + LSN_OFFSET) != -1)
+            ok = false;
+        // check page id
+        if (*reinterpret_cast<page_id_t*>(read_buf + PAGE_ID_OFFSET) != *iter)
+            ok = false;
+
+        if (!ok) break;
+
+        // check contents
+        for (int i = 0; i < num; i++) {
+            if (*iter != *reinterpret_cast<page_id_t*>(read_buf + PG_COM_HEADER_SZ + i * sizeof(page_id_t))) {
+                ok = false;
+                break;
+            }
+        }
+
+        if (!ok) break;
     }
-};
+
+    return ok;
+}
 
 /**
  * Test List:
  *   1. create mode: check files have been created and values have been written into the .mtd
  *   2. read mode: read all files successfully and initialize data correctly
- *   TODO other test
- *   3. read mode: based on the test 2, we should collect page id's info correctly
+ *   3. read mode: db should collect page id's info correctly when it starts
  */
 TEST_F(DiskManagerTest, ConstructorTEST) {
+    const char *meta = "test";
     const char *mtdf = "test.mtd";
     const char *dbf = "test.db";
     const char *logf = "test.log";
@@ -150,7 +210,7 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
 
     {
         // test 1
-        DiskManager_T dmt("test", true);
+        DiskManager_T dmt(meta, true);
         EXPECT_TRUE(dmt.get_status());
 
         // check files have been created successfully
@@ -195,11 +255,12 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
         pg = reinterpret_cast<page_id_t*>(buf + dmt.get_max_alloced_pgid_offset());
         EXPECT_EQ(dmt.get_max_alloced_pgid(), *pg);
 
-        remove(mtdf);
-        remove(dbf);
-        remove(logf);
         delete buf;
     }
+
+    remove(mtdf);
+    remove(dbf);
+    remove(logf);
 
     {
         // test 2
@@ -210,12 +271,178 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
     }
 
     {
-        // TODO test 3
+        // test 3
+        int page_num = 1000;
+        {
+            // allocate and free some pages
+            DiskManager_T dmt(meta, true);
+            ASSERT_TRUE(dmt.get_status());
+
+            // check files have been created successfully
+            ASSERT_FALSE(check_inexistence(mtdf));
+            ASSERT_FALSE(check_inexistence(dbf));
+            ASSERT_FALSE(check_inexistence(logf));
+
+            EXPECT_TRUE(read_write_pages_check(dmt, page_num));
+
+            // free some pages
+            for (int i = 0; i < page_num; i++) {
+                if (i % 2 == 0)
+                    continue;
+                ASSERT_TRUE(dmt.free_page(i));
+            }
+        }
+
+        {   
+            // restart and collect information
+            DiskManager_T dmt(meta);
+            ASSERT_TRUE(dmt.get_status());
+
+            // check files have been created successfully
+            ASSERT_FALSE(check_inexistence(mtdf));
+            ASSERT_FALSE(check_inexistence(dbf));
+            ASSERT_FALSE(check_inexistence(logf));
+
+            // check correctness
+            bool ok = true;
+            for (int i = 0; i < page_num; i++) {
+                if (i % 2 == 0) {
+                    if (dmt.is_allocated(i) != true)
+                        ok = false;
+                    if (dmt.is_free(i) != false)
+                        ok = false;
+                } else {
+                    if (dmt.is_allocated(i) != false)
+                        ok = false;
+                    if (dmt.is_free(i) != true)
+                        ok = false;
+                }
+
+                if (!ok) break;
+                
+            }
+
+            EXPECT_TRUE(ok);
+            EXPECT_EQ(998, dmt.get_max_alloced_pgid());
+        }
     }
+
+    remove(mtdf);
+    remove(dbf);
+    remove(logf);
+
 }
 
-TEST(DMTest, DISABLED_DMFunctionTest) {
+/**
+ * Test List:
+ *   1. write some pages and read it successfully with correct data
+ *   2. write lots of pages and read it successfully with correct data
+ *   3. release some pages and check operation have been allpied
+ */
+TEST_F(DiskManagerTest, DMFunctionTest) {
+    const char *mtdf = "test.mtd";
+    const char *dbf = "test.db";
+    const char *logf = "test.log";
 
+    string_t mtdf_s(mtdf);
+    string_t dbf_s(dbf);
+    string_t logf_s(logf);
+    
+    remove(mtdf);
+    remove(dbf);
+    remove(logf);
+
+    {
+        // test 1
+        DiskManager_T dmt("test", true);
+        ASSERT_TRUE(dmt.get_status());
+
+        // check files have been created successfully
+        ASSERT_FALSE(check_inexistence(mtdf));
+        ASSERT_FALSE(check_inexistence(dbf));
+        ASSERT_FALSE(check_inexistence(logf));
+
+        // basic test
+        EXPECT_TRUE(read_write_pages_check(dmt, 10));
+    }
+
+    remove(mtdf);
+    remove(dbf);
+    remove(logf);
+
+    {
+        // test 2
+        DiskManager_T dmt("test", true);
+        ASSERT_TRUE(dmt.get_status());
+
+        // check files have been created successfully
+        ASSERT_FALSE(check_inexistence(mtdf));
+        ASSERT_FALSE(check_inexistence(dbf));
+        ASSERT_FALSE(check_inexistence(logf));
+
+        // check lots of pages
+        EXPECT_TRUE(read_write_pages_check(dmt, 10000));
+    }
+
+    remove(mtdf);
+    remove(dbf);
+    remove(logf);
+
+    {
+        // test 3
+        DiskManager_T dmt("test", true);
+        ASSERT_TRUE(dmt.get_status());
+
+        // check files have been created successfully
+        ASSERT_FALSE(check_inexistence(mtdf));
+        ASSERT_FALSE(check_inexistence(dbf));
+        ASSERT_FALSE(check_inexistence(logf));
+
+        int page_num = 1000;
+        EXPECT_TRUE(read_write_pages_check(dmt, page_num));
+
+        // free some pages and check the data's correstness
+        for (int i = 0; i < page_num; i++) {
+            if (i % 2 == 0)
+                continue;
+            ASSERT_TRUE(dmt.free_page(i));
+        }
+
+        // check correctness
+        bool ok = true;
+        for (int i = 0; i < page_num; i++) {
+            if (i % 2 == 0) {
+                if (dmt.is_allocated(i) != true)
+                    ok = false;
+                if (dmt.is_free(i) != false)
+                    ok = false;
+            } else {
+                if (dmt.is_allocated(i) != false)
+                    ok = false;
+                if (dmt.is_free(i) != true)
+                    ok = false;
+            }
+
+            if (!ok) break;
+        }
+
+        EXPECT_TRUE(ok);
+        EXPECT_EQ(998, dmt.get_max_alloced_pgid());
+    }
+
+    remove(mtdf);
+    remove(dbf);
+    remove(logf);
+}
+
+// TODO test concurrency environment
+TEST(ConcurrencyDMTest, DISABLED_CDMTest) {
+
+}
+
+TEST(TT, DISABLED_TE) {
+    fstream_t f;
+    f.close();
 }
 
 } // namespace dawn

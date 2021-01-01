@@ -17,13 +17,15 @@ namespace dawn {
  */
 class Page {
 public:
-    Page(char *data_src, page_id_t page_id) {
+    Page(page_id_t page_id, char *data_src = nullptr) {
         page_id_ = page_id;
         pin_count_ = 0;
         is_dirty_ = false;
         reset_mem();
 
-        memcpy(data_, data_src, PAGE_SIZE);
+        if (data_src != nullptr)
+            memcpy(data_, data_src, PAGE_SIZE);
+        
         char *status = reinterpret_cast<char*>(data_);
         *status = STATUS_EXIST;
         lsn_t *lt = reinterpret_cast<lsn_t*>(data_ + LSN_OFFSET);
@@ -45,10 +47,6 @@ public:
 
 private:
     void reset_mem() { memset(data_, 0, PAGE_SIZE); }
-
-    const offset_t STATUS_OFFSET = 0;
-    const offset_t LSN_OFFSET = 1;
-    const offset_t PAGE_ID_OFFSET = 5;
 
     char data_[PAGE_SIZE];
     std::atomic<page_id_t> page_id_;

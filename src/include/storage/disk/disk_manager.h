@@ -12,6 +12,8 @@
 
 namespace dawn {
 /**
+ * TODO handle concurrency environment
+ * 
  * meta data file layout:
  * the reserved filed is placed just for notification not to forget to
  * maintain a reserved field when I plan to add other fields.
@@ -37,12 +39,13 @@ public:
     explicit DiskManager(const string_t &meta_name, bool create = false);
 
     ~DiskManager() {
-        shutdown();
+        if (status_)
+            shutdown();
     }
 
     bool write_page(page_id_t page_id, const char *data);
     bool read_page(page_id_t page_id, char *dst);
-    page_id_t alloc_page();
+    page_id_t get_new_page();
     bool free_page(page_id_t page_id);
     // bool write_log();
     // bool read_log();
@@ -50,11 +53,19 @@ public:
     page_id_t get_max_ava_pgid() const { return max_ava_pgid_; }
     page_id_t get_max_alloced_pgid() const { return max_alloced_pgid_; }
 
+    // duplicated, just for test
+    bool is_free(page_id_t page_id) const { return free_pgid_.find(page_id) != free_pgid_.end(); }
+    bool is_allocated(page_id_t page_id) const { return alloced_pgid_.find(page_id) != alloced_pgid_.end();}
+
     void shutdown() {
+        // FIXME bug will happen if we put log_io_.close() after the write_meta_data(). confused...
+        if (status_ && !write_meta_data()) {
+            LOG("WARNING! Write Meta Data Fail in Shutdown");
+        }
+        status_ = false;
         meta_io_.close();
         db_io_.close();
         log_io_.close();
-        status_ = false;
         if (meta_buffer != nullptr) {
             delete meta_buffer;
             buffer_size = -1;
@@ -65,7 +76,6 @@ public:
 private:
     void from_scratch();
     void from_mtd(const string_t &meta_name);
-
     bool write_meta_data();
 
     offset_t db_name_sz_offset;
@@ -99,7 +109,7 @@ private:
     std::atomic<page_id_t> max_ava_pgid_;
 
     /**
-     * TODO truncating hasn't been implemented
+     * TODO truncate the .db file
      * max page id that has been allocated, so that we can
      * truncate the file to shrink it's size.
      */
@@ -124,5 +134,8 @@ private:
     char page_buf[PAGE_SIZE];
 
     ReaderWriterLatch latch_;
+
+    // TODO ensure the io concurrency
+    ReaderWriterLatch io_latch_;
 };
 } // namespace dawn

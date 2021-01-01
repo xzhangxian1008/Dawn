@@ -51,6 +51,9 @@ long get_file_sz(std::fstream &io) {
     }
     io.seekp(0, std::ios::beg);
     long beg = io.tellp();
+    if (beg == -1) {
+        return -1;
+    }
     io.seekp(0, std::ios::end);
     return io.tellp() - beg;
 }

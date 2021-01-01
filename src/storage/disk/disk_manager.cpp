@@ -75,53 +75,13 @@ void DiskManager::from_scratch() {
     for (int i = 0; i < 100; i++)
         free_pgid_.insert(i);
     
-    // initialize the buffer with size 1024 byte
+    // initialize the buffer with size 512 byte
     meta_buffer = new char[512];
     buffer_size = 512;
 
-    // write meta data to the buffer and set the offset
-    int *p;
-    
-    db_name_sz_offset = 0;
-    p = reinterpret_cast<int*>(meta_buffer + db_name_sz_offset);
-    *p = db_name_.length();
-    
-    db_name_offset = db_name_sz_offset + sizeof(int);
-    for (int i = 0; i < db_name_.length(); i++)
-        meta_buffer[db_name_offset+i] = db_name_[i];
-    db_name_[db_name_offset+db_name_.length()] = '\0';
-
-    log_name_sz_offset = db_name_offset + db_name_.length() + 1;
-    p = reinterpret_cast<int*>(meta_buffer+log_name_sz_offset);
-    *p = log_name_.length();
-
-    log_name_offset = log_name_sz_offset + sizeof(int);
-    for (int i = 0; i < log_name_.length(); i++)
-        meta_buffer[log_name_offset+i] = log_name_[i];
-    meta_buffer[log_name_offset+log_name_.length()] = '\0';
-
-    max_ava_pgid_offset = log_name_offset + log_name_.length() + 1;
-    page_id_t *pt;
-    pt = reinterpret_cast<page_id_t*>(meta_buffer+max_ava_pgid_offset);
-    *pt = max_ava_pgid_;
-
-    max_alloced_pgid_offset = max_ava_pgid_offset + sizeof(page_id_t);
-    pt = reinterpret_cast<page_id_t*>(meta_buffer+max_alloced_pgid_offset);
-    *pt = max_alloced_pgid_;
-
-    reserved_offset = max_alloced_pgid_offset + sizeof(page_id_t);
-    memset(meta_buffer + reserved_offset, 0, 128);
-
-    // write meta data to the meta file
-    meta_io_.seekg(0);
-    meta_io_.write(meta_buffer, buffer_size);
-    if (meta_io_.fail()) {
-        // FIXME need other ways to handle the exception
-        LOG("Write to meta data file fail.");
+    if (write_meta_data()) {
+        status_ = true;
     }
-
-    meta_io_.flush();
-    status_ = true;
 }
 
 void DiskManager::from_mtd(const string_t &meta_name) {
@@ -178,7 +138,7 @@ void DiskManager::from_mtd(const string_t &meta_name) {
         log_name_offset = log_name_sz_offset + sizeof(int);
         log_name_ = meta_buffer + log_name_offset;
 
-        if (!open_file(log_name_, db_io_, std::ios::in | std::ios::out)) {
+        if (!open_file(log_name_, log_io_, std::ios::in | std::ios::out)) {
             string_t info("ERROR! ");
             info += "Open " + log_name_ + " Fail!";
             LOG(info);
@@ -210,6 +170,7 @@ void DiskManager::from_mtd(const string_t &meta_name) {
     if (db_file_sz == -1 || (db_file_sz % PAGE_SIZE != 0)) {
         string_t info("ERROR! ");
         info += "Get Invalid File Size! size:" + std::to_string(db_file_sz);
+        LOG(info);
         shutdown();
         return;
     }
@@ -222,13 +183,14 @@ void DiskManager::from_mtd(const string_t &meta_name) {
     }
 
     char *tmp_buf = new char[READ_DB_BUF_SZ];
-    int read_cnt = db_file_sz / READ_DB_BUF_SZ + 1;
+    int read_cnt = db_file_sz / READ_DB_BUF_SZ;
     if (db_file_sz % READ_DB_BUF_SZ != 0)
         read_cnt++;
     
     // read the full .db file to initialize data
     page_id_t page_id;
     for (int i = 0; i < read_cnt; i++) {
+        db_io_.seekp(i * READ_DB_BUF_SZ);
         db_io_.read(tmp_buf, READ_DB_BUF_SZ);
         if (db_io_.fail()) {
             string_t info("ERROR! ");
@@ -243,8 +205,8 @@ void DiskManager::from_mtd(const string_t &meta_name) {
         for (int offset = 0; offset < read_sz; offset += PAGE_SIZE) {
             page_id = i * READ_DB_PG_NUM + (offset / PAGE_SIZE);
 
-            p_status = reinterpret_cast<char*>(tmp_buf);
-            if (*p_status == 1) {
+            p_status = reinterpret_cast<char*>(tmp_buf + offset);
+            if (*p_status & STATUS_EXIST) {
                 max_alloced_pgid_ = page_id;
                 alloced_pgid_.insert(page_id);
             } else {
@@ -309,7 +271,7 @@ bool DiskManager::read_page(page_id_t page_id, char *dst) {
     return true;
 }
 
-page_id_t DiskManager::alloc_page() {
+page_id_t DiskManager::get_new_page() {
     if (!db_io_.is_open()) {
         string_t info("ALLOC ERROR: can't open the ");
         info += db_name_;
@@ -325,7 +287,7 @@ page_id_t DiskManager::alloc_page() {
     if (iter == free_pgid_.end()) {
         int tmp = max_ava_pgid_;
         max_ava_pgid_ = max_ava_pgid_ * 2;
-        for (int id = tmp; id > max_ava_pgid_; id++)
+        for (int id = tmp; id < max_ava_pgid_; id++)
             free_pgid_.insert(id);
         iter = free_pgid_.begin();
     }
@@ -334,6 +296,7 @@ page_id_t DiskManager::alloc_page() {
     alloced_pgid_.insert(new_page_id);
     latch_.w_unlock();
 
+    page_buf[0] |= STATUS_EXIST;
     db_io_.seekg(new_page_id * PAGE_SIZE);
     db_io_.write(page_buf, PAGE_SIZE);
 
@@ -347,14 +310,104 @@ page_id_t DiskManager::alloc_page() {
         new_page_id = -1;
         latch_.w_unlock();
     } else {
+        if (max_alloced_pgid_ < new_page_id)
+            max_alloced_pgid_ = new_page_id;
         db_io_.flush();
     }
 
     return new_page_id;
 }
 
-bool DiskManager::write_meta_data() {
+bool DiskManager::free_page(page_id_t page_id) {
+    if (page_id < 0)
+        return false;
 
+    latch_.r_lock();
+    auto iter = alloced_pgid_.find(page_id);
+    if (iter == alloced_pgid_.end()) {
+        latch_.r_unlock();
+        return true;
+    }
+    latch_.r_unlock();
+
+    // change the page's status on disk
+    io_latch_.w_lock();
+    char c = STATUS_FREE;
+    db_io_.seekg(page_id * PAGE_SIZE);
+    db_io_.write(&c, 1);
+    if (db_io_.fail()) {
+        return false;
+    }
+    db_io_.flush();
+    io_latch_.w_unlock();
+
+    latch_.w_lock();
+    free_pgid_.insert(page_id);
+    alloced_pgid_.erase(iter);
+
+    if (max_alloced_pgid_ == page_id) {
+        if (alloced_pgid_.size() != 0) {
+            iter = alloced_pgid_.end();
+            iter--;
+            max_alloced_pgid_ = *iter;
+        } else {
+            max_alloced_pgid_ = -1;
+        }
+    }
+    latch_.w_unlock();
+
+    return true;
+}
+
+bool DiskManager::write_meta_data() {
+    if (meta_buffer == nullptr) {
+        return false;
+    }
+    
+    // write meta data to the buffer and set the offset
+    int *p;
+    
+    db_name_sz_offset = 0;
+    p = reinterpret_cast<int*>(meta_buffer + db_name_sz_offset);
+    *p = db_name_.length();
+    
+    db_name_offset = db_name_sz_offset + sizeof(int);
+    for (int i = 0; i < db_name_.length(); i++)
+        meta_buffer[db_name_offset+i] = db_name_[i];
+    db_name_[db_name_offset+db_name_.length()] = '\0';
+
+    log_name_sz_offset = db_name_offset + db_name_.length() + 1;
+    p = reinterpret_cast<int*>(meta_buffer+log_name_sz_offset);
+    *p = log_name_.length();
+
+    log_name_offset = log_name_sz_offset + sizeof(int);
+    for (int i = 0; i < log_name_.length(); i++)
+        meta_buffer[log_name_offset+i] = log_name_[i];
+    meta_buffer[log_name_offset+log_name_.length()] = '\0';
+
+    max_ava_pgid_offset = log_name_offset + log_name_.length() + 1;
+    page_id_t *pt;
+    pt = reinterpret_cast<page_id_t*>(meta_buffer+max_ava_pgid_offset);
+    *pt = max_ava_pgid_;
+
+    max_alloced_pgid_offset = max_ava_pgid_offset + sizeof(page_id_t);
+    pt = reinterpret_cast<page_id_t*>(meta_buffer+max_alloced_pgid_offset);
+    *pt = max_alloced_pgid_;
+
+    reserved_offset = max_alloced_pgid_offset + sizeof(page_id_t);
+    memset(meta_buffer + reserved_offset, 0, 128);
+
+    // write meta data to the meta file
+    meta_io_.seekg(0);
+    meta_io_.write(meta_buffer, buffer_size);
+    if (meta_io_.fail()) {
+        // FIXME need other ways to handle the exception
+        LOG("Write to meta data file fail.");
+        return false;
+    }
+
+    meta_io_.flush();
+    return true;
 }
 
 } // namespace dawn
