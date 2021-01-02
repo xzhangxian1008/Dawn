@@ -151,13 +151,8 @@ void DiskManager::from_mtd(const string_t &meta_name) {
         max_ava_pgid_offset = log_name_offset + *p + 1;
         pg = reinterpret_cast<page_id_t*>(meta_buffer + max_ava_pgid_offset);
         max_ava_pgid_ = *pg;
-
-        max_alloced_pgid_offset = max_ava_pgid_offset + sizeof(page_id_t);
-        pg = reinterpret_cast<page_id_t*>(meta_buffer + max_alloced_pgid_offset);
-        max_alloced_pgid_ = *pg;
     }
 
-    // FIXME one thread operation is slow when the file is big
     // initialize the alloced_pgid_ and free_pgid_
     // Read through the .db file to check every page's status。
     // If one page is in use, we put it's page id into alloced_pgid
@@ -178,6 +173,7 @@ void DiskManager::from_mtd(const string_t &meta_name) {
     if (db_file_sz == 0) {
         for (int i = 0; i < max_ava_pgid_; i++)
             free_pgid_.insert(i);
+        max_alloced_pgid_ = -1;
         status_ = true;
         return;
     }
@@ -235,12 +231,15 @@ bool DiskManager::write_page(page_id_t page_id, const char *data) {
     }
 
     long offset = static_cast<long>(page_id) * PAGE_SIZE;
+    db_io_latch_.w_lock();
     db_io_.seekg(offset);
     db_io_.write(data, PAGE_SIZE);
     if (db_io_.fail()) {
+        db_io_latch_.w_unlock();
         LOG("WRITE FAIL!!!");
         return false;
     }
+    db_io_latch_.w_unlock();
 
     db_io_.flush();
     return true;
@@ -259,14 +258,17 @@ bool DiskManager::read_page(page_id_t page_id, char *dst) {
     }
 
     long offset = static_cast<long>(page_id) * PAGE_SIZE;
+    db_io_latch_.w_lock();
     db_io_.seekp(offset);
     db_io_.read(dst, PAGE_SIZE);
     if (db_io_.gcount() != PAGE_SIZE) {
+        db_io_latch_.w_unlock();
         string_t info("Get Error Data Size: ");
         info += std::to_string(db_io_.gcount());
         LOG(info);
         return false;
     }
+    db_io_latch_.w_unlock();
     
     return true;
 }
@@ -297,10 +299,12 @@ page_id_t DiskManager::get_new_page() {
     latch_.w_unlock();
 
     page_buf[0] |= STATUS_EXIST;
+    db_io_latch_.w_lock();
     db_io_.seekg(new_page_id * PAGE_SIZE);
     db_io_.write(page_buf, PAGE_SIZE);
 
     if (db_io_.fail()) {
+        db_io_latch_.w_unlock();
         string_t info("ALLOC ERROR: can't alloc new space");
         LOG(info);
         latch_.w_lock();
@@ -314,6 +318,7 @@ page_id_t DiskManager::get_new_page() {
             max_alloced_pgid_ = new_page_id;
         db_io_.flush();
     }
+    db_io_latch_.w_unlock();
 
     return new_page_id;
 }
@@ -331,15 +336,16 @@ bool DiskManager::free_page(page_id_t page_id) {
     latch_.r_unlock();
 
     // change the page's status on disk
-    io_latch_.w_lock();
     char c = STATUS_FREE;
+    db_io_latch_.w_lock();
     db_io_.seekg(page_id * PAGE_SIZE);
     db_io_.write(&c, 1);
     if (db_io_.fail()) {
+        db_io_latch_.w_unlock();
         return false;
     }
+    db_io_latch_.w_unlock();
     db_io_.flush();
-    io_latch_.w_unlock();
 
     latch_.w_lock();
     free_pgid_.insert(page_id);
@@ -390,11 +396,7 @@ bool DiskManager::write_meta_data() {
     pt = reinterpret_cast<page_id_t*>(meta_buffer+max_ava_pgid_offset);
     *pt = max_ava_pgid_;
 
-    max_alloced_pgid_offset = max_ava_pgid_offset + sizeof(page_id_t);
-    pt = reinterpret_cast<page_id_t*>(meta_buffer+max_alloced_pgid_offset);
-    *pt = max_alloced_pgid_;
-
-    reserved_offset = max_alloced_pgid_offset + sizeof(page_id_t);
+    reserved_offset = max_ava_pgid_offset + sizeof(page_id_t);
     memset(meta_buffer + reserved_offset, 0, 128);
 
     // write meta data to the meta file

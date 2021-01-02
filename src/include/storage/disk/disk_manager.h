@@ -12,7 +12,6 @@
 
 namespace dawn {
 /**
- * TODO handle concurrency environment
  * 
  * meta data file layout:
  * the reserved filed is placed just for notification not to forget to
@@ -25,7 +24,7 @@ namespace dawn {
  * | db_name size (4) | db_name... | log_name size (4) | log_name ... |
  * --------------------------------------------------------------------
  * --------------------------------------------------------------------
- * | max_ava_pgid_ (4) | max_alloced_pgid_ (4) |    Reserved (128)    |
+ * | max_ava_pgid_ (4) |  Reserved (128)    |
  * --------------------------------------------------------------------
  */
 class DiskManager {
@@ -83,7 +82,6 @@ private:
     offset_t log_name_sz_offset;
     offset_t log_name_offset;
     offset_t max_ava_pgid_offset;
-    offset_t max_alloced_pgid_offset;
     offset_t reserved_offset;
 
     fstream_t db_io_;
@@ -135,7 +133,7 @@ private:
 
     ReaderWriterLatch latch_;
 
-    // TODO ensure the io concurrency
-    ReaderWriterLatch io_latch_;
+    ReaderWriterLatch db_io_latch_;
+    ReaderWriterLatch log_io_latch_;
 };
 } // namespace dawn

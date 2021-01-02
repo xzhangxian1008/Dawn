@@ -18,7 +18,7 @@ namespace dawn {
 char buf[1024];
 int buf_sz = 1024;
 
-bool create_meta_file(const char *name, page_id_t max_ava_pgid, page_id_t max_alloced_pgid);
+bool create_meta_file(const char *name, page_id_t max_ava_pgid);
 
 class DiskManager_T : public DiskManager {
 public:
@@ -29,7 +29,6 @@ public:
     offset_t get_log_name_sz_offset() const { return log_name_sz_offset; }
     offset_t get_log_name_offset() const { return log_name_offset; }
     offset_t get_max_ava_pgid_offset() const { return max_ava_pgid_offset; }
-    offset_t get_max_alloced_pgid_offset() const { return max_alloced_pgid_offset; }
     offset_t get_reserved_offset() const { return reserved_offset; }
 };
 
@@ -40,13 +39,12 @@ public:
     const char *db_name1 = "read_mode1.db";
     const char *log_name1 = "read_mode1.log";
     const page_id_t max_ava_pgid1 = 300;
-    const page_id_t max_alloced_pgid1 = 100;
 
     void SetUp() override {
         remove(meta_name1);
         remove(db_name1);
         remove(log_name1);
-        if (!create_meta_file(meta1, max_ava_pgid1, max_alloced_pgid1)) {
+        if (!create_meta_file(meta1, max_ava_pgid1)) {
             LOG("create file fail");
             exit(-1);
         }
@@ -59,7 +57,7 @@ public:
     }
 };
 
-bool create_meta_file(const char *name, page_id_t max_ava_pgid, page_id_t max_alloced_pgid) {
+bool create_meta_file(const char *name, page_id_t max_ava_pgid) {
     string_t meta_name(name);
     meta_name += ".mtd";
     string_t db_name_(name);
@@ -115,11 +113,7 @@ bool create_meta_file(const char *name, page_id_t max_ava_pgid, page_id_t max_al
     pt = reinterpret_cast<page_id_t*>(buf+max_ava_pgid_offset);
     *pt = max_ava_pgid;
 
-    max_alloced_pgid_offset = max_ava_pgid_offset + sizeof(page_id_t);
-    pt = reinterpret_cast<page_id_t*>(buf+max_alloced_pgid_offset);
-    *pt = max_alloced_pgid;
-
-    reserved_offset = max_alloced_pgid_offset + sizeof(page_id_t);
+    reserved_offset = max_ava_pgid_offset + sizeof(page_id_t);
     memset(buf + reserved_offset, 0, 128);
 
     // write meta data to the meta file
@@ -252,9 +246,6 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
         pg = reinterpret_cast<page_id_t*>(buf + dmt.get_max_ava_pgid_offset());
         EXPECT_EQ(dmt.get_max_ava_pgid(), *pg);
 
-        pg = reinterpret_cast<page_id_t*>(buf + dmt.get_max_alloced_pgid_offset());
-        EXPECT_EQ(dmt.get_max_alloced_pgid(), *pg);
-
         delete buf;
     }
 
@@ -267,7 +258,7 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
         DiskManager dm(meta1);
         EXPECT_TRUE(dm.get_status());
         EXPECT_EQ(max_ava_pgid1, dm.get_max_ava_pgid());
-        EXPECT_EQ(max_alloced_pgid1, dm.get_max_alloced_pgid());
+        EXPECT_EQ(-1, dm.get_max_alloced_pgid());
     }
 
     {
@@ -438,11 +429,6 @@ TEST_F(DiskManagerTest, DMFunctionTest) {
 // TODO test concurrency environment
 TEST(ConcurrencyDMTest, DISABLED_CDMTest) {
 
-}
-
-TEST(TT, DISABLED_TE) {
-    fstream_t f;
-    f.close();
 }
 
 } // namespace dawn
