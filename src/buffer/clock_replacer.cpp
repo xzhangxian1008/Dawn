@@ -22,7 +22,7 @@ void ClockReplacer::unpin(frame_id_t frame_id) {
 }
 
 void ClockReplacer::victim(frame_id_t *frame_id) {
-    std::unique_lock<std::mutex> lk(latch_);
+    std::unique_lock<std::mutex> lk(latch_, std::defer_lock);
     while (true) {
         lk.lock();
         if (exit_num != 0) {
@@ -34,7 +34,7 @@ void ClockReplacer::victim(frame_id_t *frame_id) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     
-    while (true) {
+    while (true) {        
         if (flags[clock_pointer_] & FRAME_EXIST_FALSE) {
             *frame_id = clock_pointer_;
             flags[clock_pointer_] = FRAME_NOT_EXIST;
@@ -48,6 +48,8 @@ void ClockReplacer::victim(frame_id_t *frame_id) {
             clock_pointer_to_next();
             continue;
         }
+
+        clock_pointer_to_next();
     }
 }
 

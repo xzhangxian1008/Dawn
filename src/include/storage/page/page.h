@@ -34,6 +34,13 @@ public:
         *pt = page_id;
     }
 
+    Page() {
+        page_id_ = INVALID_PAGE_ID;
+        pin_count_ = 0;
+        is_dirty_ = 0;
+        reset_mem();
+    }
+
     char *get_data() { return data_; }
     page_id_t get_page_id() { return page_id_; }
     int get_pin_count() { return pin_count_; }

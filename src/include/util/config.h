@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <fstream>
+
 namespace dawn {
 
 #define READ_DB_BUF_SZ 409600 // 100 pages

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "util/util.h"
-#include "util/config.h"
 #include "buffer/replacer_abstract.h"
 
 #include <chrono>
@@ -28,7 +26,7 @@ private:
     int pool_size_;
     int clock_pointer_;
 
-    // record how many frames in the
+    // record how many frames in the replacer
     int exit_num;
 
     std::mutex latch_;

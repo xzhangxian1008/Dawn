@@ -19,7 +19,7 @@ void print__(const T& firstArg, const Types&... args) {
 }
 
 // TODO add switch、time and so no
-void log__(std::string func_name, int line, std::string info) {
+inline void log__(std::string func_name, int line, std::string info) {
     std::string out = func_name + ", line " + std::to_string(line) + ": " + info;
     std::cout << out << std::endl;
 }

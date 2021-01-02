@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util/config.h"
+#include "util/util.h"
 
 namespace dawn {
 
