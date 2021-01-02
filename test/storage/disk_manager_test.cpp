@@ -142,7 +142,7 @@ bool read_write_pages_check(DiskManager_T &dmt, int page_num) {
         page_id_t *pt;
         for (int j = 0; j < num; j++) {
             pt = reinterpret_cast<page_id_t*>
-                    (data + PG_COM_HEADER_SZ + j * sizeof(page_id_t));
+                    (data + COM_PG_HEADER_SZ + j * sizeof(page_id_t));
             *pt = new_pgid;
         }
         if (!dmt.write_page(new_pgid, data))
@@ -170,7 +170,7 @@ bool read_write_pages_check(DiskManager_T &dmt, int page_num) {
 
         // check contents
         for (int i = 0; i < num; i++) {
-            if (*iter != *reinterpret_cast<page_id_t*>(read_buf + PG_COM_HEADER_SZ + i * sizeof(page_id_t))) {
+            if (*iter != *reinterpret_cast<page_id_t*>(read_buf + COM_PG_HEADER_SZ + i * sizeof(page_id_t))) {
                 ok = false;
                 break;
             }

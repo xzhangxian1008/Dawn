@@ -10,7 +10,7 @@
 namespace dawn {
 
 /**
- * page common header layout(64 bytes):
+ * common page header layout(64 bytes):
  * -------------------------------------------------------------
  * | Status (1) | LSN (4) | PageId (4) |      Reserved (55)    |
  * -------------------------------------------------------------
@@ -41,25 +41,53 @@ public:
         reset_mem();
     }
 
-    char *get_data() { return data_; }
-    page_id_t get_page_id() { return page_id_; }
-    int get_pin_count() { return pin_count_; }
-    bool is_dirty() { return is_dirty_; }
-    void w_latch() { rwlatch_.w_lock(); }
-    void w_unlatch() { rwlatch_.w_unlock(); }
-    void r_latch() { rwlatch_.r_lock(); }
-    void r_unlatch() { rwlatch_.r_unlock(); }
-    lsn_t get_lsn() { return *reinterpret_cast<lsn_t *>(data_ + LSN_OFFSET); }
-    void set_lsn(lsn_t lsn) { memcpy(data_ + LSN_OFFSET, &lsn, sizeof(lsn_t)); }
+    inline void w_lock() { latch_.w_lock(); }
+    inline void w_unlock() { latch_.w_unlock(); }
+    inline void r_lock() { latch_.r_lock(); }
+    inline void r_unlock() { latch_.r_unlock(); }
 
+    inline char *get_data() { return data_; }
+    inline page_id_t get_page_id() { return page_id_; }
+    inline int get_pin_count() { return pin_count_; }
+    inline bool is_dirty() { return is_dirty_; }
+    inline lsn_t get_lsn() { return lsn_; }
+
+    inline void add_pin_count() { pin_count_++; }
+    inline void decrease_pin_count() { pin_count_--; }
+    inline void set_is_dirty(bool is_dirty) { is_dirty_ = is_dirty; }
+
+    void set_page_id(page_id_t page_id) {
+        latch_.w_lock();
+        memcpy(data_ + PAGE_ID_OFFSET, &page_id, sizeof(page_id_t));
+        page_id_ = page_id;
+        latch_.w_unlock();
+    }
+
+    void set_lsn(lsn_t lsn) {
+        latch_.w_lock();
+        memcpy(data_ + LSN_OFFSET, &lsn, sizeof(lsn_t));
+        lsn_ = lsn;
+        latch_.w_unlock();
+    }
+
+    void set_status() {
+        char s = STATUS_EXIST;
+        latch_.w_lock();
+        memcpy(data_ + STATUS_OFFSET, &s, sizeof(1));
+        latch_.w_unlock();
+    }
 private:
     void reset_mem() { memset(data_, 0, PAGE_SIZE); }
 
-    char data_[PAGE_SIZE];
     std::atomic<page_id_t> page_id_;
     std::atomic<int> pin_count_;
     std::atomic<bool> is_dirty_;
-    ReaderWriterLatch rwlatch_;
+    std::atomic<lsn_t> lsn_;
+
+    char data_[PAGE_SIZE];
+
+    // latch_ only protects the data_
+    ReaderWriterLatch latch_;
 };
 
 } // namespace dawn

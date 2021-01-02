@@ -10,7 +10,7 @@ namespace dawn {
 
 // page
 #define PAGE_SIZE 4096
-#define PG_COM_HEADER_SZ 64 // page's comman header size
+#define COM_PG_HEADER_SZ 64 // page's comman header size
 #define INVALID_PAGE_ID -1
 #define STATUS_EXIST 1
 #define STATUS_FREE 2

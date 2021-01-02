@@ -18,12 +18,25 @@ namespace dawn {
 class BufferPoolManager {
 public:
     explicit BufferPoolManager(DiskManager *disk_manager, int pool_size);
+
     ~BufferPoolManager() {
         delete pages_;
         delete replacer_;
     }
 
+    Page* get_page(page_id_t page_id);
+    Page* new_page();
+    void delete_page(page_id_t page_id);
+    void unpin_page(page_id_t page_id);
+    bool flush_page(page_id_t page_id);
+
 private:
+    // ATTENTION no lock protects it
+    inline frame_id_t get_frame_id(page_id_t page_id);
+
+    // we assume this function will always success.
+    void evict_page(page_id_t page_id, frame_id_t frame_id);
+
     // a page pool
     Page *pages_;
 
