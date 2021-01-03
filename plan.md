@@ -46,7 +46,7 @@ other 标签下的任务不需要做记号，完成即删除
 
 任务：
 - clock replacer的实现
-- *buffer pool manager的实现
+- buffer pool manager的实现
    - *对日志和事务的支持(未来实现)
 
 ## 索引层
@@ -91,6 +91,11 @@ other 标签下的任务不需要做记号，完成即删除
   - unpin一些页框，pin其中的一部分，剩下的全部逐出
   - 逐出时没有可逐出页框，等待，放入页框后成功逐出
 - *clock replacer并发
+- buffer pool manager非并发
+  - 针对一个页面作如下操作：创建，写，驱逐，拿，读，写，冲刷，读，最后删除
+  - 
+- *buffer pool manager并发
+
 
 ## 索引层
 

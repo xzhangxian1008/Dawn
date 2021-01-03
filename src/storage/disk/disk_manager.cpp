@@ -347,6 +347,7 @@ bool DiskManager::free_page(page_id_t page_id) {
     db_io_latch_.w_unlock();
     db_io_.flush();
 
+    // update the meta data
     latch_.w_lock();
     free_pgid_.insert(page_id);
     alloced_pgid_.erase(iter);

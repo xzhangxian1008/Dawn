@@ -24,19 +24,21 @@ public:
         delete replacer_;
     }
 
-    Page* get_page(page_id_t page_id);
+    Page* get_page(const page_id_t &page_id);
     Page* new_page();
-    void delete_page(page_id_t page_id);
-    void unpin_page(page_id_t page_id);
-    bool flush_page(page_id_t page_id);
+    bool delete_page(const page_id_t &page_id);
+    void unpin_page(const page_id_t &page_id);
+    bool flush_page(const page_id_t &page_id);
 
-private:
+protected:
     // ATTENTION no lock protects it
-    inline frame_id_t get_frame_id(page_id_t page_id);
+    inline frame_id_t get_frame_id(const page_id_t &page_id) const;
 
     // we assume this function will always success.
-    void evict_page(page_id_t page_id, frame_id_t frame_id);
+    void evict_page(const page_id_t &page_id, const frame_id_t &frame_id);
 
+    ReaderWriterLatch latch_;
+private:
     // a page pool
     Page *pages_;
 
@@ -50,8 +52,6 @@ private:
     DiskManager *disk_manager_;
 
     ReplacerAbstract *replacer_;
-
-    ReaderWriterLatch latch_;
 };
 
 } // namespace dawn

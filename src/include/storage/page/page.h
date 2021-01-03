@@ -54,6 +54,7 @@ public:
 
     inline void add_pin_count() { pin_count_++; }
     inline void decrease_pin_count() { pin_count_--; }
+    inline void set_pin_count_zero() { pin_count_ = 0; }
     inline void set_is_dirty(bool is_dirty) { is_dirty_ = is_dirty; }
 
     void set_page_id(page_id_t page_id) {
