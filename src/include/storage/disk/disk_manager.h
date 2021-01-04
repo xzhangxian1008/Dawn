@@ -136,4 +136,65 @@ private:
     ReaderWriterLatch db_io_latch_;
     ReaderWriterLatch log_io_latch_;
 };
+
+class DiskManagerFactory {
+public:
+    static void add_meta_postfix(char *meta_name, offset_t offset) {
+        meta_name[offset] = '.';
+        meta_name[offset+1] = 'm';
+        meta_name[offset+2] = 't';
+        meta_name[offset+3] = 'd';
+        meta_name[offset+4] = '\0';
+    }
+
+    static void add_db_postfix(char *db_name, offset_t offset) {
+        db_name[offset] = '.';
+        db_name[offset+1] = 'd';
+        db_name[offset+2] = 'b';
+        db_name[offset+3] = '\0';
+    }
+
+    static void add_log_postfix(char *log_name, offset_t offset) {
+        log_name[offset] = '.';
+        log_name[offset+1] = 'l';
+        log_name[offset+2] = 'o';
+        log_name[offset+3] = 'g';
+        log_name[offset+4] = '\0';
+    }
+
+    static void copy_string2char(char *s, const string_t &str) {
+        int size = str.length();
+        for (int i = 0; i < size; i++)
+            s[i] = str[i];
+    }
+
+    static DiskManager* create_DiskManager(const string_t &meta_name, bool create = false) {
+        char meta_name_[meta_name.length() + 5];
+        char db_name_[meta_name.length() + 4];
+        char log_name_[meta_name.length() + 5];
+
+        copy_string2char(meta_name_, meta_name);
+        copy_string2char(db_name_, meta_name);
+        copy_string2char(log_name_, meta_name);
+        add_meta_postfix(meta_name_, meta_name.length());
+        add_db_postfix(db_name_, meta_name.length());
+        add_log_postfix(log_name_, meta_name.length());
+
+        if (create) {
+            remove(meta_name_);
+            remove(db_name_);
+            remove(log_name_);
+        }
+
+        DiskManager *dm = new DiskManager(meta_name, create);
+        if ((dm->get_status() == false) || check_inexistence(meta_name_)
+            || check_inexistence(db_name_) || check_inexistence(log_name_)) {
+            delete dm;
+            return nullptr;
+        }
+
+        return dm;
+    }
+};
+
 } // namespace dawn

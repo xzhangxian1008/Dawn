@@ -28,23 +28,18 @@ Page* BufferPoolManager::new_page() {
     frame_id = free_list_.front();
     free_list_.pop_front();
 
+    mapping_.insert(std::make_pair(page_id, frame_id));
+    latch_.w_unlock();
+    
     // initialize the page
     pages_[frame_id].set_is_dirty(true); // new page is always dirty
     pages_[frame_id].set_pin_count_zero();
+    pages_[frame_id].add_pin_count();
     pages_[frame_id].set_lsn(-1);
     pages_[frame_id].set_page_id(page_id);
     pages_[frame_id].set_status();
-    latch_.w_unlock();
-
+    
     return &(pages_[frame_id]);
-}
-
-inline frame_id_t BufferPoolManager::get_frame_id(const page_id_t &page_id) {
-    auto iter = mapping_.find(page_id);
-    if (iter == mapping_.end()) {
-        return -1;
-    }
-    return iter->second;
 }
 
 void BufferPoolManager::unpin_page(const page_id_t &page_id) {

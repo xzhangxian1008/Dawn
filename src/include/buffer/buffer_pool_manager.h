@@ -20,7 +20,7 @@ public:
     explicit BufferPoolManager(DiskManager *disk_manager, int pool_size);
 
     ~BufferPoolManager() {
-        delete pages_;
+        delete[] pages_;
         delete replacer_;
     }
 
@@ -53,5 +53,13 @@ private:
 
     ReplacerAbstract *replacer_;
 };
+
+inline frame_id_t BufferPoolManager::get_frame_id(const page_id_t &page_id) const {
+    auto iter = mapping_.find(page_id);
+    if (iter == mapping_.end()) {
+        return -1;
+    }
+    return iter->second;
+}
 
 } // namespace dawn

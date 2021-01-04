@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <set>
+
+#include "storage/page/page.h"
 #include "util/util.h"
 #include "util/config.h"
 
@@ -15,9 +17,11 @@ using std::ends;
 
 namespace dawn {
 
+
 TEST(CommonTest, CommonTEST) {
-    char c[10];
-    PRINT(sizeof(c));
+    Page *p;
+    p = new Page[10];
+    delete p;
 }
 
 } // namespace dawn
