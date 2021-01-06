@@ -26,6 +26,25 @@ namespace dawn {
 // type
 #define TYPE_NUM 4
 
+#define INVALID_T TypeId::INVALID
+#define BOOLEAN_T TypeId::BOOLEAN
+#define INTEGER_T TypeId::INTEGER
+#define DECIMAL_T TypeId::DECIMAL
+#define VARCHAR_T TypeId::VARCHAR
+
+#define CMP_EQ(type, left, right) Type::get_instance(type)->cmp_eq(left, right)
+#define CMP_LESS(type, left, right) Type::get_instance(type)->cmp_less(left, right)
+#define CMP_LESS_EQ(type, left, right) Type::get_instance(type)->cmp_less_and_eq(left, right)
+#define CMP_GREATER(type, left, right) Type::get_instance(type)->cmp_greater(left, right)
+#define CMP_GREATER_EQ(type, left, right) Type::get_instance(type)->cmp_greater_and_eq(left, right)
+
+#define MINUS(type, left, right) Type::get_instance(type)->minus(left, right)
+#define ADD(type, left, right) Type::get_instance(type)->add(left, right)
+#define MULTIPLY(type, left, right) Type::get_instance(type)->multiply(left, right)
+#define DIVIDE(type, left, right) Type::get_instance(type)->divide(left, right)
+#define MIN(type, left, right) Type::get_instance(type)->min(left, right)
+#define MAX(type, left, right) Type::get_instance(type)->max(left, right)
+
 using page_id_t = int32_t;
 using offset_t = int32_t;
 using lsn_t = int32_t;
