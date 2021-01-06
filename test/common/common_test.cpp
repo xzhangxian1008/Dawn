@@ -17,11 +17,8 @@ using std::ends;
 
 namespace dawn {
 
-
 TEST(CommonTest, CommonTEST) {
-    Page *p;
-    p = new Page[10];
-    delete p;
+
 }
 
 } // namespace dawn

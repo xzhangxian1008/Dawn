@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util/config.h"
+#include "murmur3/MurmurHash3.h"
 
 namespace dawn {
 

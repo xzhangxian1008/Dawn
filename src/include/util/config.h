@@ -23,6 +23,9 @@ namespace dawn {
 #define FRAME_EXIST_TRUE 2
 #define FRAME_EXIST_FALSE 4
 
+// type
+#define TYPE_NUM 4
+
 using page_id_t = int32_t;
 using offset_t = int32_t;
 using lsn_t = int32_t;
@@ -30,5 +33,10 @@ using string_t = std::string;
 using fstream_t = std::fstream;
 using frame_id_t = int32_t;
 using hash_slot_t = uint64_t;
+
+using boolean_t = bool;
+using integet_t = int32_t;
+using decimal_t = double;
+using varchar_t = char*;
 
 } // namespace dawn

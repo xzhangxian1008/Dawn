@@ -10,7 +10,7 @@
 namespace dawn {
 
 template<typename KeyType, typename ValueType, typename KeyComparator>
-class LinkHashIndex : public IndexAbstract {
+class LinkHashIndex : public IndexAbstract<KeyType, ValueType, KeyComparator> {
 public:
 
     /**
