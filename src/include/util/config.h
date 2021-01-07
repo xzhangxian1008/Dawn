@@ -52,6 +52,7 @@ using string_t = std::string;
 using fstream_t = std::fstream;
 using frame_id_t = int32_t;
 using hash_slot_t = uint64_t;
+using table_id_t = page_id_t;
 
 using boolean_t = bool;
 using integet_t = int32_t;

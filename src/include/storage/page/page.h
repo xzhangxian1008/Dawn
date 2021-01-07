@@ -84,11 +84,10 @@ private:
     std::atomic<int> pin_count_;
     std::atomic<bool> is_dirty_;
     std::atomic<lsn_t> lsn_;
-
-    char data_[PAGE_SIZE];
-
+    
     // latch_ only protects the data_
     ReaderWriterLatch latch_;
+    char data_[PAGE_SIZE];
 };
 
 } // namespace dawn

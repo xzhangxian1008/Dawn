@@ -78,11 +78,13 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
 任务：
 - 记录系统运行时所需的信息
   - 系统目录(Catalog)
-    - (TODO)表名对应的编号和page_id(有限数量表即可)
-    - (TODO)某张表对应的索引头页page id
+    - (TODO)表名(Table)对应的page id(有限数量表即可)
     - (TODO)负责表的增删查改
 - 表与表相关元数据的设计
   - (TODO)表元(TableMetaData)
+    - 某张表对应的索引头页(index header)page id
+    - 表第一张页的page id
+    - 视图
   - (TODO)表管理(Table)
   - (TODO)表页(TablePage)
   - (TODO)表视图(TableSchema)
