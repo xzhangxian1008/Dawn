@@ -22,7 +22,14 @@ public:
     void swap(Value &val) {
         std::swap(val.type_id_, type_id_);
         std::swap(val.value_, value_);
-        std::swap(val.varchar_size_, varchar_size_);
+        std::swap(val.str_size_, str_size_);
+    }
+
+    // similar to shallow copy
+    void load(const Value &val) {
+        type_id_ = val.type_id_;
+        value_ = val.value_;
+        str_size_ = val.str_size_;
     }
 
     TypeId get_type_id() const { return type_id_; }
@@ -32,7 +39,7 @@ public:
         return *reinterpret_cast<const T*>(&value_);
     }
 
-    int get_varchar_size() const { return varchar_size_; }
+    int get_varchar_size() const { return str_size_; }
 
 private:
     union values {
@@ -44,7 +51,7 @@ private:
     
     values value_;
     TypeId type_id_;
-    int varchar_size_;
+    int str_size_;
 };
 
 } // namespace dawn
