@@ -27,7 +27,7 @@ public:
     Page* get_page(const page_id_t &page_id);
     Page* new_page();
     bool delete_page(const page_id_t &page_id);
-    void unpin_page(const page_id_t &page_id);
+    void unpin_page(const page_id_t &page_id, const bool is_dirty);
     bool flush_page(const page_id_t &page_id);
 
 protected:

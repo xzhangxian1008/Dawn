@@ -8,6 +8,7 @@
 #include "util/rwlatch.h"
 #include "storage/disk/disk_manager.h"
 #include "buffer/buffer_pool_manager.h"
+#include "meta/table_meta_data.h"
 
 namespace dawn {
 
@@ -37,8 +38,10 @@ public:
 
     ~CatalogPage() {
         // return the page
-        bpm_->flush_page(page_id_);
-        bpm_->unpin_page(page_id_);
+        bpm_->flush_page(self_page_id_);
+        bpm_->unpin_page(self_page_id_, true);
+        for (auto &p : tb_id_to_meta_)
+            delete p.second;
     }
 
     void init_catalog(page_id_t page_id, BufferPoolManager *bpm);
@@ -68,12 +71,24 @@ public:
     }
     
     inline int get_table_num() { return table_num_; }
-    inline page_id_t get_page_id() const { return page_id_; }
+    inline page_id_t get_page_id() const { return self_page_id_; }
 
     // ATTENTION no lock
     inline int get_free_space() const {
         return free_space_pointer_ - COM_PG_HEADER_SZ - 4 - tb_id_to_name_.size() * TABLE_RECORD_SZ;
     }
+
+    TableMetaData* get_table_meta_data(string_t table_name) {
+        latch_.r_lock();
+        auto iter = tb_name_to_id_.find(table_name);
+        latch_.r_unlock();
+        if (iter == tb_name_to_id_.end()) {
+            return nullptr;
+        }
+        return get_table_meta_data(iter->second);
+    }
+
+    TableMetaData* get_table_meta_data(table_id_t table_id);
 
     void new_table(const string_t &table_name);
     bool delete_table(const string_t &table_name);
@@ -82,14 +97,18 @@ public:
 private:
     // ATTENTION no lock
     string_t get_table_name(offset_t tb_name_offset, int size);
+    TableMetaData* create_table_meta_data(table_id_t table_id);
 
     BufferPoolManager *bpm_;
-    const page_id_t page_id_; // it's his own page id
+    const page_id_t self_page_id_; // it's his own page id
     const int TABLE_RECORD_SZ = 12;
     const offset_t TABLE_NUM_OFFSET = COM_PG_HEADER_SZ;
     offset_t free_space_pointer_;
+
+    // TableMetaData's page id is equal to table id
     std::unordered_map<table_id_t, string_t> tb_id_to_name_;
     std::unordered_map<string_t, table_id_t> tb_name_to_id_;
+    std::unordered_map<table_id_t, TableMetaData*> tb_id_to_meta_;
     std::atomic<int> table_num_;
     ReaderWriterLatch latch_;
     Page *page_;

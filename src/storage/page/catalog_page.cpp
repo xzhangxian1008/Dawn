@@ -3,12 +3,12 @@
 namespace dawn {
 
 void CatalogPage::init_catalog(page_id_t page_id, BufferPoolManager *bpm) {
-    page_id_t *pgid = const_cast<page_id_t*>(&page_id_);
+    page_id_t *pgid = const_cast<page_id_t*>(&self_page_id_);
     *pgid = page_id;
     bpm_ = bpm;
-    page_ = bpm_->get_page(page_id_);
+    page_ = bpm_->get_page(self_page_id_);
     if (page_ == nullptr) {
-        PRINT("ERROR: get nullptr. page id ", page_id_);
+        PRINT("ERROR: get nullptr. page id ", self_page_id_);
         exit(-1);
     }
     data_ = page_->get_data();
@@ -69,5 +69,27 @@ bool CatalogPage::change_table_name(table_id_t table_id, const string_t &new_nam
 
 }
 
+TableMetaData* CatalogPage::get_table_meta_data(table_id_t table_id) {
+    latch_.w_lock();
+    auto iter = tb_id_to_meta_.find(table_id);
+    if (iter == tb_id_to_meta_.end()) {
+        // find his name
+        auto name_iter = tb_id_to_name_.find(table_id);
+        if (name_iter == tb_id_to_name_.end()) {
+            // the table does not exist
+            latch_.w_unlock();
+            return nullptr;
+        }
+
+        // create the TableMetaData
+        TableMetaData *tmd = new TableMetaData(bpm_, name_iter->second, table_id, table_id);
+        tb_id_to_meta_.insert(std::make_pair(table_id, tmd));
+        latch_.w_unlock();
+        return tmd;
+    }
+    TableMetaData *tb_meta_data = iter->second;
+    latch_.w_unlock();
+    return tb_meta_data;
+}
 
 } // namespace dawn

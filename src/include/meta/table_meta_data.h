@@ -10,24 +10,28 @@
 
 namespace dawn {
 
+/**
+ * TableMetaData header layout:
+ * ------------------------------------------------------------------------
+ * |                          common header (64)                          |
+ * ------------------------------------------------------------------------
+ * | first_table_page_id_ (4) | index_header_page_id_ (4) |
+ * ------------------------------------------------------------------------
+ * |                             Schema(TODO)                             |
+ * ------------------------------------------------------------------------
+ */
 class TableMetaData {
 public:
-    TableMetaData(const page_id_t index_header_page_id, const TableSchema &table_schema,
-        BufferPoolManager *bpm, const page_id_t first_table_page_id, const string_t &table_name,
-        table_id_t table_id, Table *table)
-        : index_header_page_id_(index_header_page_id), table_schema_(table_schema),
-        bpm_(bpm), first_table_page_id_(first_table_page_id), table_name_(table_name),
-        table_id_(table_id), table_(table) {}
+    TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
+        table_id_t table_id, const page_id_t self_page_id);
 
     ~TableMetaData() {
         // TODO other things should be done
         delete table_;
-    }
-
-    
+    }    
 
 private:
-    page_id_t index_header_page_id_;
+    // TODO need schema designed first to arrange the page layout
     TableSchema table_schema_;
     ReaderWriterLatch latch_;
     BufferPoolManager *bpm_;
@@ -36,7 +40,11 @@ private:
     Table *table_;
 
     // this can't be modified, even the table has no tuple
-    const page_id_t first_table_page_id_;
+    page_id_t first_table_page_id_;
+    page_id_t index_header_page_id_;
+    const page_id_t self_page_id_; // where stores the table_meta_data's info
+    Page *page_;
+    char *data_;
 };
 
 } // namespace dawn

@@ -27,7 +27,7 @@ public:
     Page* get_page_test(page_id_t page_id) { return get_page(page_id); }
     Page* new_page_test() { return new_page(); }
     bool delete_page_test(page_id_t page_id) { return delete_page(page_id); }
-    void unpin_page_test(page_id_t page_id) { unpin_page(page_id); }
+    void unpin_page_test(page_id_t page_id, bool is_dirty) { unpin_page(page_id, is_dirty); }
     bool flush_page_test(page_id_t page_id) { return flush_page(page_id); }
 
     /**
@@ -49,18 +49,14 @@ public:
     }
 };
 
-void BufferPoolManagerTest::
+inline void BufferPoolManagerTest::
 write_page(Page *page, const offset_t &offset, const char *src, const int size) {
-    // write page
     page->w_lock();
     memcpy(page->get_data() + offset, src, size);
-
-    // set dirty
-    page->set_is_dirty(true);
     page->w_unlock();
 }
 
-void BufferPoolManagerTest::
+inline void BufferPoolManagerTest::
 read_page(Page *page, const offset_t &offset, char *dst, const int &size) {
     page->r_lock();
     memcpy(dst, page->get_data() + offset, size);
@@ -131,13 +127,16 @@ TEST(BPMTest, BasicTest) {
         const int size2 = 9;
         const char *s2 = "abcdefgh";
         bpmt.write_page(page, COM_PG_HEADER_SZ, s2, size2);
+        bpmt.unpin_page_test(page->get_page_id(), true);
 
         // flush
         ASSERT_TRUE(bpmt.flush_page_test(page->get_page_id()));
 
         // read with DiskManager
+        page = bpmt.get_page_test(page_id);
         char page_buf[PAGE_SIZE];
         ASSERT_TRUE(dm->read_page(page->get_page_id(), page_buf));
+        bpmt.unpin_page_test(page->get_page_id(), false);
 
         // check
         ok = true;
@@ -151,7 +150,6 @@ TEST(BPMTest, BasicTest) {
 
         // delete page
         page_id = page->get_page_id();
-        bpmt.unpin_page_test(page_id);
         ASSERT_TRUE(bpmt.delete_page_test(page_id));
         EXPECT_FALSE(bpmt.is_in_bpm(page_id));
         EXPECT_TRUE(dm->is_free(page_id));
@@ -186,7 +184,7 @@ TEST(BPMTest, BasicTest) {
                 unpinned_pages.insert(std::make_pair(pgid, p));
                 write_num_to_char(pgid, data);
                 bpmt.write_page(p, COM_PG_HEADER_SZ, data, strlen(data)+1);
-                bpmt.unpin_page_test(pgid);
+                bpmt.unpin_page_test(pgid, true);
                 continue;
             }
             pinned.insert(pgid);
@@ -195,7 +193,7 @@ TEST(BPMTest, BasicTest) {
         // phase 2
         for (int i = 0; i < 5 * POOL_SIZE; i++) {
             Page *p = bpmt.new_page_test();
-            bpmt.unpin_page_test(p->get_page_id());
+            bpmt.unpin_page_test(p->get_page_id(), false);
         }
 
         // phase 3

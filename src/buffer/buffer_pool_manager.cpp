@@ -42,7 +42,7 @@ Page* BufferPoolManager::new_page() {
     return &(pages_[frame_id]);
 }
 
-void BufferPoolManager::unpin_page(const page_id_t &page_id) {
+void BufferPoolManager::unpin_page(const page_id_t &page_id, const bool is_dirty) {
     latch_.w_lock();
     auto iter = mapping_.find(page_id);
     if (iter == mapping_.end()) {
@@ -51,6 +51,7 @@ void BufferPoolManager::unpin_page(const page_id_t &page_id) {
     }
 
     frame_id_t frame_id = iter->second;
+    pages_[frame_id].set_is_dirty(is_dirty);
     pages_[frame_id].decrease_pin_count();
     if (pages_[frame_id].get_pin_count() != 0) {
         latch_.w_unlock();

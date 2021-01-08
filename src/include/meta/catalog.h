@@ -7,6 +7,6 @@ public:
 
 private:
     
-}
+};
 
 } // namespace dawn
