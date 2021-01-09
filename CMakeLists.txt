@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
+set(BUILD_SHARED_LIBS ON)
 set(CMAKE_CXX_STANDARD 17)              # Compile as C++17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)     # Require C++17 support
 
@@ -19,10 +20,10 @@ add_subdirectory("${CMAKE_BINARY_DIR}/googletest-src" "${CMAKE_BINARY_DIR}/googl
 # Compiler flags
 
 # Includes.
-set(BUSTUB_SRC_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src/include)
-set(BUSTUB_TEST_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/test/include)
-set(BUSTUB_THIRD_PARTY_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/third_party)
-include_directories(${BUSTUB_SRC_INCLUDE_DIR} ${BUSTUB_TEST_INCLUDE_DIR} ${BUSTUB_THIRD_PARTY_INCLUDE_DIR})
+set(DAWN_SRC_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src/include)
+set(DAWN_TEST_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/test/include)
+set(DAWN_THIRD_PARTY_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/third_party)
+include_directories(${DAWN_SRC_INCLUDE_DIR} ${DAWN_TEST_INCLUDE_DIR} ${DAWN_THIRD_PARTY_INCLUDE_DIR})
 include_directories(BEFORE src) # This is needed for gtest.
 
 add_subdirectory(src)

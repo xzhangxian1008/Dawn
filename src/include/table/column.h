@@ -16,7 +16,7 @@ public:
         : column_type_(column_type), column_name_(column_name), offset_(offset), fixed_length_ (get_type_size(column_type)) {}
 
     // for the char initialization
-    Column(const string_t &column_name, offset_t offset, int char_length)
+    Column(const string_t &column_name, offset_t offset, size_t_ char_length)
         : column_name_(column_name), offset_(offset), char_length_(char_length), fixed_length_(PTR_SIZE) {}
 
     ~Column() = default;
@@ -25,7 +25,7 @@ public:
     inline TypeId get_type_id() const { return column_type_; }
     inline string_t get_column_name() const { return column_name_; }
 
-    inline int get_data_size() const {
+    inline size_t_ get_data_size() const {
         if (column_type_ != TypeId::CHAR)
             return fixed_length_;
         else if (column_type_ == TypeId::CHAR)
@@ -51,7 +51,7 @@ public:
     }
 
 private:
-    int get_type_size(TypeId type_id) {
+    size_t_ get_type_size(TypeId type_id) {
         switch (type_id) {
             case TypeId::INVALID:
                 return -1;
@@ -71,8 +71,8 @@ private:
     TypeId column_type_;
     string_t column_name_;
     offset_t offset_; // offset in the tuple
-    int fixed_length_; // data length of the column
-    int char_length_;
+    size_t_ fixed_length_; // data length of the column
+    size_t_ char_length_;
 };
 
 } // namespace dawn

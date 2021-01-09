@@ -22,7 +22,7 @@ public:
 
     ~TableSchema() = default;
 
-    inline int get_tuple_size() const { return length_; }
+    inline size_t_ get_tuple_size() const { return length_; }
     inline int get_column_num() const { return columns_.size(); }
 
     // QUESTION who should ensure the index is valid?
@@ -31,7 +31,7 @@ public:
     inline string_t get_column_name(int index) const { return columns_[index].get_column_name(); }
     inline TypeId get_column_type(int index) const { return columns_[index].get_type_id(); }
     inline offset_t get_column_offset(int index) const { return columns_[index].get_offset(); }
-    inline int get_column_size(int index) const { return columns_[index].get_data_size(); }
+    inline size_t_ get_column_size(int index) const { return columns_[index].get_data_size(); }
 
     int get_column_idx(const string_t &column_name) const {
         for (int i = 0; i < get_column_num(); i++)
@@ -66,7 +66,7 @@ public:
 
 private:
     std::vector<Column> columns_;
-    int length_; // the tuple's size
+    size_t_ length_; // the tuple's size
 };
 
 } // namespace dawn

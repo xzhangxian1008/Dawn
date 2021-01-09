@@ -7,7 +7,6 @@
 namespace dawn {
 
 /**
- * // FIXME can't be referenced by compiler
  * ATTENTION don't forget to delete the char* after use !!!
  */
 char* string2char(const std::string &str) {

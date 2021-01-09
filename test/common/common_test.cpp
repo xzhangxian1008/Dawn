@@ -20,7 +20,6 @@ using std::ends;
 namespace dawn {
 
 TEST(CommonTest, CommonTEST) {
-
 }
 
 } // namespace dawn

@@ -9,9 +9,9 @@ class Type;
 extern Type *singleton[2];
 
 // TODO VARCHAR
-enum class TypeId { INVALID = -1, BOOLEAN, INTEGER, DECIMAL, CHAR };
+enum class TypeId : enum_size_t { INVALID = -1, BOOLEAN, INTEGER, DECIMAL, CHAR };
 
-enum class CmpResult { TRUE = 0, FALSE };
+enum class CmpResult : enum_size_t { TRUE = 0, FALSE };
 
 class Value;
 

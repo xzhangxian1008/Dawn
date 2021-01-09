@@ -45,8 +45,6 @@ namespace dawn {
 #define MIN(type, left, right) Type::get_instance(type)->min(left, right)
 #define MAX(type, left, right) Type::get_instance(type)->max(left, right)
 
-#define PTR_SIZE sizeof(char*)
-
 using page_id_t = int32_t;
 using offset_t = int32_t;
 using lsn_t = int32_t;
@@ -55,9 +53,19 @@ using fstream_t = std::fstream;
 using frame_id_t = int32_t;
 using hash_slot_t = uint64_t;
 using table_id_t = page_id_t;
+using size_t_ = int32_t; // I think it's a stupid name
 
 using boolean_t = bool;
 using integet_t = int32_t;
 using decimal_t = double;
 using varchar_t = char*;
+
+using enum_size_t = int32_t;
+
+static constexpr size_t_ PTR_SIZE = sizeof(char*);
+static constexpr size_t_ ENUM_SIZE = sizeof(enum_size_t);
+static constexpr size_t_ SIZE_T_SIZE = sizeof(size_t_); // may be this is a stupid name
+static constexpr size_t_ OFFSET_T_SIZE = sizeof(offset_t);
+
+
 } // namespace dawn
