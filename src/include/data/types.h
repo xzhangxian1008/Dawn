@@ -1,6 +1,7 @@
 #pragma once
 
 #include "data/values.h"
+#include "util/config.h"
 
 namespace dawn {
 class Type;
@@ -34,6 +35,21 @@ public:
     virtual Value max(const Value &left, const Value &right) = 0;
 
     static Type* get_instance(TypeId type_id) { return singleton[(int)type_id]; }
+    static string_t type_to_string(TypeId type_id) {
+        switch (type_id) {
+            case TypeId::INVALID:
+                return "INVALID";
+            case TypeId::BOOLEAN:
+                return "BOOLEAN";
+            case TypeId::INTEGER:
+                return "INTEGER";
+            case TypeId::DECIMAL:
+                return "DECIMAL";
+            case TypeId::CHAR:
+                return "CHAR";
+        }
+        return "ILLEGAL";
+    }
 };
     
 } // namespace dawn

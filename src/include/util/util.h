@@ -12,6 +12,11 @@ namespace dawn {
 
 inline void print__() { std::cout << std::endl; };
 
+/**
+ * TODO change the output to a thread safe method
+ * do not use cout to output with this method in concurrency environment
+ * This is thread unsafety
+ */
 template<typename T, typename... Types>
 void print__(const T& firstArg, const Types&... args) {
     std::cout << firstArg << " ";

@@ -2,10 +2,12 @@
 #include <iostream>
 #include <fstream>
 #include <set>
+#include <sstream>
 
 #include "storage/page/page.h"
 #include "util/util.h"
 #include "util/config.h"
+#include "data/types.h"
 
 using std::fstream;
 using std::string;
@@ -18,7 +20,7 @@ using std::ends;
 namespace dawn {
 
 TEST(CommonTest, CommonTEST) {
-
+    PRINT(a);
 }
 
 } // namespace dawn

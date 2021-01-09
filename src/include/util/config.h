@@ -45,6 +45,8 @@ namespace dawn {
 #define MIN(type, left, right) Type::get_instance(type)->min(left, right)
 #define MAX(type, left, right) Type::get_instance(type)->max(left, right)
 
+#define PTR_SIZE sizeof(char*)
+
 using page_id_t = int32_t;
 using offset_t = int32_t;
 using lsn_t = int32_t;
@@ -58,5 +60,4 @@ using boolean_t = bool;
 using integet_t = int32_t;
 using decimal_t = double;
 using varchar_t = char*;
-
 } // namespace dawn

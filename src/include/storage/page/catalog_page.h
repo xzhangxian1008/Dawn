@@ -17,12 +17,12 @@ namespace dawn {
  * ------------------------------------------------------------------------
  * |                          common header (64)                          |
  * ------------------------------------------------------------------------
- * | table_num (4) | tb_name ptr 1 (4) | tb_name size 1 (4) | page id (4) |
+ * | table_num (4) | tb_name ptr 1 (8) | tb_name size 1 (4) | page id (4) |
  * ------------------------------------------------------------------------
  * ------------------------------------------------------------------------
- * | tb_name ptr 2 (4) | tb_name size 2 (4) | page id (4) |      ....     |
+ * | tb_name ptr 2 (8) | tb_name size 2 (4) | page id (4) |      ....     |
  * ------------------------------------------------------------------------
- * | tb_name ptr n (4) | tb_name size n (4) | page id (4) |
+ * | tb_name ptr n (8) | tb_name size n (4) | page id (4) |
  * ------------------------------------------------------------------------
  * |  ...free space... | tb_name (x) | tb_name (x) |  ....  | tb_name (x) |
  * ------------------------------------------------------------------------
@@ -99,10 +99,15 @@ private:
     string_t get_table_name(offset_t tb_name_offset, int size);
     TableMetaData* create_table_meta_data(table_id_t table_id);
 
+    static const int TABLE_NUM_SZ = 4;
+    static const int TABLE_RECORD_SZ = 16;
+    static const int TB_NAME_PTR_SZ = PTR_SIZE;
+    static const int TB_NAME_SZ_SZ = 4;
+    static const int TB_PAGE_ID_SZ = 4;
+    static const offset_t TABLE_NUM_OFFSET = COM_PG_HEADER_SZ;
+
     BufferPoolManager *bpm_;
     const page_id_t self_page_id_; // it's his own page id
-    const int TABLE_RECORD_SZ = 12;
-    const offset_t TABLE_NUM_OFFSET = COM_PG_HEADER_SZ;
     offset_t free_space_pointer_;
 
     // TableMetaData's page id is equal to table id

@@ -27,10 +27,10 @@ void CatalogPage::init_catalog(page_id_t page_id, BufferPoolManager *bpm) {
 
     // get tables' info
     for (int i = 0; i < table_num_; i++) {
-        tb_record_offset = TABLE_NUM_OFFSET + 4 + i * TABLE_RECORD_SZ;
+        tb_record_offset = TABLE_NUM_OFFSET + TABLE_NUM_SZ + i * TABLE_RECORD_SZ;
         tb_name_offset = *reinterpret_cast<offset_t*>(data_ + tb_record_offset);
-        tb_name_sz = *reinterpret_cast<int*>(data_ + tb_record_offset + 4);
-        tb_page_id = *reinterpret_cast<page_id_t*>(data_ + tb_record_offset + 8);
+        tb_name_sz = *reinterpret_cast<int*>(data_ + tb_record_offset + TB_NAME_PTR_SZ);
+        tb_page_id = *reinterpret_cast<page_id_t*>(data_ + tb_record_offset + TB_NAME_PTR_SZ + TB_NAME_SZ_SZ);
         tb_name = get_table_name(tb_name_offset, tb_name_sz);
         tb_id_to_name_.insert(std::make_pair(tb_page_id, tb_name));
         tb_name_to_id_.insert(std::make_pair(tb_name, tb_page_id));
