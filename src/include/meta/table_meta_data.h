@@ -28,11 +28,12 @@ public:
     ~TableMetaData() {
         // TODO other things should be done
         delete table_;
+        delete table_schema_;
     }    
 
 private:
     // TODO need schema designed first to arrange the page layout
-    TableSchema table_schema_;
+    TableSchema *table_schema_;
     ReaderWriterLatch latch_;
     BufferPoolManager *bpm_;
     string_t table_name_;
