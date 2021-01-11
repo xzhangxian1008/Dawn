@@ -12,11 +12,11 @@ namespace dawn {
 
 class Column {
 public:
-    Column(const TypeId column_type, const string_t &column_name, offset_t offset)
+    explicit Column(const TypeId column_type, const string_t &column_name, offset_t offset)
         : column_type_(column_type), column_name_(column_name), offset_(offset), fixed_length_ (get_type_size(column_type)) {}
 
     // for the char initialization
-    Column(const string_t &column_name, offset_t offset, size_t_ char_length)
+    explicit Column(const string_t &column_name, offset_t offset, size_t_ char_length)
         : column_name_(column_name), offset_(offset), char_length_(char_length), fixed_length_(PTR_SIZE) {}
 
     ~Column() = default;

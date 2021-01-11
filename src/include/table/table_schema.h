@@ -15,7 +15,7 @@ namespace dawn {
  */
 class TableSchema {
 public:
-    TableSchema(const std::vector<Column> &columns) : columns_(columns), length_(0) {
+    explicit TableSchema(const std::vector<Column> &columns) : columns_(columns), length_(0) {
         for (auto &col : columns_)
             length_ += col.get_data_size();
     }

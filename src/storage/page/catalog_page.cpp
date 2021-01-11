@@ -82,7 +82,7 @@ TableMetaData* CatalogPage::get_table_meta_data(table_id_t table_id) {
         }
 
         // create the TableMetaData
-        TableMetaData *tmd = new TableMetaData(bpm_, name_iter->second, table_id, table_id);
+        TableMetaData *tmd = new TableMetaData(bpm_, name_iter->second, table_id);
         tb_id_to_meta_.insert(std::make_pair(table_id, tmd));
         latch_.w_unlock();
         return tmd;

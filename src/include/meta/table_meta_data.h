@@ -5,6 +5,7 @@
 #include "util/config.h"
 #include "util/rwlatch.h"
 #include "table/table_schema.h"
+#include "table/table.h"
 #include "buffer/buffer_pool_manager.h"
 #include "table/table.h"
 #include "data/types.h"
@@ -12,6 +13,8 @@
 namespace dawn {
 
 /**
+ * ATTENTION the TableMetaData always hold the Page while it is alive, this may be not efficient
+ * 
  * TableMetaData header layout:
  * we suppose that one page could store all the info
  * ------------------------------------------------------------------------
@@ -26,8 +29,12 @@ namespace dawn {
  */
 class TableMetaData {
 public:
-    TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
-        table_id_t table_id, const page_id_t self_page_id);
+    // create table with meta table, in other words, this table exists in the disk
+    explicit TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const table_id_t table_id);
+
+    // create table from scratch and write data to disk for persistence
+    TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema,
+        const table_id_t table_id, const page_id_t first_table_page_id, const page_id_t index_header_page_id);
 
     ~TableMetaData() {
         // TODO other things should be done
@@ -54,13 +61,13 @@ private:
     ReaderWriterLatch latch_;
     BufferPoolManager *bpm_;
     string_t table_name_;
-    table_id_t table_id_;
     Table *table_;
 
     // this two ids can't be modified, even the table has no tuple
-    page_id_t first_table_page_id_;
-    page_id_t index_header_page_id_;
+    const page_id_t first_table_page_id_;
+    const page_id_t index_header_page_id_;
     const page_id_t self_page_id_; // where stores the table_meta_data's info
+    const table_id_t table_id_; // it's also the page id
     Page *page_;
     char *data_;
 };
