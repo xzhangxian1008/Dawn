@@ -13,38 +13,37 @@
 namespace dawn {
 
 /**
- * catalog header layout:
- * ------------------------------------------------------------------------
+ * catalog table header layout:
+ * ---------------------------------------------------------------------------
  * |                          common header (64)                          |
- * ------------------------------------------------------------------------
- * | table_num (4) | tb_name ptr 1 (8) | tb_name size 1 (4) | page id (4) |
- * ------------------------------------------------------------------------
- * ------------------------------------------------------------------------
- * | tb_name ptr 2 (8) | tb_name size 2 (4) | page id (4) |      ....     |
- * ------------------------------------------------------------------------
- * | tb_name ptr n (8) | tb_name size n (4) | page id (4) |
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------------
+ * | table_num (4) | tb_name offset 1 (4) | tb_name size 1 (4) | page id (4) |
+ * ---------------------------------------------------------------------------
+ * ---------------------------------------------------------------------------
+ * |   ......   | tb_name offset n (4) | tb_name size n (4) | page id n (4) |
+ * ---------------------------------------------------------------------------
+ * ---------------------------------------------------------------------------
  * |  ...free space... | tb_name (x) | tb_name (x) |  ....  | tb_name (x) |
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------------
  *                     ^
  *                     free space pointer
  * 
  * flush itself every time the data have been modified.
- * It's inefficient but can ensure the data to be stored on the disk.
+ * It's inefficient but can ensure the data stored on the disk.
  */
-class CatalogPage {
+class CatalogTable {
 public:
-    CatalogPage();
+    CatalogTable(page_id_t page_id, BufferPoolManager *bpm, bool from_scratch = false);
 
-    ~CatalogPage() {
+    DISALLOW_COPY(CatalogTable)
+
+    ~CatalogTable() {
         // return the page
         bpm_->flush_page(self_page_id_);
         bpm_->unpin_page(self_page_id_, true);
         for (auto &p : tb_id_to_meta_)
             delete p.second;
     }
-
-    void init_catalog(page_id_t page_id, BufferPoolManager *bpm);
 
     table_id_t get_table_id(const string_t &tb_name) {
         latch_.r_lock();
@@ -90,6 +89,7 @@ public:
 
     TableMetaData* get_table_meta_data(table_id_t table_id);
 
+    // TODO implement them!
     void new_table(const string_t &table_name);
     bool delete_table(const string_t &table_name);
     bool delete_table(table_id_t table_id);
@@ -99,15 +99,16 @@ private:
     string_t get_table_name(offset_t tb_name_offset, int size);
     TableMetaData* create_table_meta_data(table_id_t table_id);
 
-    static const int TABLE_NUM_SZ = 4;
-    static const int TABLE_RECORD_SZ = 16;
-    static const int TB_NAME_PTR_SZ = PTR_SIZE;
-    static const int TB_NAME_SZ_SZ = 4;
-    static const int TB_PAGE_ID_SZ = 4;
+    // call this function when catalog table has never been created before
+    void init_catalog_table() {
+        *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET) = 0;
+    }
+
+    static const int TABLE_RECORD_SZ = sizeof(offset_t) + sizeof(size_t_) + sizeof(page_id_t);
     static const offset_t TABLE_NUM_OFFSET = COM_PG_HEADER_SZ;
 
     BufferPoolManager *bpm_;
-    const page_id_t self_page_id_; // it's his own page id
+    page_id_t self_page_id_; // it's his own page id
     offset_t free_space_pointer_;
 
     // TableMetaData's page id is equal to table id

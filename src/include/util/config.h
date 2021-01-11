@@ -17,6 +17,7 @@ namespace dawn {
 #define STATUS_OFFSET 0
 #define LSN_OFFSET 1
 #define PAGE_ID_OFFSET 5
+#define TABLE_PAGE_RESERVED 64
 
 // replacer
 #define FRAME_NOT_EXIST 1

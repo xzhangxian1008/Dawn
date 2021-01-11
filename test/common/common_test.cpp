@@ -19,31 +19,9 @@ using std::ends;
 
 namespace dawn {
 
-class C{
-public:
-    C(int x) : x_(x) {
-        PRINT("constructor");
-    }
-    C(const C &c) {
-        this->x_ = c.x_;
-        PRINT("copy");
-    }
-    const C& operator=(const C &c) {
-        PRINT("operator=");
-        return *this;
-    }
-    int x_;
-};
-
-void foo(C c) {}
-
-C func(C c) {
-    return c;
-}
 
 TEST(CommonTest, CommonTEST) {
-    C c = 10;
-    C cc(c);
+
 }
 
 } // namespace dawn
