@@ -9,6 +9,7 @@
 #include "storage/disk/disk_manager.h"
 #include "buffer/buffer_pool_manager.h"
 #include "meta/table_meta_data.h"
+#include "table/table_schema.h"
 
 namespace dawn {
 
@@ -90,10 +91,12 @@ public:
     TableMetaData* get_table_meta_data(table_id_t table_id);
 
     // TODO implement them!
-    void new_table(const string_t &table_name);
+    bool new_table(const string_t &table_name, const TableSchema &schema);
     bool delete_table(const string_t &table_name);
     bool delete_table(table_id_t table_id);
-    bool change_table_name(table_id_t table_id, const string_t &new_name);
+
+    // do not support change table name so far
+    bool change_table_name(table_id_t table_id, const string_t &new_name) { return true; }
 private:
     // ATTENTION no lock
     string_t get_table_name(offset_t tb_name_offset, int size);

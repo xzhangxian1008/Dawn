@@ -55,20 +55,78 @@ string_t CatalogTable::get_table_name(offset_t tb_name_offset, int size) {
     return string_t(tb_name);
 }
 
-void CatalogTable::new_table(const string_t &table_name) {
+bool CatalogTable::new_table(const string_t &table_name, const TableSchema &schema) {
+    latch_.w_lock();
+    // check if table_name is duplicate
+    auto iter = tb_name_to_id_.find(table_name);
+    if (iter != tb_name_to_id_.end()) {
+        latch_.w_unlock();
+        return false;
+    }
 
+    size_t_ tb_num = *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET);
+    offset_t insert_offset = TABLE_NUM_OFFSET + sizeof(size_t_) + tb_num * TABLE_RECORD_SZ;
+    size_t_ available_space = free_space_pointer_ - insert_offset;
+    if (table_name.length() + TABLE_RECORD_SZ > available_space) {
+        latch_.w_unlock();
+        return false; // no more space to store
+    }
+
+    Page *new_page = bpm_->new_page();
+    if (new_page == nullptr) {
+        latch_.w_unlock();
+        return false;
+    }
+
+    tb_id_to_meta_.insert(std::make_pair(new_page->get_page_id(), 
+        new TableMetaData(bpm_, table_name, schema, new_page->get_page_id())));
+    tb_id_to_name_.insert(std::make_pair(new_page->get_page_id(), table_name));
+    tb_name_to_id_.insert(std::make_pair(table_name, new_page->get_page_id()));
+    table_num_++;
+
+    size_t_ len = table_name.length();
+    free_space_pointer_ -= len;
+    for (int i = 0; i < len; i++)
+        *reinterpret_cast<char*>(data_ + free_space_pointer_ + i) = table_name[i];
+
+    *reinterpret_cast<offset_t*>(data_ + insert_offset) = free_space_pointer_;
+    *reinterpret_cast<size_t_*>(data_ + insert_offset + OFFSET_T_SIZE) = table_name.length();
+    *reinterpret_cast<page_id_t*>(data_ + insert_offset + OFFSET_T_SIZE + SIZE_T_SIZE) = new_page->get_page_id();
+
+    latch_.w_unlock();
+    return true;
 }
 
 bool CatalogTable::delete_table(const string_t &table_name) {
-
+    latch_.r_lock();
+    auto iter = tb_name_to_id_.find(table_name);
+    if (iter == tb_name_to_id_.end()) {
+        latch_.r_unlock();
+        return true;
+    }
+    latch_.r_unlock();
+    return delete_table(iter->second);
 }
 
+// TODO
 bool CatalogTable::delete_table(table_id_t table_id) {
+    latch_.w_lock();
+    auto iter = tb_id_to_name_.find(table_id);
+    if (iter == tb_id_to_name_.end()) {
+        latch_.w_unlock();
+        return true;
+    }
 
-}
+    // find this table's offset in the page
+    offset_t tb_offset = -1;
+    for (int i = 0; i < table_num_; i++) {
+        tb_offset = TABLE_NUM_OFFSET + SIZE_T_SIZE + i * TABLE_RECORD_SZ;
+        table_id_t tb_id = 
+            *reinterpret_cast<table_id_t*>(data_ + );
+        if (table_id == tb_id) {
 
-bool CatalogTable::change_table_name(table_id_t table_id, const string_t &new_name) {
-
+        }
+    }
 }
 
 TableMetaData* CatalogTable::get_table_meta_data(table_id_t table_id) {

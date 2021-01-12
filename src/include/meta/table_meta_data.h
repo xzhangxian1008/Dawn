@@ -33,8 +33,7 @@ public:
     explicit TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const table_id_t table_id);
 
     // create table from scratch and write data to disk for persistence
-    TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema,
-        const table_id_t table_id, const page_id_t first_table_page_id, const page_id_t index_header_page_id);
+    TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema, const table_id_t table_id);
 
     ~TableMetaData() {
         // TODO other things should be done
@@ -44,7 +43,8 @@ public:
     }
 
     // TODO add function to new, update, delete the table
-
+    
+    void delete_table_meta_data() {} // TODO need impl
 private:
     static const offset_t FIRST_TABLE_PGID_OFFSET = COM_PG_HEADER_SZ;
     static const offset_t INDEX_HEADER_PGID_OFFSET = COM_PG_HEADER_SZ + sizeof(page_id_t);

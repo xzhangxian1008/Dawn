@@ -63,11 +63,9 @@ namespace dawn {
         table_schema_ = new TableSchema(cols);
     }
 
-    // TODO create Table
-    TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema,
-        const table_id_t table_id, const page_id_t first_table_page_id, const page_id_t index_header_page_id)
-        : bpm_(bpm), table_name_(table_name), table_id_(table_id), self_page_id_(table_id),
-        first_table_page_id_(first_table_page_id), index_header_page_id_(index_header_page_id) {
+    // TODO create Table、first_table_page_id_、index_header_page_id_
+    TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema, const table_id_t table_id)
+        : bpm_(bpm), table_name_(table_name), table_id_(table_id), self_page_id_(table_id), first_table_page_id_(-1), index_header_page_id_(-1) {
         table_schema_ = new TableSchema(schema);
 
         // firstly, get page from disk
