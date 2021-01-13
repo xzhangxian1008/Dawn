@@ -31,7 +31,9 @@ namespace dawn {
 class TablePage : public Page {
 public:
     void init(const page_id_t prev_pgid, const page_id_t next_pgid);
+    page_id_t get_next_page_id() { return *reinterpret_cast<page_id_t*>(get_data() + NEXT_PGID_OFFSET); }
     // TODO many many opration
+    
 private:
     static const offset_t PREV_PGID_OFFSET = COM_PG_HEADER_SZ;
     static const offset_t NEXT_PGID_OFFSET = PREV_PGID_OFFSET + sizeof(page_id_t);

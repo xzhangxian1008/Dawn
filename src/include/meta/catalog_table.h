@@ -34,7 +34,7 @@ namespace dawn {
  */
 class CatalogTable {
 public:
-    CatalogTable(page_id_t page_id, BufferPoolManager *bpm, bool from_scratch = false);
+    explicit CatalogTable(page_id_t page_id, BufferPoolManager *bpm, bool from_scratch = false);
 
     DISALLOW_COPY(CatalogTable)
 
@@ -86,6 +86,18 @@ public:
             return nullptr;
         }
         return get_table_meta_data(iter->second);
+    }
+
+    // ATTENTION no lock protects it
+    void delete_table_data(table_id_t table_id, string_t table_name) {
+        auto iter_id_to_name = tb_id_to_name_.find(table_id);
+        tb_id_to_name_.erase(iter_id_to_name);
+        auto iter_name_to_id = tb_name_to_id_.find(table_name);
+        tb_name_to_id_.erase(iter_name_to_id);
+        auto iter_id_to_meta = tb_id_to_meta_.find(table_id);
+        iter_id_to_meta->second->delete_table_data();
+        delete iter_id_to_meta->second;
+        tb_id_to_meta_.erase(iter_id_to_meta);
     }
 
     TableMetaData* get_table_meta_data(table_id_t table_id);

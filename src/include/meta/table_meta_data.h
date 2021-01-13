@@ -42,9 +42,9 @@ public:
         bpm_->unpin_page(self_page_id_, true); // always true
     }
 
-    // TODO add function to new, update, delete the table
+    // TODO add function to update the table
     
-    void delete_table_meta_data() {} // TODO need impl
+    void delete_table_data();
 private:
     static const offset_t FIRST_TABLE_PGID_OFFSET = COM_PG_HEADER_SZ;
     static const offset_t INDEX_HEADER_PGID_OFFSET = COM_PG_HEADER_SZ + sizeof(page_id_t);
@@ -53,7 +53,7 @@ private:
 
     /**
      * column size means how many space a column need to record his info.
-     * fixed size refer to the space it always need.
+     * fixed size refer to the space it always needs.
      */
     static const size_t_ FIXED_COL_SIZE = 2 * sizeof(size_t_) + sizeof(offset_t) + ENUM_SIZE;
     

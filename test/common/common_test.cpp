@@ -21,7 +21,9 @@ namespace dawn {
 
 
 TEST(CommonTest, CommonTEST) {
-
+    char c[30] = "1234567890qwertyuiopasdfghjkl";
+    memcpy(c + 5, c, 10);
+    cout << c << endl;
 }
 
 } // namespace dawn

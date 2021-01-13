@@ -82,6 +82,7 @@ bool CatalogTable::new_table(const string_t &table_name, const TableSchema &sche
         new TableMetaData(bpm_, table_name, schema, new_page->get_page_id())));
     tb_id_to_name_.insert(std::make_pair(new_page->get_page_id(), table_name));
     tb_name_to_id_.insert(std::make_pair(table_name, new_page->get_page_id()));
+    bpm_->unpin_page(new_page->get_page_id(), false);
     table_num_++;
 
     size_t_ len = table_name.length();
@@ -108,7 +109,6 @@ bool CatalogTable::delete_table(const string_t &table_name) {
     return delete_table(iter->second);
 }
 
-// TODO
 bool CatalogTable::delete_table(table_id_t table_id) {
     latch_.w_lock();
     auto iter = tb_id_to_name_.find(table_id);
@@ -117,16 +117,56 @@ bool CatalogTable::delete_table(table_id_t table_id) {
         return true;
     }
 
+    string_t deleted_tb_name = iter->second;
+
     // find this table's offset in the page
     offset_t tb_offset = -1;
-    for (int i = 0; i < table_num_; i++) {
+    int i = 0; // deleted table's index
+    for (; i < table_num_; i++) {
         tb_offset = TABLE_NUM_OFFSET + SIZE_T_SIZE + i * TABLE_RECORD_SZ;
         table_id_t tb_id = 
-            *reinterpret_cast<table_id_t*>(data_ + );
+            *reinterpret_cast<table_id_t*>(data_ + tb_offset + OFFSET_T_SIZE + SIZE_T_SIZE);
         if (table_id == tb_id) {
-
+            break;
         }
     }
+
+    if (tb_offset == -1) {
+        latch_.w_unlock();
+        LOG("ERROR: Data inconsistency");
+        return false;
+    }
+
+    offset_t deleted_name_size = 
+        *reinterpret_cast<offset_t*>(data_ + tb_offset + OFFSET_T_SIZE);
+    offset_t deleted_page_id = 
+        *reinterpret_cast<offset_t*>(data_ + tb_offset + OFFSET_T_SIZE + SIZE_T_SIZE);
+
+    // adjust the page
+    if (i != table_num_ - 1) {
+        offset_t name_offset;
+        offset_t table_offset;
+        size_t_ name_size;
+        for (int j = i + 1; j < table_num_; j++) {
+            table_offset = TABLE_NUM_OFFSET + SIZE_T_SIZE + j * TABLE_RECORD_SZ;
+            name_offset = 
+                *reinterpret_cast<offset_t*>(data_ + table_offset);
+            name_size = 
+                *reinterpret_cast<size_t_*>(data_ + table_offset + OFFSET_T_SIZE);
+            
+            // do move operation
+            memcpy(data_ + table_offset - TABLE_RECORD_SZ, data_ + table_offset, TABLE_RECORD_SZ);
+            memcpy(data_ + name_offset + deleted_name_size, data_ + name_offset, name_size);
+        }
+    }
+    table_num_--;
+    *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET) = table_num_;
+    free_space_pointer_ -= deleted_name_size;
+    delete_table_data(table_id, deleted_tb_name);
+    bpm_->delete_page(deleted_page_id);
+
+    latch_.w_unlock();
+    return true;
 }
 
 TableMetaData* CatalogTable::get_table_meta_data(table_id_t table_id) {

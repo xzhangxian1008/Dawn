@@ -42,12 +42,14 @@ public:
             shutdown();
     }
 
+    // TODO write, read and free for meta data file
+
     bool write_page(page_id_t page_id, const char *data);
     bool read_page(page_id_t page_id, char *dst);
     page_id_t get_new_page();
     bool free_page(page_id_t page_id);
-    // bool write_log();
-    // bool read_log();
+    // bool write_log_page();
+    // bool read_log_page();
     bool get_status() const { return status_; }
     page_id_t get_max_ava_pgid() const { return max_ava_pgid_; }
     page_id_t get_max_alloced_pgid() const { return max_alloced_pgid_; }

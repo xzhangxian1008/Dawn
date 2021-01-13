@@ -41,6 +41,8 @@ public:
         delete catalog_table_;
     }
 
+    inline page_id_t get_page_id() const { return self_page_id_; }
+
     // TODO operation about catalog table
     
 private:

@@ -13,6 +13,7 @@ class Table {
 public:
     // if from_scratch == true, it means that the Table should initialize the page in the disk
     Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool from_scratch = false);
+    void delete_all_data();
     // TODO a lot of operation about tuple's crud
 private:
     BufferPoolManager *bpm_;
