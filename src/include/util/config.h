@@ -57,7 +57,7 @@ using table_id_t = page_id_t;
 using size_t_ = int32_t; // I think it's a stupid name
 
 using boolean_t = bool;
-using integet_t = int32_t;
+using integer_t = int32_t;
 using decimal_t = double;
 using varchar_t = char*;
 

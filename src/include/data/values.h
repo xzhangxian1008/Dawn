@@ -39,14 +39,14 @@ public:
         return *reinterpret_cast<const T*>(&value_);
     }
 
-    int get_varchar_size() const { return str_size_; }
+    int get_char_size() const { return str_size_; }
 
 private:
     union values {
-        bool boolean;
-        __INT32_TYPE__ integer;
-        double decimal;
-        char *varchar;
+        boolean_t boolean;
+        integer_t integer;
+        decimal_t decimal;
+        char *char_;
     };
     
     values value_;

@@ -21,7 +21,7 @@ namespace dawn {
 #define PRINT(...) print__(__VA_ARGS__)
 
 // TODO let log receives random number of parameters
-#define LOG(info) log__(__func__, __LINE__, info)
+#define LOG(info) log__(__FILE__, __func__, __LINE__, info)
 
 inline void print__() { std::cout << std::endl; };
 
@@ -37,8 +37,8 @@ void print__(const T& firstArg, const Types&... args) {
 }
 
 // TODO add switch、time and so no
-inline void log__(std::string func_name, int line, std::string info) {
-    std::string out = func_name + ", line " + std::to_string(line) + ": " + info;
+inline void log__(std::string file_name, std::string func_name, int line, std::string info) {
+    std::string out = file_name + " " + func_name + ", line " + std::to_string(line) + ": " + info;
     std::cout << out << std::endl;
 }
 

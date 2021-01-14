@@ -24,6 +24,13 @@ TEST(CatalogTest, BasicTest) {
         ASSERT_TRUE(db_mgr.get_status());
         EXPECT_NE(nullptr, db_mgr.get_catalog());
         catalog_pgid = db_mgr.get_catalog_page_id();
+
+        // ensure the catalog table page id has been written to the disk
+        DiskManager *disk_manager = db_mgr.get_disk_manager();
+        char buf[PAGE_SIZE];
+        disk_manager->read_page(catalog_pgid, buf);
+        EXPECT_EQ(db_mgr.get_catalog()->get_catalog_table_page_id(),
+            *reinterpret_cast<page_id_t*>(buf + Catalog::CATALOG_TABLE_PGID_OFFSET));
     }
 
     {

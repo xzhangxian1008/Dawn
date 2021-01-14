@@ -33,22 +33,22 @@ TEST(ValueTest, BasicTest) {
         Value val;
 
         val.load(MINUS(INTEGER_T, integer_1, integer_2));
-        EXPECT_EQ(Value(v1-v2).get_value<integet_t>(), val.get_value<integet_t>());
+        EXPECT_EQ(Value(v1-v2).get_value<integer_t>(), val.get_value<integer_t>());
 
         val.load(ADD(INTEGER_T, integer_1, integer_2));
-        EXPECT_EQ(Value(v1+v2).get_value<integet_t>(), val.get_value<integet_t>());
+        EXPECT_EQ(Value(v1+v2).get_value<integer_t>(), val.get_value<integer_t>());
 
         val.load(MULTIPLY(INTEGER_T, integer_1, integer_2));
-        EXPECT_EQ(Value(v1*v2).get_value<integet_t>(), val.get_value<integet_t>());
+        EXPECT_EQ(Value(v1*v2).get_value<integer_t>(), val.get_value<integer_t>());
 
         val.load(DIVIDE(INTEGER_T, integer_1, integer_2));
-        EXPECT_EQ(Value(v1/v2).get_value<integet_t>(), val.get_value<integet_t>());
+        EXPECT_EQ(Value(v1/v2).get_value<integer_t>(), val.get_value<integer_t>());
 
         val.load(MIN(INTEGER_T, integer_1, integer_2));
-        EXPECT_EQ(Value(v1).get_value<integet_t>(), val.get_value<integet_t>());
+        EXPECT_EQ(Value(v1).get_value<integer_t>(), val.get_value<integer_t>());
 
         val.load(MAX(INTEGER_T, integer_1, integer_2));
-        EXPECT_EQ(Value(v2).get_value<integet_t>(), val.get_value<integet_t>());
+        EXPECT_EQ(Value(v2).get_value<integer_t>(), val.get_value<integer_t>());
     }
 }
 

@@ -17,11 +17,12 @@ public:
         
         bpm_ = new BufferPoolManager(disk_manager_, POOL_SIZE);
         catalog_page_id_ = disk_manager_->get_catalog_pgid();
-        catalog_ = new Catalog(bpm_, from_scratch);
+        catalog_ = new Catalog(bpm_, catalog_page_id_, from_scratch);
         status = true;
     }
 
     ~DBManager() {
+        // TODO flush all
         delete catalog_;
         delete bpm_;
         delete disk_manager_;

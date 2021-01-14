@@ -273,7 +273,7 @@ bool DiskManager::read_page(page_id_t page_id, char *dst) {
     if (db_io_.gcount() != PAGE_SIZE) {
         db_io_latch_.w_unlock();
         string_t info("Get Error Data Size: ");
-        info += std::to_string(db_io_.gcount());
+        info += std::to_string(db_io_.gcount()) + ", page: " + std::to_string(page_id);
         LOG(info);
         return false;
     }
@@ -307,7 +307,7 @@ page_id_t DiskManager::get_new_page() {
     alloced_pgid_.insert(new_page_id);
     latch_.w_unlock();
 
-    page_buf[0] |= STATUS_EXIST;
+    page_buf[0] = STATUS_EXIST;
     db_io_latch_.w_lock();
     db_io_.seekg(new_page_id * PAGE_SIZE);
     db_io_.write(page_buf, PAGE_SIZE);

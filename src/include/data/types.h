@@ -34,7 +34,25 @@ public:
     virtual Value min(const Value &left, const Value &right) = 0;
     virtual Value max(const Value &left, const Value &right) = 0;
 
-    static Type* get_instance(TypeId type_id) { return singleton[(int)type_id]; }
+    inline static Type* get_instance(TypeId type_id) { return singleton[(int)type_id]; }
+    inline static size_t_ get_bool_size() { return sizeof(boolean_t); }
+    inline static size_t_ get_integer_size() { return sizeof(integer_t); }
+    inline static size_t_ get_decimal_size() { return sizeof(decimal_t); }
+    inline static size_t_ get_char_size(const Value &val) { return val.get_char_size(); }
+
+    static size_t_ get_type_size(TypeId type_id) {
+        switch (type_id) {
+            case TypeId::BOOLEAN:
+                return sizeof(boolean_t);
+            case TypeId::INTEGER:
+                return sizeof(integer_t);
+            case TypeId::DECIMAL:
+                return sizeof(decimal_t);
+            default:
+                return -1;
+        }
+    }
+
     static string_t type_to_string(TypeId type_id) {
         switch (type_id) {
             case TypeId::INVALID:

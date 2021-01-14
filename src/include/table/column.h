@@ -13,7 +13,7 @@ namespace dawn {
 class Column {
 public:
     explicit Column(const TypeId column_type, const string_t &column_name, offset_t offset)
-        : column_type_(column_type), column_name_(column_name), offset_(offset), fixed_length_ (get_type_size(column_type)) {}
+        : column_type_(column_type), column_name_(column_name), offset_(offset), fixed_length_(get_type_size(column_type)) {}
 
     // for the char initialization
     explicit Column(const string_t &column_name, offset_t offset, size_t_ char_length)

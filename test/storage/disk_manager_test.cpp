@@ -254,6 +254,10 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
         pg = reinterpret_cast<page_id_t*>(buf + dmt.get_catalog_pgid_offset());
         EXPECT_EQ(0, *pg);
 
+        char rbuf[PAGE_SIZE];
+        EXPECT_TRUE(dmt.read_page(0, rbuf));
+        EXPECT_EQ(rbuf[0], STATUS_EXIST);
+
         delete[] buf;
     }
 

@@ -73,10 +73,6 @@ bool BufferPoolManager::flush_page(const page_id_t &page_id) {
         return false;
     }
 
-    if (!pages_[frame_id].is_dirty()) {
-        return true;
-    }
-
     // flush dirty page and reset it's dirty flag
     char *data = pages_[frame_id].get_data();
     pages_[frame_id].w_lock();
@@ -142,6 +138,7 @@ Page* BufferPoolManager::get_page(const page_id_t &page_id) {
 
         // read page from disk
         if (!disk_manager_->read_page(page_id, pages_[frame_id].get_data())) {
+            LOG("read page fail");
             return nullptr;
         }
 
@@ -149,6 +146,7 @@ Page* BufferPoolManager::get_page(const page_id_t &page_id) {
         char *data = pages_[frame_id].get_data();
         if (*reinterpret_cast<char*>(data + STATUS_OFFSET) != STATUS_EXIST) {
             latch_.w_unlock();
+            LOG("get a invalid page");
             return nullptr;
         }
 

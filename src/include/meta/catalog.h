@@ -23,7 +23,7 @@ public:
         : bpm_(bpm), self_page_id_(self_page_id) {
         page_ = bpm->get_page(self_page_id_);
         if (page_ == nullptr) {
-            PRINT("Catalog: ERROR! get nullptr, page id ", self_page_id_);
+            PRINT("Catalog: ERROR! get nullptr, page id", self_page_id_);
             exit(-1);
         }
         data_ = page_->get_data();
@@ -41,10 +41,15 @@ public:
         delete catalog_table_;
     }
 
+    DISALLOW_COPY(Catalog);
+
     inline page_id_t get_page_id() const { return self_page_id_; }
+    inline page_id_t get_catalog_table_page_id() const { return catalog_table_->get_page_id(); }
+    inline CatalogTable* get_catalog_table() const { return catalog_table_; }
 
     // TODO operation about catalog table
     
+    static const offset_t CATALOG_TABLE_PGID_OFFSET = COM_PG_HEADER_SZ;
 private:
     // call this function when the catalog has never been created before
     inline void init_catalog() {
@@ -56,9 +61,8 @@ private:
 
         *reinterpret_cast<page_id_t*>(data_ + CATALOG_TABLE_PGID_OFFSET) = p->get_page_id();
         bpm_->unpin_page(p->get_page_id(), true);
+        bpm_->flush_page(self_page_id_);
     }
-
-    static const offset_t CATALOG_TABLE_PGID_OFFSET = COM_PG_HEADER_SZ;
 
     BufferPoolManager *bpm_;
     const page_id_t self_page_id_;
