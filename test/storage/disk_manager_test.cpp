@@ -29,6 +29,7 @@ public:
     offset_t get_log_name_sz_offset() const { return log_name_sz_offset; }
     offset_t get_log_name_offset() const { return log_name_offset; }
     offset_t get_max_ava_pgid_offset() const { return max_ava_pgid_offset; }
+    offset_t get_catalog_pgid_offset() const { return catalog_pgid_offset; }
     offset_t get_reserved_offset() const { return reserved_offset; }
 };
 
@@ -87,6 +88,7 @@ bool create_meta_file(const char *name, page_id_t max_ava_pgid) {
     offset_t max_ava_pgid_offset;
     offset_t max_alloced_pgid_offset;
     offset_t reserved_offset;
+    offset_t catalog_pgid_offset;
 
     // write meta data to the buffer and set the offset
     int *p;
@@ -113,7 +115,10 @@ bool create_meta_file(const char *name, page_id_t max_ava_pgid) {
     pt = reinterpret_cast<page_id_t*>(buf+max_ava_pgid_offset);
     *pt = max_ava_pgid;
 
-    reserved_offset = max_ava_pgid_offset + sizeof(page_id_t);
+    catalog_pgid_offset = max_ava_pgid_offset + PGID_T_SIZE;
+    *reinterpret_cast<page_id_t*>(buf+catalog_pgid_offset) = 123;
+
+    reserved_offset = catalog_pgid_offset + sizeof(page_id_t);
     memset(buf + reserved_offset, 0, 128);
 
     // write meta data to the meta file
@@ -246,6 +251,9 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
         pg = reinterpret_cast<page_id_t*>(buf + dmt.get_max_ava_pgid_offset());
         EXPECT_EQ(dmt.get_max_ava_pgid(), *pg);
 
+        pg = reinterpret_cast<page_id_t*>(buf + dmt.get_catalog_pgid_offset());
+        EXPECT_EQ(0, *pg);
+
         delete buf;
     }
 
@@ -259,6 +267,7 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
         EXPECT_TRUE(dm.get_status());
         EXPECT_EQ(max_ava_pgid1, dm.get_max_ava_pgid());
         EXPECT_EQ(-1, dm.get_max_alloced_pgid());
+        EXPECT_EQ(123, dm.get_catalog_pgid());
     }
 
     {
@@ -275,9 +284,10 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
             ASSERT_FALSE(check_inexistence(logf));
 
             EXPECT_TRUE(read_write_pages_check(dmt, page_num));
+            EXPECT_EQ(1000, dmt.get_max_alloced_pgid());
 
             // free some pages
-            for (int i = 0; i < page_num; i++) {
+            for (int i = 1; i < page_num; i++) {
                 if (i % 2 == 0)
                     continue;
                 ASSERT_TRUE(dmt.free_page(i));
@@ -296,7 +306,7 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
 
             // check correctness
             bool ok = true;
-            for (int i = 0; i < page_num; i++) {
+            for (int i = 1; i < page_num; i++) {
                 if (i % 2 == 0) {
                     if (dmt.is_allocated(i) != true)
                         ok = false;
@@ -314,7 +324,7 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
             }
 
             EXPECT_TRUE(ok);
-            EXPECT_EQ(998, dmt.get_max_alloced_pgid());
+            EXPECT_EQ(1000, dmt.get_max_alloced_pgid());
         }
     }
 
@@ -391,9 +401,10 @@ TEST_F(DiskManagerTest, DMFunctionTest) {
 
         int page_num = 1000;
         EXPECT_TRUE(read_write_pages_check(dmt, page_num));
+        EXPECT_EQ(1000, dmt.get_max_alloced_pgid());
 
         // free some pages and check the data's correstness
-        for (int i = 0; i < page_num; i++) {
+        for (int i = 1; i < page_num; i++) {
             if (i % 2 == 0)
                 continue;
             ASSERT_TRUE(dmt.free_page(i));
@@ -401,7 +412,7 @@ TEST_F(DiskManagerTest, DMFunctionTest) {
 
         // check correctness
         bool ok = true;
-        for (int i = 0; i < page_num; i++) {
+        for (int i = 1; i < page_num; i++) {
             if (i % 2 == 0) {
                 if (dmt.is_allocated(i) != true)
                     ok = false;
@@ -418,7 +429,7 @@ TEST_F(DiskManagerTest, DMFunctionTest) {
         }
 
         EXPECT_TRUE(ok);
-        EXPECT_EQ(998, dmt.get_max_alloced_pgid());
+        EXPECT_EQ(1000, dmt.get_max_alloced_pgid());
     }
 
     remove(mtdf);

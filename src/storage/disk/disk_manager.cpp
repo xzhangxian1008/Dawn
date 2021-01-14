@@ -79,6 +79,8 @@ void DiskManager::from_scratch() {
     meta_buffer = new char[512];
     buffer_size = 512;
 
+    catalog_page_id_ = get_new_page();
+
     if (write_meta_data()) {
         status_ = true;
     }
@@ -151,6 +153,9 @@ void DiskManager::from_mtd(const string_t &meta_name) {
         max_ava_pgid_offset = log_name_offset + *p + 1;
         pg = reinterpret_cast<page_id_t*>(meta_buffer + max_ava_pgid_offset);
         max_ava_pgid_ = *pg;
+
+        catalog_pgid_offset = max_ava_pgid_offset + PGID_T_SIZE;
+        catalog_page_id_ = *reinterpret_cast<page_id_t*>(meta_buffer + catalog_pgid_offset);
     }
 
     // initialize the alloced_pgid_ and free_pgid_
@@ -182,12 +187,15 @@ void DiskManager::from_mtd(const string_t &meta_name) {
     int read_cnt = db_file_sz / READ_DB_BUF_SZ;
     if (db_file_sz % READ_DB_BUF_SZ != 0)
         read_cnt++;
-    
+
     // read the full .db file to initialize data
     page_id_t page_id;
+    int read_size;
     for (int i = 0; i < read_cnt; i++) {
         db_io_.seekp(i * READ_DB_BUF_SZ);
-        db_io_.read(tmp_buf, READ_DB_BUF_SZ);
+
+        read_size = READ_DB_BUF_SZ <= db_file_sz ? READ_DB_BUF_SZ : db_file_sz;
+        db_io_.read(tmp_buf, read_size);
         if (db_io_.fail()) {
             string_t info("ERROR! ");
             info += "Read Fail!";
@@ -195,6 +203,7 @@ void DiskManager::from_mtd(const string_t &meta_name) {
             shutdown();
             return;
         }
+        db_file_sz = db_file_sz - READ_DB_BUF_SZ;
 
         int read_sz = db_io_.gcount();
         char *p_status;
@@ -397,7 +406,10 @@ bool DiskManager::write_meta_data() {
     pt = reinterpret_cast<page_id_t*>(meta_buffer+max_ava_pgid_offset);
     *pt = max_ava_pgid_;
 
-    reserved_offset = max_ava_pgid_offset + sizeof(page_id_t);
+    catalog_pgid_offset = max_ava_pgid_offset + PGID_T_SIZE;
+    *reinterpret_cast<page_id_t*>(meta_buffer+catalog_pgid_offset) = catalog_page_id_;
+
+    reserved_offset = catalog_pgid_offset + PGID_T_SIZE;
     memset(meta_buffer + reserved_offset, 0, 128);
 
     // write meta data to the meta file

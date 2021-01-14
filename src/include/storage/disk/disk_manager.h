@@ -12,7 +12,6 @@
 
 namespace dawn {
 /**
- * 
  * meta data file layout:
  * the reserved filed is placed just for notification not to forget to
  * maintain a reserved field when I plan to add other fields.
@@ -50,16 +49,16 @@ public:
     bool free_page(page_id_t page_id);
     // bool write_log_page();
     // bool read_log_page();
-    bool get_status() const { return status_; }
-    page_id_t get_max_ava_pgid() const { return max_ava_pgid_; }
-    page_id_t get_max_alloced_pgid() const { return max_alloced_pgid_; }
+    inline bool get_status() const { return status_; }
+    inline page_id_t get_max_ava_pgid() const { return max_ava_pgid_; }
+    inline page_id_t get_max_alloced_pgid() const { return max_alloced_pgid_; }
+    inline page_id_t get_catalog_pgid() const { return catalog_page_id_; }
 
     // duplicated, just for test
     bool is_free(page_id_t page_id) const { return free_pgid_.find(page_id) != free_pgid_.end(); }
     bool is_allocated(page_id_t page_id) const { return alloced_pgid_.find(page_id) != alloced_pgid_.end();}
 
     void shutdown() {
-        // FIXME bug will happen if we put log_io_.close() after the write_meta_data(). confused...
         if (status_ && !write_meta_data()) {
             LOG("WARNING! Write Meta Data Fail in Shutdown");
         }
@@ -84,6 +83,7 @@ private:
     offset_t log_name_sz_offset;
     offset_t log_name_offset;
     offset_t max_ava_pgid_offset;
+    offset_t catalog_pgid_offset;
     offset_t reserved_offset;
 
     fstream_t db_io_;
@@ -132,6 +132,8 @@ private:
     int buffer_size = -1;
 
     char page_buf[PAGE_SIZE];
+
+    page_id_t catalog_page_id_;
 
     ReaderWriterLatch latch_;
 

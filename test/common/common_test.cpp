@@ -19,11 +19,27 @@ using std::ends;
 
 namespace dawn {
 
-
 TEST(CommonTest, CommonTEST) {
-    char c[30] = "1234567890qwertyuiopasdfghjkl";
-    memcpy(c + 5, c, 10);
-    cout << c << endl;
+    const char *meta_name = "file";
+    fstream_t meta_io;
+    if (!open_file(meta_name, meta_io, ios::in | ios::out | ios::trunc)) {
+        LOG("can't create");
+        return;
+    }
+    meta_io.seekg(0);
+    const char *buf = "123456789";
+    meta_io.write(buf, 10);
+    meta_io.seekp(0);
+    char rbuf[20];
+    meta_io.read(rbuf, 5);
+    if (meta_io.fail()) {
+        LOG("fail");
+    }
+    meta_io.seekp(0);
+    meta_io.read(rbuf, 20);
+    if (meta_io.fail()) {
+        LOG("fail");
+    }
 }
 
 } // namespace dawn
