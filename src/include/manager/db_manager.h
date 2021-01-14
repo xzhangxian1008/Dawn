@@ -8,7 +8,6 @@
 
 namespace dawn {
 
-// TODO add '\0' after a string in the file
 class DBManager {
 public:
     explicit DBManager(const string_t &meta_name, bool from_scratch = false) : status(false) {
@@ -32,6 +31,7 @@ public:
     inline DiskManager* get_disk_manager() const { return disk_manager_; }
     inline BufferPoolManager* get_buffer_pool_manager() const { return bpm_; }
     inline Catalog* get_catalog() const { return catalog_; }
+    inline bool get_status() const { return status; }
 
 private:
     static constexpr size_t_ POOL_SIZE = 100;

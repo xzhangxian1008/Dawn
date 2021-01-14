@@ -51,7 +51,7 @@ public:
 
         bool first = true;
         os << " :: (";
-        for (uint32_t i = 0; i < get_column_num(); i++) {
+        for (int i = 0; i < get_column_num(); i++) {
             if (first) {
             first = false;
             } else {

@@ -12,7 +12,7 @@ namespace dawn {
 template<typename T>
 void write_num_to_char(T num, char *dst) {
     string_t num_str = std::to_string(num);
-    for (int i = 0; i < num_str.length(); i++)
+    for (size_t i = 0; i < num_str.length(); i++)
         dst[i] = num_str[i];
     dst[num_str.length()] = '\0';
 }
@@ -220,7 +220,7 @@ TEST(BPMTest, BasicTest) {
             string_t pgid_str = std::to_string(pgid);
 
             // check data
-            for (int i = 0; i < pgid_str.length(); i++) {
+            for (size_t i = 0; i < pgid_str.length(); i++) {
                 if (page_buf[COM_PG_HEADER_SZ + i] != pgid_str[i]) {
                     ok = false;
                     break;

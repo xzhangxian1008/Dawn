@@ -67,7 +67,7 @@ bool CatalogTable::new_table(const string_t &table_name, const TableSchema &sche
     size_t_ tb_num = *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET);
     offset_t insert_offset = TABLE_NUM_OFFSET + sizeof(size_t_) + tb_num * TABLE_RECORD_SZ;
     size_t_ available_space = free_space_pointer_ - insert_offset;
-    if (table_name.length() + TABLE_RECORD_SZ > available_space) {
+    if ((size_t_)(table_name.length() + TABLE_RECORD_SZ) > available_space) {
         latch_.w_unlock();
         return false; // no more space to store
     }
@@ -86,9 +86,10 @@ bool CatalogTable::new_table(const string_t &table_name, const TableSchema &sche
     table_num_++;
 
     size_t_ len = table_name.length();
-    free_space_pointer_ -= len;
+    free_space_pointer_ -= len + 1;
     for (int i = 0; i < len; i++)
         *reinterpret_cast<char*>(data_ + free_space_pointer_ + i) = table_name[i];
+    *reinterpret_cast<char*>(data_ + free_space_pointer_ + len) = '\0';
 
     *reinterpret_cast<offset_t*>(data_ + insert_offset) = free_space_pointer_;
     *reinterpret_cast<size_t_*>(data_ + insert_offset + OFFSET_T_SIZE) = table_name.length();
@@ -156,12 +157,12 @@ bool CatalogTable::delete_table(table_id_t table_id) {
             
             // do move operation
             memcpy(data_ + table_offset - TABLE_RECORD_SZ, data_ + table_offset, TABLE_RECORD_SZ);
-            memcpy(data_ + name_offset + deleted_name_size, data_ + name_offset, name_size);
+            memcpy(data_ + name_offset + deleted_name_size + 1, data_ + name_offset, name_size + 1);
         }
     }
     table_num_--;
     *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET) = table_num_;
-    free_space_pointer_ -= deleted_name_size;
+    free_space_pointer_ += deleted_name_size + 1;
     delete_table_data(table_id, deleted_tb_name);
     bpm_->delete_page(deleted_page_id);
 

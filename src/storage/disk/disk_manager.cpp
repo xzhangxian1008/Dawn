@@ -223,7 +223,7 @@ void DiskManager::from_mtd(const string_t &meta_name) {
     while (page_id < max_ava_pgid_)
         free_pgid_.insert(page_id++);
 
-    delete tmp_buf;
+    delete[] tmp_buf;
     status_ = true;
 }
 
@@ -351,6 +351,7 @@ bool DiskManager::free_page(page_id_t page_id) {
     db_io_.write(&c, 1);
     if (db_io_.fail()) {
         db_io_latch_.w_unlock();
+        LOG("free page fail");
         return false;
     }
     db_io_latch_.w_unlock();
@@ -387,17 +388,17 @@ bool DiskManager::write_meta_data() {
     p = reinterpret_cast<int*>(meta_buffer + db_name_sz_offset);
     *p = db_name_.length();
     
-    db_name_offset = db_name_sz_offset + sizeof(int);
-    for (int i = 0; i < db_name_.length(); i++)
+    db_name_offset = db_name_sz_offset + OFFSET_T_SIZE;
+    for (size_t i = 0; i < db_name_.length(); i++)
         meta_buffer[db_name_offset+i] = db_name_[i];
-    db_name_[db_name_offset+db_name_.length()] = '\0';
+    meta_buffer[db_name_offset+db_name_.length()] = '\0';
 
     log_name_sz_offset = db_name_offset + db_name_.length() + 1;
     p = reinterpret_cast<int*>(meta_buffer+log_name_sz_offset);
     *p = log_name_.length();
 
-    log_name_offset = log_name_sz_offset + sizeof(int);
-    for (int i = 0; i < log_name_.length(); i++)
+    log_name_offset = log_name_sz_offset + OFFSET_T_SIZE;
+    for (size_t i = 0; i < log_name_.length(); i++)
         meta_buffer[log_name_offset+i] = log_name_[i];
     meta_buffer[log_name_offset+log_name_.length()] = '\0';
 

@@ -39,17 +39,14 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
         col_name_len = *reinterpret_cast<size_t_*>(data_ + col_name_len_offset);
         col_size = FIXED_COL_SIZE + col_name_len;
         name_offset = col_name_len_offset + SIZE_T_SIZE;
-        offset_offset = name_offset + col_name_len;
-        offset_in_tp = *reinterpret_cast<offset_t*>(data_ + name_offset);
-        type_id_offset = offset_in_tp + OFFSET_T_SIZE;
-        type_id = *reinterpret_cast<TypeId*>(data_ + offset_in_tp + OFFSET_T_SIZE);
+        offset_offset = name_offset + col_name_len + 1;
+        offset_in_tp = *reinterpret_cast<offset_t*>(data_ + offset_offset);
+        type_id_offset = offset_offset + OFFSET_T_SIZE;
+        type_id = *reinterpret_cast<TypeId*>(data_ + type_id_offset);
         data_size_offset = type_id_offset + ENUM_SIZE;
         data_size = *reinterpret_cast<size_t_*>(data_ + data_size_offset);
 
-        char name[col_name_len+1];
-        for (int j = 0; j < col_name_len; j++)
-            name[j] = *reinterpret_cast<char*>(data_ + name_offset + j);
-        name[col_name_len] = '\0';
+        char *name = reinterpret_cast<char*>(data_ + name_offset);
 
         // make column
         if (type_id == TypeId::CHAR) {
@@ -97,7 +94,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
         size_t_ name_len = col_name.length();
         *reinterpret_cast<size_t_*>(data_ + col_name_len_offset) = name_len;
         name_offset = col_name_len_offset + SIZE_T_SIZE;
-        offset_offset = name_offset + name_len;
+        offset_offset = name_offset + name_len + 1;
         *reinterpret_cast<offset_t*>(data_ + offset_offset) = col.get_offset();
         type_id_offset = offset_offset + OFFSET_T_SIZE;
         *reinterpret_cast<TypeId*>(data_ + type_id_offset) = col.get_type_id();
@@ -106,6 +103,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
 
         for (offset_t i = 0; i < (offset_t)name_len; i++)
             *reinterpret_cast<char*>(data_ + name_offset + i) = col_name[i];
+        *reinterpret_cast<char*>(data_ + name_offset + (offset_t)name_len) = '\0';
     }
 
     bpm_->flush_page(self_page_id_);

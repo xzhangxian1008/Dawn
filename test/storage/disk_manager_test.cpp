@@ -86,7 +86,6 @@ bool create_meta_file(const char *name, page_id_t max_ava_pgid) {
     offset_t log_name_sz_offset;
     offset_t log_name_offset;
     offset_t max_ava_pgid_offset;
-    offset_t max_alloced_pgid_offset;
     offset_t reserved_offset;
     offset_t catalog_pgid_offset;
 
@@ -97,7 +96,7 @@ bool create_meta_file(const char *name, page_id_t max_ava_pgid) {
     *p = db_name_.length();
 
     db_name_offset = db_name_sz_offset + sizeof(int);
-    for (int i = 0; i < db_name_.length(); i++)
+    for (size_t i = 0; i < db_name_.length(); i++)
         buf[db_name_offset+i] = db_name_[i];
     buf[db_name_offset+db_name_.length()] = '\0';
 
@@ -106,7 +105,7 @@ bool create_meta_file(const char *name, page_id_t max_ava_pgid) {
     *p = log_name_.length();
 
     log_name_offset = log_name_sz_offset + sizeof(int);
-    for (int i = 0; i < log_name_.length(); i++)
+    for (size_t i = 0; i < log_name_.length(); i++)
         buf[log_name_offset+i] = log_name_[i];
     buf[log_name_offset+log_name_.length()] = '\0';
     max_ava_pgid_offset = log_name_offset + log_name_.length() + 1;
@@ -235,15 +234,16 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
 
         char *str;
         str = reinterpret_cast<char*>(buf + dmt.get_db_name_offset());
-        for (int i = 0; i < dbf_s.length(); i++)
+        for (size_t i = 0; i < dbf_s.length(); i++) {
             EXPECT_EQ(dbf_s[i], str[i]);
+        }
         EXPECT_EQ('\0', str[dbf_s.length()]);
 
         p = reinterpret_cast<int*>(buf + dmt.get_log_name_sz_offset());
         EXPECT_EQ(*p, logf_s.length());
 
         str = reinterpret_cast<char*>(buf + dmt.get_log_name_offset());
-        for (int i = 0; i < logf_s.length(); i++)
+        for (size_t i = 0; i < logf_s.length(); i++)
             EXPECT_EQ(logf_s[i], str[i]);
         EXPECT_EQ('\0', str[logf_s.length()]);
         
@@ -254,7 +254,7 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
         pg = reinterpret_cast<page_id_t*>(buf + dmt.get_catalog_pgid_offset());
         EXPECT_EQ(0, *pg);
 
-        delete buf;
+        delete[] buf;
     }
 
     remove(mtdf);

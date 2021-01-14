@@ -67,7 +67,7 @@ public:
         db_io_.close();
         log_io_.close();
         if (meta_buffer != nullptr) {
-            delete meta_buffer;
+            delete[] meta_buffer;
             buffer_size = -1;
             meta_buffer = nullptr;
         }

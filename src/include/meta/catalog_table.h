@@ -102,12 +102,11 @@ public:
 
     TableMetaData* get_table_meta_data(table_id_t table_id);
 
-    // TODO implement them!
     bool new_table(const string_t &table_name, const TableSchema &schema);
     bool delete_table(const string_t &table_name);
     bool delete_table(table_id_t table_id);
 
-    // do not support change table name so far
+    // not support change table name so far
     bool change_table_name(table_id_t table_id, const string_t &new_name) { return true; }
 private:
     // ATTENTION no lock

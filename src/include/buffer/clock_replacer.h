@@ -11,7 +11,7 @@ namespace dawn {
 class ClockReplacer : public ReplacerAbstract {
 public:
     explicit ClockReplacer(int pool_size);
-    ~ClockReplacer() { delete[] flags; }
+    virtual ~ClockReplacer() override { delete[] flags; }
 
     void pin(frame_id_t frame_id) override;
     void unpin(frame_id_t frame_id) override;

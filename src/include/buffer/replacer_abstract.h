@@ -8,7 +8,7 @@ namespace dawn {
 class ReplacerAbstract {
 public:
     ReplacerAbstract() = default;
-    ~ReplacerAbstract() = default;
+    virtual ~ReplacerAbstract() = default;
     virtual void pin(frame_id_t) = 0;
     virtual void unpin(frame_id_t) = 0;
     virtual void victim(frame_id_t*) = 0;

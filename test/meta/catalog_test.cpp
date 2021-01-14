@@ -5,30 +5,38 @@
 
 namespace dawn {
 
+const char *meta = "test";
+const char *meta_name = "test.mtd";
+const char *db_name = "test.db";
+const char *log_name = "test.log";
+
 /**
  * Test List:
  *   1. ensure DBManager has created the Catalog from scratch
  *   2. ensure DBManager has created the pre-created Catalog
- *   2. create Catalog from scratch and ensure the disk has store the catalog_table's page id
- *   3. create a pre-created Catalog and ensure get the catalog_table's page id stored in the disk
  */
 TEST(CatalogTest, BasicTest) {
+    page_id_t catalog_pgid;
+
     {
         // test 1
-
+        DBManager db_mgr(meta, true);
+        ASSERT_TRUE(db_mgr.get_status());
+        EXPECT_NE(nullptr, db_mgr.get_catalog());
+        catalog_pgid = db_mgr.get_catalog_page_id();
     }
 
     {
         // test 2
+        DBManager db_mgr(meta);
+        ASSERT_TRUE(db_mgr.get_status());
+        EXPECT_NE(nullptr, db_mgr.get_catalog());
+        EXPECT_EQ(catalog_pgid, db_mgr.get_catalog_page_id());
     }
 
-    {
-        // test 3
-    }
-
-    {
-        // test 4
-    }
+    remove(meta_name);
+    remove(db_name);
+    remove(log_name);
 }
 
 } // namespace dawn

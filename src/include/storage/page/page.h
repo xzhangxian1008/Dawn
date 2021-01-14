@@ -74,7 +74,7 @@ public:
     void set_status() {
         char s = STATUS_EXIST;
         latch_.w_lock();
-        memcpy(data_ + STATUS_OFFSET, &s, sizeof(1));
+        memcpy(data_ + STATUS_OFFSET, &s, 1);
         latch_.w_unlock();
     }
 private:
