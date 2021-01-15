@@ -69,4 +69,7 @@ private:
     size_t_ length_; // the tuple's size
 };
 
+TableSchema* create_table_schema(std::vector<TypeId> types, 
+    std::vector<string_t> names, std::vector<size_t_> name_len = std::vector<size_t_>{});
+
 } // namespace dawn

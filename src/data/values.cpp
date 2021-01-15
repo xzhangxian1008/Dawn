@@ -28,22 +28,22 @@ Value::Value(double val) : str_size_(-1) {
 
 Value::Value(char *val, int size) : str_size_(size) {
     type_id_ = TypeId::CHAR;
-    value_.varchar = new char[size+1];
-    memcpy(value_.varchar, val, size);
-    value_.varchar[size] = '\0';
+    value_.char_ = new char[size+1];
+    memcpy(value_.char_, val, size);
+    value_.char_[size] = '\0';
 }
 
 Value::Value(const string_t &val) : str_size_(val.length()) {
     type_id_ = TypeId::CHAR;
-    value_.varchar = new char[str_size_+1];
+    value_.char_ = new char[str_size_+1];
     for (int i = 0; i < str_size_; i++)
-        value_.varchar[i] = val[i];
-    value_.varchar[str_size_] = '\0';
+        value_.char_[i] = val[i];
+    value_.char_[str_size_] = '\0';
 }
 
 Value::~Value() {
     if (type_id_ == TypeId::CHAR)
-        delete value_.varchar;
+        delete value_.char_;
 }
 
 } // namespace dawn

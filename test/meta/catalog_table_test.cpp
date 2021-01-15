@@ -15,25 +15,51 @@ const char *meta_name = "test.mtd";
 const char *db_name = "test.db";
 const char *log_name = "test.log";
 
-TableSchema* create_table_schema(std::vector<TypeId> types, std::vector<string_t> names, std::vector<size_t_> name_len) {
-    if (types.size() != names.size())
-        return nullptr;
-    
-    offset_t offset = 0;
-    std::vector<Column> cols;
-    size_t j = 0;
-    for (size_t i = 0; i < types.size(); i++) {
-        if (types[i] == TypeId::BOOLEAN) {
-            cols.push_back(Column(names[i], offset, name_len[j]));
-            offset += name_len[j++];
-            continue;
-        }
-        cols.push_back(Column(types[i], names[i], offset));
-        offset += Type::get_type_size(types[i]);
-    }
+/**
+ * table name: table1
+ * column names:
+ * -----------------------
+ * | tb1_col1 | tb1_col2 |
+ * -----------------------
+ * column types:
+ * ------------------
+ * | bool | integer |
+ * ------------------
+ */
+string_t table1("table1");
+std::vector<TypeId> tb1_types{TypeId::BOOLEAN, TypeId::INTEGER};
+std::vector<string_t> tb1_names{"tb1_col1", "tb1_col2"};
 
-    return new TableSchema(cols);
-}
+/**
+ * table name: table2
+ * column names:
+ * ----------------------------------
+ * | tb2_col1 | tb2_col2 | tb2_col3 |
+ * ----------------------------------
+ * column types:
+ * ----------------------------
+ * | integer | bool | decimal |
+ * ----------------------------
+ */
+string_t table2("table2");
+std::vector<TypeId> tb2_types{TypeId::INTEGER, TypeId::BOOLEAN, TypeId::DECIMAL};
+std::vector<string_t> tb2_names{"tb2_col1", "tb2_col2", "tb2_col3"};
+
+/**
+ * table name: table3
+ * column names:
+ * ---------------------------------------------
+ * | tb3_col1 | tb3_col2 | tb3_col3 | tb3_col4 |
+ * ---------------------------------------------
+ * column types:
+ * ----------------------------------------
+ * | decimal | bool | char (10) | integer | 
+ * ----------------------------------------
+ */
+string_t table3("table3");
+std::vector<TypeId> tb3_types{TypeId::DECIMAL, TypeId::BOOLEAN, TypeId::CHAR, TypeId::INTEGER};
+std::vector<string_t> tb3_names{"tb3_col1", "tb3_col2", "tb3_col3", "tb3_col4"};
+std::vector<size_t_> tb3_char_size{10};
 
 /**
  * Test List:
@@ -43,7 +69,7 @@ TableSchema* create_table_schema(std::vector<TypeId> types, std::vector<string_t
  *   
  */
 TEST(CatalogTableTest, BasicTest) {
-    
+
     {
         // test 1
         DBManager db_mgr(meta, true);
@@ -55,9 +81,18 @@ TEST(CatalogTableTest, BasicTest) {
         CatalogTable *catalog_table = catalog->get_catalog_table();
         ASSERT_NE(nullptr, catalog_table);
 
+        TableSchema *tb1 = create_table_schema(tb1_types, tb1_names);
+        TableSchema *tb2 = create_table_schema(tb2_types, tb2_names);
+        TableSchema *tb3 = create_table_schema(tb3_types, tb3_names, tb3_char_size);
 
+        EXPECT_TRUE(catalog_table->new_table(table1, *tb1));
+        EXPECT_TRUE(catalog_table->new_table(table2, *tb2));
+        EXPECT_TRUE(catalog_table->new_table(table3, *tb3));
+
+        delete tb1;
+        delete tb2;
+        delete tb3;
     }
-
 
     remove(meta_name);
     remove(db_name);

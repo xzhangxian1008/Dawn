@@ -96,6 +96,7 @@ bool CatalogTable::new_table(const string_t &table_name, const TableSchema &sche
     *reinterpret_cast<page_id_t*>(data_ + insert_offset + OFFSET_T_SIZE + SIZE_T_SIZE) = new_page->get_page_id();
 
     latch_.w_unlock();
+    bpm_->flush_page(self_page_id_); // ATTENTION transaction conflict
     return true;
 }
 
@@ -165,8 +166,8 @@ bool CatalogTable::delete_table(table_id_t table_id) {
     free_space_pointer_ += deleted_name_size + 1;
     delete_table_data(table_id, deleted_tb_name);
     bpm_->delete_page(deleted_page_id);
-
     latch_.w_unlock();
+    bpm_->flush_page(self_page_id_); // ATTENTION transaction conflict
     return true;
 }
 

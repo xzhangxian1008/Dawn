@@ -38,7 +38,6 @@ public:
     inline static size_t_ get_bool_size() { return sizeof(boolean_t); }
     inline static size_t_ get_integer_size() { return sizeof(integer_t); }
     inline static size_t_ get_decimal_size() { return sizeof(decimal_t); }
-    inline static size_t_ get_char_size(const Value &val) { return val.get_char_size(); }
 
     static size_t_ get_type_size(TypeId type_id) {
         switch (type_id) {
