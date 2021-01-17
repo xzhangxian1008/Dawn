@@ -84,6 +84,7 @@ bool CatalogTable::new_table(const string_t &table_name, const TableSchema &sche
     tb_name_to_id_.insert(std::make_pair(table_name, new_page->get_page_id()));
     bpm_->unpin_page(new_page->get_page_id(), false);
     table_num_++;
+    *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET) = table_num_;
 
     size_t_ len = table_name.length();
     free_space_pointer_ -= len + 1;

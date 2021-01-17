@@ -10,7 +10,7 @@ Table::Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool f
     
     Page *page = bpm_->get_page(first_table_page_id_);
     if (page == nullptr) {
-        PRINT("ERROR! get *page nullptr");
+        LOG("ERROR! get *page nullptr");
         exit(-1);
     }
     TablePage *table_page = reinterpret_cast<TablePage*>(page);

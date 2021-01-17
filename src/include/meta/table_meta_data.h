@@ -42,6 +42,12 @@ public:
         bpm_->unpin_page(self_page_id_, true); // always true
     }
 
+    inline const TableSchema* get_table_schema() const { return table_schema_; }
+    inline string_t get_table_name() const { return table_name_; }
+    inline Table* get_table() const { return table_; }
+    inline table_id_t get_self_table_id() const { return self_page_id_; }
+    inline table_id_t get_table_id() const { return table_id_; }
+
     // TODO add function to update the table
     
     void delete_table_data();
@@ -55,7 +61,7 @@ private:
      * column size means how many space a column need to record his info.
      * fixed size refer to the space it always needs.
      */
-    static const size_t_ FIXED_COL_SIZE = 2 * sizeof(size_t_) + sizeof(offset_t) + ENUM_SIZE;
+    static const size_t_ FIXED_COLUMN_SIZE = SIZE_T_SIZE + OFFSET_T_SIZE + ENUM_SIZE + SIZE_T_SIZE;
     
     TableSchema *table_schema_;
     ReaderWriterLatch latch_;

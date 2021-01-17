@@ -1,7 +1,6 @@
 #include "meta/table_meta_data.h"
 
 namespace dawn {
-// TODO create Table
 TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const table_id_t table_id)
     : bpm_(bpm), table_name_(table_name), table_id_(table_id), self_page_id_((page_id_t)table_id),
     first_table_page_id_(-1), index_header_page_id_(-1) {
@@ -37,7 +36,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
         col_name_len_offset += col_size; // jump to the next column
 
         col_name_len = *reinterpret_cast<size_t_*>(data_ + col_name_len_offset);
-        col_size = FIXED_COL_SIZE + col_name_len;
+        col_size = FIXED_COLUMN_SIZE + col_name_len + 1;
         name_offset = col_name_len_offset + SIZE_T_SIZE;
         offset_offset = name_offset + col_name_len + 1;
         offset_in_tp = *reinterpret_cast<offset_t*>(data_ + offset_offset);
@@ -58,9 +57,11 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
 
     // create TableSchema
     table_schema_ = new TableSchema(cols);
+
+    // create Table
+    table_ = new Table(bpm_, first_table_page_id_, false);
 }
 
-// TODO create Table、first_table_page_id_、index_header_page_id_
 TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema, const table_id_t table_id)
     : bpm_(bpm), table_name_(table_name), table_id_(table_id), self_page_id_(table_id), first_table_page_id_(-1), index_header_page_id_(-1) {
     table_schema_ = new TableSchema(schema);
@@ -87,7 +88,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
     size_t_ type_id_offset;
     size_t_ data_size_offset;
     for (int i = 0; i < col_num; i++) {
-        Column col = schema.get_column(0);
+        Column col = schema.get_column(i);
         col_name_len_offset += col_size; // jump to the next column
 
         const string_t &col_name = col.get_column_name();
@@ -104,9 +105,30 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
         for (offset_t i = 0; i < (offset_t)name_len; i++)
             *reinterpret_cast<char*>(data_ + name_offset + i) = col_name[i];
         *reinterpret_cast<char*>(data_ + name_offset + (offset_t)name_len) = '\0';
+        col_size = FIXED_COLUMN_SIZE + name_len + 1;
     }
 
     bpm_->flush_page(self_page_id_);
+
+    Page *page = bpm_->new_page();
+    if (page == nullptr) {
+        LOG("ERROR! can't get new page");
+        exit(-1);
+    }
+    page_id_t *pgid = const_cast<page_id_t*>(&first_table_page_id_);
+    *pgid = page->get_page_id();
+    bpm_->unpin_page(*pgid, false);
+
+    page = bpm_->new_page();
+    if (page == nullptr) {
+        LOG("ERROR! can't get new page");
+        exit(-1);
+    }
+    pgid = const_cast<page_id_t*>(&index_header_page_id_);
+    *pgid = page->get_page_id();
+    bpm_->unpin_page(*pgid, false);
+
+    table_ = new Table(bpm_, first_table_page_id_, true);
 }
 
 // TODO delete index data(index_header_page_id_)

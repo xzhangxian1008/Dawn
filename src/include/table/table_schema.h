@@ -70,6 +70,8 @@ private:
 };
 
 TableSchema* create_table_schema(std::vector<TypeId> types, 
-    std::vector<string_t> names, std::vector<size_t_> name_len = std::vector<size_t_>{});
+    std::vector<string_t> names, std::vector<size_t_> char_len = std::vector<size_t_>{});
+
+bool is_table_schemas_equal(const TableSchema &ts1, const TableSchema &ts2);
 
 } // namespace dawn
