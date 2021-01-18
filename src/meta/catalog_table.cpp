@@ -156,10 +156,13 @@ bool CatalogTable::delete_table(table_id_t table_id) {
                 *reinterpret_cast<offset_t*>(data_ + table_offset);
             name_size = 
                 *reinterpret_cast<size_t_*>(data_ + table_offset + OFFSET_T_SIZE);
-            
+
             // do move operation
             memcpy(data_ + table_offset - TABLE_RECORD_SZ, data_ + table_offset, TABLE_RECORD_SZ);
             memcpy(data_ + name_offset + deleted_name_size + 1, data_ + name_offset, name_size + 1);
+
+            // update the table name's position
+            *reinterpret_cast<offset_t*>(data_ + table_offset - TABLE_RECORD_SZ) += deleted_name_size + 1;
         }
     }
     table_num_--;
@@ -193,6 +196,45 @@ TableMetaData* CatalogTable::get_table_meta_data(table_id_t table_id) {
     TableMetaData *tb_meta_data = iter->second;
     latch_.w_unlock();
     return tb_meta_data;
+}
+
+std::vector<string_t> CatalogTable::get_all_table_name() {
+    latch_.r_lock();
+    std::vector<string_t> names;
+    for (auto &iter : tb_name_to_id_)
+        names.push_back(iter.first);
+    latch_.r_unlock();
+    return names;
+}
+
+std::vector<table_id_t> CatalogTable::get_all_table_id() {
+    latch_.r_lock();
+    std::vector<table_id_t> ids;
+    for (auto &iter : tb_name_to_id_)
+        ids.push_back(iter.second);
+    latch_.r_unlock();
+    return ids;
+}
+
+string_t CatalogTable::to_string() {
+    std::ostringstream os;
+
+    os << "CatalogTable{"
+        << "table number:" << tb_id_to_name_.size() << "}";
+
+    bool first = true;
+    os << " :: [";
+    for (auto iter : tb_id_to_name_) {
+        if (first) {
+            first = false;
+        } else {
+            os << ", ";
+        }
+        os << iter.second;
+    }
+    os << "]";
+
+    return os.str();
 }
 
 } // namespace dawn

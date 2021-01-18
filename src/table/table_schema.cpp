@@ -30,6 +30,10 @@ bool is_table_schemas_equal(const TableSchema &ts1, const TableSchema &ts2) {
         PRINT("size not equal:", col_num, cols2.size());
         return false;
     }
+
+    if (ts1.get_tuple_size() != ts2.get_tuple_size())
+        return false;
+
     for (size_t i = 0; i < col_num; i++) {
         if (Column::is_columns_equal(cols1[i], cols2[i])) {
             continue;

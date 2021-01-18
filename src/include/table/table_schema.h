@@ -11,6 +11,7 @@
 namespace dawn {
 
 /**
+ * ATTENTION no latch to handle the concurrency environment, because we won't modify TableSchema after it is created
  * for specification of the tuple
  */
 class TableSchema {

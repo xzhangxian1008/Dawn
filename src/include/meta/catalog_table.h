@@ -88,27 +88,37 @@ public:
         return get_table_meta_data(iter->second);
     }
 
-    // ATTENTION no lock protects it
-    void delete_table_data(table_id_t table_id, string_t table_name) {
-        auto iter_id_to_name = tb_id_to_name_.find(table_id);
-        tb_id_to_name_.erase(iter_id_to_name);
-        auto iter_name_to_id = tb_name_to_id_.find(table_name);
-        tb_name_to_id_.erase(iter_name_to_id);
-        auto iter_id_to_meta = tb_id_to_meta_.find(table_id);
-        iter_id_to_meta->second->delete_table_data();
-        delete iter_id_to_meta->second;
-        tb_id_to_meta_.erase(iter_id_to_meta);
-    }
-
     TableMetaData* get_table_meta_data(table_id_t table_id);
 
     bool new_table(const string_t &table_name, const TableSchema &schema);
     bool delete_table(const string_t &table_name);
     bool delete_table(table_id_t table_id);
+    std::vector<string_t> get_all_table_name();
+    std::vector<table_id_t> get_all_table_id();
+    string_t to_string();
 
     // not support change table name so far
     bool change_table_name(table_id_t table_id, const string_t &new_name) { return true; }
 private:
+    // ATTENTION no lock protects it
+    void delete_table_data(table_id_t table_id, string_t table_name) {
+        auto iter_id_to_meta = tb_id_to_meta_.find(table_id);
+        if (iter_id_to_meta == tb_id_to_meta_.end()) {
+            TableMetaData *tmd = new TableMetaData(bpm_, table_name, table_id);
+            tb_id_to_meta_.insert(std::make_pair(table_id, tmd));
+            iter_id_to_meta = tb_id_to_meta_.find(table_id);
+        }
+        iter_id_to_meta->second->delete_table_data();
+        delete iter_id_to_meta->second;
+        tb_id_to_meta_.erase(iter_id_to_meta);
+        
+        auto iter_id_to_name = tb_id_to_name_.find(table_id);
+        tb_id_to_name_.erase(iter_id_to_name);
+
+        auto iter_name_to_id = tb_name_to_id_.find(table_name);
+        tb_name_to_id_.erase(iter_name_to_id);
+    }
+
     // ATTENTION no lock
     string_t get_table_name(offset_t tb_name_offset, int size);
     TableMetaData* create_table_meta_data(table_id_t table_id);
@@ -128,11 +138,13 @@ private:
     // TableMetaData's page id is equal to table id
     std::unordered_map<table_id_t, string_t> tb_id_to_name_;
     std::unordered_map<string_t, table_id_t> tb_name_to_id_;
-    std::unordered_map<table_id_t, TableMetaData*> tb_id_to_meta_;
     std::atomic<int> table_num_;
     ReaderWriterLatch latch_;
     Page *page_;
     char *data_;
+
+    // ATTENTION create-on-need, create TableMetaData only when we need it
+    std::unordered_map<table_id_t, TableMetaData*> tb_id_to_meta_;
 };
 
 } // namespace dawn

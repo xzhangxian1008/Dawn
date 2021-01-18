@@ -46,6 +46,7 @@ public:
     inline page_id_t get_page_id() const { return self_page_id_; }
     inline page_id_t get_catalog_table_page_id() const { return catalog_table_->get_page_id(); }
     inline CatalogTable* get_catalog_table() const { return catalog_table_; }
+    inline BufferPoolManager* get_buffer_pool_manager() const { return bpm_; }
 
     // TODO operation about catalog table
     
