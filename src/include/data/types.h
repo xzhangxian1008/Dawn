@@ -1,12 +1,11 @@
 #pragma once
 
-#include "data/values.h"
 #include "util/config.h"
 
 namespace dawn {
 class Type;
 
-extern Type *singleton[2];
+extern Type *singleton[4];
 
 // TODO VARCHAR
 enum class TypeId : enum_size_t { INVALID = -1, BOOLEAN, INTEGER, DECIMAL, CHAR };
@@ -34,6 +33,9 @@ public:
     virtual Value min(const Value &left, const Value &right) = 0;
     virtual Value max(const Value &left, const Value &right) = 0;
 
+    virtual void serialize_to(char *dst, char *src) = 0;
+    virtual void deserialize_from(char *dst, char *src) = 0;
+
     inline static Type* get_instance(TypeId type_id) { return singleton[(int)type_id]; }
     inline static size_t_ get_bool_size() { return sizeof(boolean_t); }
     inline static size_t_ get_integer_size() { return sizeof(integer_t); }
@@ -51,6 +53,8 @@ public:
                 return -1;
         }
     }
+
+
 };
 
 string_t type_to_string(TypeId type_id);

@@ -8,6 +8,9 @@
 
 namespace dawn {
 enum class TypeId;
+class Type;
+
+extern Type *singleton[4];
 
 class Value {
 public:
@@ -17,6 +20,7 @@ public:
     Value(double val);
     Value(char *val, int size);
     Value(const string_t &val);
+    Value(char *value, TypeId type_id);
     ~Value();
 
     void swap(Value &val) {
@@ -40,6 +44,9 @@ public:
     }
 
     int get_char_size() const { return str_size_; }
+
+    inline void serialize_to(char *storage) { singleton[(int)type_id_]->serialize_to(storage, (char*)(&value_)); }
+    inline void deserialize_from(char *src) { singleton[(int)type_id_]->deserialize_from((char*)(&value_), src); }
 
 private:
     union values {

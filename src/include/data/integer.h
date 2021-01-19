@@ -75,6 +75,9 @@ public:
         integer_t right_val = right.get_value<integer_t>();
         return std::max(left_val, right_val);
     }
+
+    void serialize_to(char *dst, char *src) override { memcpy(dst, src, sizeof(integer_t)); }
+    void deserialize_from(char *dst, char *src) override { memcpy(dst, src, sizeof(integer_t)); }
 };
 
 } // namespace dawn

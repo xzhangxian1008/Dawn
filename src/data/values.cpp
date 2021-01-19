@@ -2,10 +2,12 @@
 #include "data/types.h"
 #include "data/boolean.h"
 #include "data/integer.h"
+#include "data/decimal.h"
+#include "data/char.h"
 
 namespace dawn {
 
-Type *singleton[2] = { new Boolean(), new Integer()};
+Type *singleton[4] = { new Boolean(), new Integer(), new Decimal(), };
 
 Value::Value() : str_size_(-1) {
     type_id_ = TypeId::INVALID;
@@ -39,6 +41,10 @@ Value::Value(const string_t &val) : str_size_(val.length()) {
     for (int i = 0; i < str_size_; i++)
         value_.char_[i] = val[i];
     value_.char_[str_size_] = '\0';
+}
+
+Value::Value(char *value, TypeId type_id) : type_id_(type_id) {
+    deserialize_from(value);
 }
 
 Value::~Value() {

@@ -6,6 +6,7 @@
 #include "util/util.h"
 #include "util/config.h"
 #include "util/rwlatch.h"
+#include "table/rid.h"
 
 namespace dawn {
 
@@ -16,7 +17,9 @@ public:
     ~Table() = default;
     void delete_all_data();
     page_id_t get_first_table_page_id() const { return first_table_page_id_; }
+
     // TODO a lot of operation about tuple's crud
+
 private:
     BufferPoolManager *bpm_;
     const page_id_t first_table_page_id_;

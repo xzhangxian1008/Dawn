@@ -28,6 +28,9 @@ public:
     Value divide(const Value &left, const Value &right) override { return Value(); }
     Value min(const Value &left, const Value &right) override { return Value(); }
     Value max(const Value &left, const Value &right) override { return Value(); }
+
+    void serialize_to(char *dst, char *src) override { memcpy(dst, src, sizeof(boolean_t)); }
+    void deserialize_from(char *dst, char *src) override { memcpy(dst, src, sizeof(boolean_t)); }
 };
 
 } // namespace dawn

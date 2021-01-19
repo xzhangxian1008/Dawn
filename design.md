@@ -51,7 +51,17 @@
 - 表的所有操作和管理暂时都使用大锁，以后再做更精确的控制
 - 在目前的实现中一张表拥有的页面数量是单方面增长的，但如果大量数据被删除，占用那么多空间显然是非常浪费的，需要一种机制实现页面数量的缩减，难点是考虑并发情况下的缩减不会影响其它功能而且效率不会太低
 
-Catalog负责管理系统元数据，由它可以产生TableMetaData表，后者记录Table的元数据，Table才是真正对外提供表功能的类。
+DBManager：内含DiskManager、BufferPoolManager和Catalog指针，它是目前是整个数据库的总控制中心
+
+Catalog：负责管理系统元数据，目前其中包含CatalogTable，未来可能会包含更多类似CatalogTable这样的子Catalog
+
+CatalogTable：表管理目录，用于管理表的增删改查
+
+TableMetaData：存储表和的元数据
+
+Table：表，由它提供的接口对表实现元组的增删改查
+
+Tuple：元组，负责装载数据的。(暂时不能让元组中的某列置空)
 
 目前只实现下面四种类型，暂时没必要实现更多的类型
 - Bool

@@ -78,26 +78,29 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
 - 数据类型描述和数据实体
 
 任务：
+- 收集系统的所有零部件
+  - 数据库管理器(DBManager)
 - 记录系统运行时所需的信息
-  - 系统目录(Catalog)
-    - (TODO)表元(TableMetaData)对应的page id(有限数量表即可)
-    - (TODO)负责表的增删查改
+  - 总目录(Catalog)
+    - 表系统目录(CatalogTable)
+      - 表元(TableMetaData)对应的page id(有限数量表即可)
+      - 负责表的增删查改
 - 表与表相关元数据的设计
-  - (TODO)表元(TableMetaData)
+  - 表元(TableMetaData)
     - 某张表对应的索引头页(index header)page id
     - 表第一张页的page id
     - 视图
   - (TODO)表管理(Table)
   - (TODO)表页(TablePage)
-  - (TODO)表视图(TableSchema)
+  - 表视图(TableSchema)
   - (TODO)元组(Tuple)
-  - (TODO)列(Column)
-  - (TODO)定位(RID)
+  - 列(Column)
+  - 定位(RID)
 - Type抽象类(目前只实现这四种类型，暂时没必要实现更多的类型)
   - Bool
   - Integer
-  - (TODO)Decimal
-  - (TODO)Char
+  - Decimal
+  - Char
   - (TODO)Varchar (这个有点复杂，暂时不做)
 - Value类
 
@@ -122,7 +125,7 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
   - 元数据文件不存在的初始化
 - 普通页面管理
   - 读、写、分配和释放页面
-  - *并发分配和释放页面 
+  - (TODO)并发分配和释放页面 
 
 ## 缓冲池测试
 
@@ -153,4 +156,16 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
 
 ## 数据数据与管理测试
 
-- 数据类型基本功能正常运作
+- 系统目录测试
+  - 实现系统目录的基本创建和保存
+
+- 表系统目录测试
+  - 实现表的创建和删除，并且保证操作的持久化
+
+- 数据与数据类型
+  - (TODO)Tuple的基本功能
+  - (TODO Decimal和Char)基本运算
+  - (TODO)序列化和反序列化
+
+- (TODO)系统目录并发测试
+- (TODO)表系统目录并发测试

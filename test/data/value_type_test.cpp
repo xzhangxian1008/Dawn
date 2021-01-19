@@ -5,6 +5,7 @@
 
 namespace dawn {
 
+// TODO test serialize and deserialize function
 TEST(ValueTest, BasicTest) {
     {
         // test BOOLEAN
@@ -49,6 +50,10 @@ TEST(ValueTest, BasicTest) {
 
         val.load(MAX(INTEGER_T, integer_1, integer_2));
         EXPECT_EQ(Value(v2).get_value<integer_t>(), val.get_value<integer_t>());
+    }
+
+    {
+        // TODO test Decimal
     }
 }
 
