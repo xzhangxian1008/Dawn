@@ -7,23 +7,23 @@
 
 namespace dawn {
 
-Type *singleton[4] = { new Boolean(), new Integer(), new Decimal(), };
+Type *singleton[4] = { new Boolean(), new Integer(), new Decimal(), new Char()};
 
 Value::Value() : str_size_(-1) {
     type_id_ = TypeId::INVALID;
 }
     
-Value::Value(bool val) : str_size_(-1) {
+Value::Value(boolean_t val) : str_size_(-1) {
     type_id_ = TypeId::BOOLEAN;
     value_.boolean = val;
 }
 
-Value::Value(__INT32_TYPE__ val) : str_size_(-1) {
+Value::Value(integer_t val) : str_size_(-1) {
     type_id_ = TypeId::INTEGER;
     value_.integer = val;
 }
 
-Value::Value(double val) : str_size_(-1) {
+Value::Value(decimal_t val) : str_size_(-1) {
     type_id_ = TypeId::DECIMAL;
     value_.decimal = val;
 }
@@ -49,7 +49,7 @@ Value::Value(char *value, TypeId type_id) : type_id_(type_id) {
 
 Value::~Value() {
     if (type_id_ == TypeId::CHAR)
-        delete value_.char_;
+        delete[] value_.char_;
 }
 
 } // namespace dawn

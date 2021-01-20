@@ -100,7 +100,7 @@ std::vector<TypeId> tb4_col_types{TypeId::INTEGER, TypeId::CHAR, TypeId::BOOLEAN
 std::vector<string_t> tb4_col_names{"tb4_col1", "tb4_col2", "tb4_col3", "tb4_col4", "tb4_col5"};
 size_t_ tb4_char0_sz = 20;
 size_t_ tb4_char1_sz = 10;
-std::vector<size_t_> tb4_char_size{20, 10};
+std::vector<size_t_> tb4_char_size{tb4_char0_sz, tb4_char1_sz};
 size_t_ tb4_tuple_size = Type::get_integer_size() + tb4_char0_sz + Type::get_bool_size() + tb4_char1_sz + Type::get_decimal_size();
 
 /**

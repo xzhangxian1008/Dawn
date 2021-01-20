@@ -5,6 +5,7 @@
 
 #include "data/types.h"
 #include "util/config.h"
+#include "util/util.h"
 
 namespace dawn {
 enum class TypeId;
@@ -15,13 +16,91 @@ extern Type *singleton[4];
 class Value {
 public:
     Value();
-    Value(bool val);
-    Value(__INT32_TYPE__ val);
-    Value(double val);
+    Value(boolean_t val);
+    Value(integer_t val);
+    Value(decimal_t val);
     Value(char *val, int size);
     Value(const string_t &val);
     Value(char *value, TypeId type_id);
     ~Value();
+
+    // deep copy
+    Value(const Value &value) {
+        this->type_id_ = value.type_id_;
+        this->str_size_ = value.str_size_;
+        switch (value.type_id_) {
+            case TypeId::INTEGER:
+                this->value_.integer = value.value_.integer;
+                break;
+            case TypeId::BOOLEAN:
+                this->value_.boolean = value.value_.boolean;
+                break;
+            case TypeId::DECIMAL:
+                this->value_.decimal = value.value_.decimal;
+                break;
+            case TypeId::CHAR: {
+                this->value_.char_ = new char[str_size_+1];
+                memcpy(this->value_.char_, value.value_.char_, str_size_ + 1);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    // deep copy
+    Value& operator=(const Value &value) {
+        this->type_id_ = value.type_id_;
+        this->str_size_ = value.str_size_;
+        switch (value.type_id_) {
+            case TypeId::INTEGER:
+                this->value_.integer = value.value_.integer;
+                break;
+            case TypeId::BOOLEAN:
+                this->value_.boolean = value.value_.boolean;
+                break;
+            case TypeId::DECIMAL:
+                this->value_.decimal = value.value_.decimal;
+                break;
+            case TypeId::CHAR: {
+                this->value_.char_ = new char[str_size_+1];
+                memcpy(this->value_.char_, value.value_.char_, str_size_ + 1);
+                break;
+            }
+            default:
+                break;
+        }
+        return *this;
+    }
+
+    bool operator==(const Value &value) {
+        if ((this->type_id_ != value.type_id_) || (this->str_size_ != value.str_size_))
+            return false;
+        
+        bool ok = true;
+        switch (value.type_id_) {
+            case TypeId::INTEGER:
+                if (this->value_.integer != value.value_.integer)
+                    ok = false;
+                break;
+            case TypeId::BOOLEAN:
+                if (this->value_.boolean != value.value_.boolean)
+                    ok = false;
+                break;
+            case TypeId::DECIMAL:
+                if (this->value_.decimal != value.value_.decimal)
+                    ok = false;
+                break;
+            case TypeId::CHAR:
+                if (string_t(this->value_.char_) != string_t(value.value_.char_))
+                    return false;
+                break;
+            default:
+                ok = false;
+                break;
+        }
+        return ok;
+    }
 
     void swap(Value &val) {
         std::swap(val.type_id_, type_id_);
@@ -45,15 +124,46 @@ public:
 
     int get_char_size() const { return str_size_; }
 
-    inline void serialize_to(char *storage) { singleton[(int)type_id_]->serialize_to(storage, (char*)(&value_)); }
-    inline void deserialize_from(char *src) { singleton[(int)type_id_]->deserialize_from((char*)(&value_), src); }
+    // string should end with '\0'
+    inline void serialize_to(char *storage) {
+        if (type_id_ == TypeId::CHAR) {
+            singleton[(int)type_id_]->serialize_to(storage, value_.char_);
+            return;
+        }
+        singleton[(int)type_id_]->serialize_to(storage, (char*)(&value_));
+    }
 
+    inline void deserialize_from(char *src) {
+        if (type_id_ == TypeId::CHAR) {
+            singleton[(int)type_id_]->deserialize_from(value_.char_, src);
+            return;
+        }
+        singleton[(int)type_id_]->deserialize_from((char*)(&value_), src);
+    }
+
+    string_t get_value_string() {
+        switch (type_id_) {
+            case TypeId::BOOLEAN:
+                if (value_.boolean) {
+                    return "true";
+                }
+                return "false";
+            case TypeId::INTEGER:
+                return std::to_string(value_.integer);
+            case TypeId::DECIMAL:
+                return std::to_string(value_.decimal);
+            case TypeId::CHAR:
+                return value_.char_;
+            default:
+                return string_t("INVALID VALUE");
+        }
+    }
 private:
     union values {
         boolean_t boolean;
         integer_t integer;
         decimal_t decimal;
-        char *char_;
+        char *char_; // string
     };
     
     values value_;

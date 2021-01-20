@@ -96,7 +96,7 @@ private:
     string_t column_name_;
     offset_t offset_; // offset in the tuple
     size_t_ fixed_length_; // data length of the column
-    size_t_ char_length_; // do not contain the '\0', and the tupple also not contains it
+    size_t_ char_length_; // do not contain the '\0', and tupple also not contains it
 };
 
 } // namespace dawn

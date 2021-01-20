@@ -18,8 +18,8 @@ public:
     Value divide(const Value &left, const Value &right) override { return Value(); }
     Value min(const Value &left, const Value &right) override { return Value(); }
     Value max(const Value &left, const Value &right) override { return Value(); }
-    void serialize_to(char *dst, char *src) override { memcpy(dst, src, strlen(src)); }
-    void deserialize_from(char *dst, char *src) override {memcpy(dst, src, strlen(src)); }
+    void serialize_to(char *dst, char *src) override { memcpy(dst, src, strlen(src)+1); }
+    void deserialize_from(char *dst, char *src) override {memcpy(dst, src, strlen(src)+1); }
 };
 
 } // namespace dawn
