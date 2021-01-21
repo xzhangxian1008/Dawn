@@ -159,7 +159,7 @@ bool CatalogTable::delete_table(table_id_t table_id) {
 
             // do move operation
             memcpy(data_ + table_offset - TABLE_RECORD_SZ, data_ + table_offset, TABLE_RECORD_SZ);
-            memcpy(data_ + name_offset + deleted_name_size + 1, data_ + name_offset, name_size + 1);
+            memmove(data_ + name_offset + deleted_name_size + 1, data_ + name_offset, name_size + 1);
 
             // update the table name's position
             *reinterpret_cast<offset_t*>(data_ + table_offset - TABLE_RECORD_SZ) += deleted_name_size + 1;
