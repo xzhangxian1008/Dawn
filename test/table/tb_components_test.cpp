@@ -42,9 +42,9 @@ TEST(TbComponentTest, BasicTest) {
 
         // prepare for Value
         integer_t v0 = 2333;
-        char v1[6] = "24680";
+        char v1[6] = "apple";
         boolean_t v2 = true;
-        char v3[11] = "1234567890";
+        char v3[11] = "monkey_key";
         decimal_t v4 = 3.1415926;
 
         std::vector<Value> values;
@@ -69,9 +69,40 @@ TEST(TbComponentTest, BasicTest) {
         EXPECT_EQ(table_schema->get_tuple_size(), tuple.get_size());
         EXPECT_TRUE(rid == tuple.get_rid());
 
+        // ensure the tuple to contain the correct values
         for (size_t i = 0; i < values.size(); i++)
             EXPECT_TRUE(values[i] == tuple.get_value(*table_schema, i));
-        
+
+        // change tuple's rid and ensure the change works
+        page_id = 2333;
+        slot_num = 777;
+        RID another_rid(page_id, slot_num);
+        tuple.set_rid(another_rid);
+        EXPECT_TRUE(another_rid == tuple.get_rid());
+
+        // change tuple's value and ensure the change works
+        v0 = 66666;
+        fill_char_array(string_t("Make"), v1);
+        v2 = false;
+        fill_char_array(string_t("for_win!"), v3);
+        v4 = 2.718281;
+        values.clear();
+        values.push_back(Value(v0));
+        values.push_back(Value(v1, tb_char0_sz));
+        values.push_back(Value(v2));
+        values.push_back(Value(v3, tb_char1_sz));
+        values.push_back(Value(v4));
+
+        for (size_t i = 0; i < values.size(); i++)
+            tuple.set_value(*table_schema, &(values[i]), i);
+
+        // check the change works
+        for (size_t i = 0; i < values.size(); i++) {
+            if (values[i] == tuple.get_value(*table_schema, i))
+                continue;
+            EXPECT_TRUE(values[i] == tuple.get_value(*table_schema, i));
+        }
+            
         delete table_schema;
     }
 }

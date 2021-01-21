@@ -8,19 +8,20 @@ Value Tuple::get_value(const TableSchema &schema, int idx) {
     if (type_id == TypeId::CHAR) {
         size_t_ str_size = col.get_data_size();
 
-        // we have to create a temporary string, because the string stored on the disk and Tupe doesn't end with '\0'
+        // we have to create a temporary string, because the Tuple and string stored on the disk doesn't end with '\0'
         char tmp[str_size+1];
         memcpy(tmp, data_ + col.get_offset(), str_size);
-        return Value(tmp, type_id);
+        tmp[str_size] = '\0';
+        return Value(tmp, type_id, str_size);
     }
     return Value(data_ + col.get_offset(), type_id);
 }
 
+// ATTENTION length of string is not checked here
 void Tuple::set_value(const TableSchema &schema, Value *value, int idx) {
     Column col = schema.get_column(idx);
     if (col.get_type_id() == TypeId::CHAR) {
         size_t_ str_size = col.get_data_size();
-
         // we have to create a temporary string, because the string stored on the disk and Tupe doesn't end with '\0'
         char tmp[str_size+1];
         value->serialize_to(tmp);

@@ -21,62 +21,47 @@ public:
     Value(decimal_t val);
     Value(char *val, int size);
     Value(const string_t &val);
-    Value(char *value, TypeId type_id);
+    Value(char *value, TypeId type_id, size_t_ str_size = -1);
     ~Value();
 
     // deep copy
     Value(const Value &value) {
         this->type_id_ = value.type_id_;
         this->str_size_ = value.str_size_;
-        switch (value.type_id_) {
-            case TypeId::INTEGER:
-                this->value_.integer = value.value_.integer;
-                break;
-            case TypeId::BOOLEAN:
-                this->value_.boolean = value.value_.boolean;
-                break;
-            case TypeId::DECIMAL:
-                this->value_.decimal = value.value_.decimal;
-                break;
-            case TypeId::CHAR: {
-                this->value_.char_ = new char[str_size_+1];
-                memcpy(this->value_.char_, value.value_.char_, str_size_ + 1);
-                break;
-            }
-            default:
-                break;
+        
+        if (value.type_id_ != TypeId::CHAR) {
+            this->value_ = value.value_;
+        } else {
+            this->value_.char_ = new char[str_size_+1];
+            memset(this->value_.char_, 0, str_size_ + 1);
+            memcpy(this->value_.char_, value.value_.char_, str_size_ + 1);
         }
     }
 
     // deep copy
     Value& operator=(const Value &value) {
+        if (this->type_id_ == TypeId::CHAR) {
+            delete[] value_.char_;
+        }
+
         this->type_id_ = value.type_id_;
         this->str_size_ = value.str_size_;
-        switch (value.type_id_) {
-            case TypeId::INTEGER:
-                this->value_.integer = value.value_.integer;
-                break;
-            case TypeId::BOOLEAN:
-                this->value_.boolean = value.value_.boolean;
-                break;
-            case TypeId::DECIMAL:
-                this->value_.decimal = value.value_.decimal;
-                break;
-            case TypeId::CHAR: {
-                this->value_.char_ = new char[str_size_+1];
-                memcpy(this->value_.char_, value.value_.char_, str_size_ + 1);
-                break;
-            }
-            default:
-                break;
+
+        if (value.type_id_ != TypeId::CHAR) {
+            this->value_ = value.value_;
+        } else {
+            this->value_.char_ = new char[str_size_+1];
+            memset(this->value_.char_, 0, str_size_ + 1);
+            memcpy(this->value_.char_, value.value_.char_, str_size_ + 1);
         }
+
         return *this;
     }
 
     bool operator==(const Value &value) {
-        if ((this->type_id_ != value.type_id_) || (this->str_size_ != value.str_size_))
+        if (this->type_id_ != value.type_id_)
             return false;
-        
+            
         bool ok = true;
         switch (value.type_id_) {
             case TypeId::INTEGER:
@@ -92,8 +77,8 @@ public:
                     ok = false;
                 break;
             case TypeId::CHAR:
-                if (string_t(this->value_.char_) != string_t(value.value_.char_))
-                    return false;
+                if (string_t(this->value_.char_) != string_t(value.value_.char_)) 
+                    ok = false;
                 break;
             default:
                 ok = false;
@@ -110,6 +95,8 @@ public:
 
     // similar to shallow copy
     void load(const Value &val) {
+        if (type_id_ == TypeId::CHAR)
+            delete[] value_.char_;
         type_id_ = val.type_id_;
         value_ = val.value_;
         str_size_ = val.str_size_;
@@ -168,7 +155,7 @@ private:
     
     values value_;
     TypeId type_id_;
-    int str_size_;
+    int str_size_ = -1;
 };
 
 } // namespace dawn

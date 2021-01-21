@@ -2,8 +2,6 @@
 #include <iostream>
 #include <fstream>
 
-// #include "util/util.h"
-
 namespace dawn {
 
 /**
@@ -55,6 +53,15 @@ long get_file_sz(std::fstream &io) {
     }
     io.seekp(0, std::ios::end);
     return io.tellp() - beg;
+}
+
+/**
+ * str's size should be controlled in case of the out of the range of char_array
+ */
+void fill_char_array(const std::string &str, char* char_array) {
+    for (size_t i = 0; i < str.size(); i++)
+        char_array[i] = str[i];
+    char_array[str.size()] = '\0';
 }
 
 } // namespace dawn

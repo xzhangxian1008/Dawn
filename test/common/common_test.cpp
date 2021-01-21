@@ -26,20 +26,11 @@ union un {
     char *char_;
 };
 
-string_t f() {
-    un v;
-    char str[10];
-    str[0] = '1';
-    str[1] = '2';
-    str[2] = '3';
-    str[3] = '\0';
-    v.char_ = str;
-    return v.char_;
-}
-
 TEST(CommonTest, CommonTEST) {
-    string_t str = f();
-    PRINT(str);
+    un u;
+    u.integer = 123;
+    un u1;
+    u1 = u;
 }
 
 } // namespace dawn

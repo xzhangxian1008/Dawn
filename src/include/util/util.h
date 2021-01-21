@@ -46,5 +46,6 @@ char* string2char(const std::string &str);
 bool check_inexistence(const std::string &file_name);
 bool open_file(const std::string &file_name, std::fstream &io, std::ios_base::openmode om);
 long get_file_sz(std::fstream &io);
+void fill_char_array(const std::string &str, char* char_array);
 
 } // namespace dawn
