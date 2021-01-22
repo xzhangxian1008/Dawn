@@ -19,18 +19,23 @@ using std::ends;
 
 namespace dawn {
 
-union un {
-    boolean_t boolean;
-    integer_t integer;
-    decimal_t decimal;
-    char *char_;
+class Base {
+public:
+    Base() = default;
+    virtual ~Base() {};
+    virtual void func() = 0;
+};
+
+class Derived : public Base {
+public:
+    ~Derived() override {}
+    void func() override {}
+    int x;
 };
 
 TEST(CommonTest, CommonTEST) {
-    un u;
-    u.integer = 123;
-    un u1;
-    u1 = u;
+    Base *b = new Derived;
+    delete b;
 }
 
 } // namespace dawn

@@ -6,7 +6,7 @@ namespace dawn {
 
 class LinkHashPage : public Page {
 public:
-
+    ~LinkHashPage() override {}
 private:
 
 };

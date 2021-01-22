@@ -31,6 +31,8 @@ namespace dawn {
  */
 class TablePage : public Page {
 public:
+    ~TablePage() override {}
+    
     void init(const page_id_t prev_pgid, const page_id_t next_pgid);
 
     page_id_t get_next_page_id() {
@@ -45,20 +47,12 @@ public:
         return *reinterpret_cast<page_id_t*>(get_data() + PREV_PGID_OFFSET);
     }
 
-    page_id_t get_next_page_id() {
-        return *reinterpret_cast<page_id_t*>(get_data() + NEXT_PGID_OFFSET);
-    }
-
     void set_prev_page_id(page_id_t page_id) {
         memcpy(get_data() + PREV_PGID_OFFSET, &page_id, PGID_T_SIZE);
     }
 
     void set_next_page_id(page_id_t page_id) {
         memcpy(get_data() + NEXT_PGID_OFFSET, &page_id, PGID_T_SIZE);
-    }
-
-    size_t_ get_tuple_count() {
-        return *reinterpret_cast<size_t_*>(get_data() + TUPLE_CNT_OFFSET);
     }
 
     // TODO find, delete, update, insert tuple
