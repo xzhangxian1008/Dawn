@@ -35,12 +35,15 @@ public:
     inline RID get_rid() const { return rid_; }
     inline void set_rid(const RID &rid) { rid_ = rid; }
 
-    Value get_value(const TableSchema &schema, int idx);
+    Value get_value(const TableSchema &schema, int idx) const;
     void set_value(const TableSchema &schema, Value *value, int idx);
 
     inline bool is_allocated() const { return allocated_; }
-
     string_t to_string(const TableSchema &schema);
+
+    inline void serialize_to(char *dst) const {
+        memcpy(dst, data_, size_);
+    }
 
 private:
     void init(std::vector<Value> *values, const TableSchema &schema) {

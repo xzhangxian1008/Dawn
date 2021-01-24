@@ -2,7 +2,7 @@
 
 namespace dawn {
 
-Value Tuple::get_value(const TableSchema &schema, int idx) {
+Value Tuple::get_value(const TableSchema &schema, int idx) const {
     Column col = schema.get_column(idx);
     TypeId type_id = col.get_type_id();
     if (type_id == TypeId::CHAR) {
