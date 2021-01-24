@@ -13,6 +13,7 @@ namespace dawn {
  * ATTENTION no lock!
  */
 class Tuple {
+friend class TablePage;
 public:
     Tuple() = default;
     Tuple(std::vector<Value> *values, const TableSchema &schema) {
@@ -43,6 +44,10 @@ public:
 
     inline void serialize_to(char *dst) const {
         memcpy(dst, data_, size_);
+    }
+
+    inline void deserialize_from(char *src) {
+        memcpy(data_, src, size_);
     }
 
 private:
