@@ -7,9 +7,17 @@
 #include "util/config.h"
 #include "util/rwlatch.h"
 #include "table/rid.h"
+#include "table/tuple.h"
+#include "table/rid.h"
 
 namespace dawn {
 
+/**
+ * ATTENTION problem
+ * delete、update and get tuples could be done with the RID parameter directly.
+ * Is it safe? How can I ensure they are legal RID and won't do some strange operation?
+ * Do we need to maintain another data structure to ensure the RID are legal?
+ */
 class Table {
 public:
     // if from_scratch == true, it means that the Table should initialize the page in the disk
@@ -18,8 +26,11 @@ public:
     void delete_all_data();
     page_id_t get_first_table_page_id() const { return first_table_page_id_; }
 
-    // TODO a lot of operation about tuple's crud
-
+    bool insert_tuple(const Tuple &tuple, RID *rid);
+    bool mark_delete(const RID &rid);
+    void apply_delete(const RID &rid);
+    void rollback_delete(const RID &rid);
+    bool get_tuple(Tuple *tuple, const RID &rid);
 private:
     BufferPoolManager *bpm_;
     const page_id_t first_table_page_id_;

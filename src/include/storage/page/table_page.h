@@ -38,6 +38,8 @@ namespace dawn {
 class TablePage : public Page {
 public:
     ~TablePage() {}
+
+    DISALLOW_COPY_AND_MOVE(TablePage);
     
     void init(const page_id_t prev_pgid, const page_id_t next_pgid);
 
@@ -85,7 +87,9 @@ public:
     
     bool get_next_tuple_rid(const RID &cur_rid, RID *next_rid) const;
     
-    inline size_t_ get_tuple_record_sz() const { return TUPLE_RECORD_SZ; }
+    inline static size_t_ get_tuple_record_sz() { return TUPLE_RECORD_SZ; }
+
+    inline static size_t_ get_tp_load_data_space() { return LOAD_DATA_SPACE; }
 private:
     static const offset_t PREV_PGID_OFFSET = COM_PG_HEADER_SZ;
     static const offset_t NEXT_PGID_OFFSET = PREV_PGID_OFFSET + PGID_T_SIZE;
@@ -94,6 +98,9 @@ private:
     static const offset_t FIRST_TUPLE_OFFSET = TUPLE_CNT_OFFSET + SIZE_T_SIZE;
     static const offset_t INVALID_FREE_SPACE_PTR = PAGE_SIZE;
     static const size_t_ TUPLE_RECORD_SZ = SIZE_T_SIZE + OFFSET_T_SIZE;
+
+    // describe how large space could be used to store tuple records and tuples' data in a TablePage
+    static const size_t_ LOAD_DATA_SPACE = PAGE_SIZE - COM_PG_HEADER_SZ - 2 * PGID_T_SIZE - OFFSET_T_SIZE - SIZE_T_SIZE - TABLE_PAGE_RESERVED;
 
     // tuple is marked as deleted if top bit of the tuple size is set to 1
     static const uint32_t DELETE_MASK = (1U << (8 * sizeof(uint32_t) - 1));

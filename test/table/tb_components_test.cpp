@@ -260,8 +260,7 @@ TEST(TbComponentTest, BasicTest) {
         /** check many many tuples' operation */
 
         const size_t_ max_inserted_num = 
-            (PAGE_SIZE - COM_PG_HEADER_SZ - 2 * PGID_T_SIZE - OFFSET_T_SIZE - SIZE_T_SIZE - TABLE_PAGE_RESERVED) / 
-            (table_schema->get_tuple_size() + table_page->get_tuple_record_sz());
+            TablePage::get_tp_load_data_space() / (table_schema->get_tuple_size() + table_page->get_tuple_record_sz());
 
         {
             /** insert max_inserted_num and check */

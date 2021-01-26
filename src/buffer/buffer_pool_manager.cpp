@@ -87,6 +87,10 @@ bool BufferPoolManager::flush_page(const page_id_t &page_id) {
     return true;
 }
 
+void BufferPoolManager::flush_all() {
+    
+}
+
 void BufferPoolManager::evict_page(const page_id_t &page_id, const frame_id_t &frame_id) {
     pages_[frame_id].w_lock();
     latch_.w_lock();

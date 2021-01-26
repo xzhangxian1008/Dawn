@@ -29,6 +29,7 @@ public:
     bool delete_page(const page_id_t &page_id);
     void unpin_page(const page_id_t &page_id, const bool is_dirty);
     bool flush_page(const page_id_t &page_id);
+    void flush_all();
 
 protected:
     // ATTENTION no lock protects it

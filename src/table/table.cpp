@@ -35,4 +35,67 @@ void Table::delete_all_data() {
         bpm_->delete_page(page_id);
 }
 
+bool Table::mark_delete(const RID &rid) {
+    page_id_t page_id = rid.get_page_id();
+    if (page_id < 0)
+        return false;
+    
+    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    table_page->w_lock();
+    bool ok = table_page->mark_delete(rid);
+    table_page->w_unlock();
+    bpm_->unpin_page(page_id, true);
+    return ok;
+}
+
+void Table::apply_delete(const RID &rid) {
+    page_id_t page_id = rid.get_page_id();
+    if (page_id < 0)
+        return;
+    
+    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    table_page->w_lock();
+    table_page->apply_delete(rid);
+    table_page->w_unlock();
+    bpm_->unpin_page(page_id, true);
+}
+
+void Table::rollback_delete(const RID &rid) {
+    page_id_t page_id = rid.get_page_id();
+    if (page_id < 0)
+        return;
+    
+    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    table_page->w_lock();
+    table_page->rollback_delete(rid);
+    table_page->w_unlock();
+    bpm_->unpin_page(page_id, true);
+}
+
+bool Table::get_tuple(Tuple *tuple, const RID &rid) {
+    page_id_t page_id = rid.get_page_id();
+    if (page_id < 0)
+        return;
+    
+    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    table_page->w_lock();
+    bool ok = table_page->get_tuple(tuple, rid);
+    table_page->w_unlock();
+    bpm_->unpin_page(page_id, false);
+}
+
+bool Table::insert_tuple(const Tuple &tuple, RID *rid) {
+    page_id_t inserted_page_id = first_table_page_id_;
+    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(inserted_page_id));
+
+    // TODO there may be no more space in disk, handle this
+    while (table_page->insert_tuple(tuple, rid)) {
+        page_id_t next_page_id = table_page->get_next_page_id();
+        if (next_page_id == INVALID_PAGE_ID) {
+            
+        }
+    }
+    bpm_->unpin_page(inserted_page_id, true);
+}
+
 } // namespace dawn

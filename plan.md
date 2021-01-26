@@ -83,18 +83,13 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
   - 数据库管理器(DBManager)
 - 记录系统运行时所需的信息
   - 总目录(Catalog)
-    - 表系统目录(CatalogTable)
-      - 表元(TableMetaData)对应的page id(有限数量表即可)
-      - 负责表的增删查改
+  - 表系统目录(CatalogTable)
 - 表与表相关元数据的设计
   - 表元(TableMetaData)
-    - 某张表对应的索引头页(index header)page id
-    - 表第一张页的page id
-    - 视图
   - (TODO)表管理(Table)
-  - (TODO)表页(TablePage)
+  - 表页(TablePage)
   - 表视图(TableSchema)
-  - (TODO)元组(Tuple)
+  - 元组(Tuple)
   - 列(Column)
   - 定位(RID)
 - Type抽象类(目前只实现这四种类型，暂时没必要实现更多的类型)
@@ -169,8 +164,11 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
 - 表(Table)测试
   - (TODO)对表中元组的增删改查
 
+- 表页(TablePage)测试
+  - 对表页中元组增删改查
+
 - 数据与数据类型(Tuple, Value, Type)
-  - (TODO)Tuple的基本功能
+  - Tuple的基本功能
   - (TODO Decimal和Char)基本运算
   - (TODO)序列化和反序列化
 
