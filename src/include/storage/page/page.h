@@ -10,6 +10,8 @@
 namespace dawn {
 
 /**
+ * WARNING DO NOT ADD VIRTUAL FUNCTION IN THIS CLASS
+ * 
  * common page header layout(64 bytes):
  * -------------------------------------------------------------
  * | Status (1) | LSN (4) | PageId (4) |      Reserved (55)    |
@@ -43,7 +45,7 @@ public:
         reset_mem();
     }
 
-    virtual ~Page() {
+    ~Page() {
         delete[] data_;
     }
 

@@ -56,4 +56,36 @@ string_t Tuple::to_string(const TableSchema &schema) {
     return os.str();
 }
 
+void Tuple::init(std::vector<Value> *values, const TableSchema &schema) {
+    size_ = schema.get_tuple_size();
+    allocated_ = true;
+    data_ = new char[size_];
+
+    size_t_ col_num = schema.get_column_num();
+    for (size_t_ i = 0; i < col_num; i++) {
+        set_value(schema, &((*values)[i]), i);
+    }
+}
+
+bool Tuple::operator==(const Tuple &tuple) {
+    if (allocated_ != tuple.allocated_) {
+        return false;
+    }
+
+    if (size_ != tuple.size_) {
+        return false;
+    }
+
+    if (allocated_) {
+        for (size_t_ i = 0; i < size_; i++)
+            if (data_[i] != tuple.data_[i]) {
+                return false;
+            }
+    }
+
+    if (rid_ == tuple.rid_)
+        return true;
+    return false;
+}
+
 } // namespace dawn

@@ -10,6 +10,7 @@ void TablePage::init(const page_id_t prev_pgid, const page_id_t next_pgid) {
     set_free_space_pointer(INVALID_FREE_SPACE_PTR);
 }
 
+// TODO slow, may be we can use bitmap?
 offset_t TablePage::get_empty_slot() {
     size_t_ tuple_count = get_tuple_count();
     for (size_t_ slot_num = 0; slot_num < tuple_count; slot_num++) {
@@ -31,7 +32,7 @@ bool TablePage::insert_tuple(const Tuple &tuple, RID *rid) {
     offset_t inserted_slot_num = get_empty_slot();
     size_t_ free_space = get_free_space();
     size_t_ tuple_size = tuple.get_size();
-    if (free_space < tuple_size + TUPLE_RECORD_SZ) {
+    if (free_space < tuple_size) {
         return false;
     }
     
@@ -42,6 +43,9 @@ bool TablePage::insert_tuple(const Tuple &tuple, RID *rid) {
     tuple.serialize_to(static_cast<char*>(get_data() + free_space_pointer));
     set_free_space_pointer(free_space_pointer);
 
+    // update RID
+    rid->set(get_page_id(), inserted_slot_num);
+
     // insert tuple's record
     insert_tuple_record(inserted_slot_num, free_space_pointer, tuple_size);
     return true;
@@ -49,7 +53,9 @@ bool TablePage::insert_tuple(const Tuple &tuple, RID *rid) {
 
 bool TablePage::mark_delete(const RID &rid) {
     offset_t slot_num = rid.get_slot_num();
-    if (slot_num >= get_tuple_count())
+    offset_t offset = get_tuple_offset(slot_num);
+    page_id_t page_id = get_page_id();
+    if (slot_num >= get_tuple_count() || offset == 0 || page_id != rid.get_page_id())
         return false;
 
     size_t_ tuple_size = get_tuple_size(slot_num);
@@ -59,7 +65,8 @@ bool TablePage::mark_delete(const RID &rid) {
 
 void TablePage::rollback_delete(const RID &rid) {
     offset_t slot_num = rid.get_slot_num();
-    if (slot_num >= get_tuple_count())
+    offset_t offset = get_tuple_offset(slot_num);
+    if (slot_num >= get_tuple_count() || offset == 0)
         return;
     
     size_t_ tuple_size = get_tuple_size(slot_num);
@@ -68,20 +75,21 @@ void TablePage::rollback_delete(const RID &rid) {
 
 void TablePage::apply_delete(const RID &rid) {
     offset_t deleted_slot_num = rid.get_slot_num();
-    if (deleted_slot_num >= get_tuple_count())
+    offset_t deleted_tuple_offset = get_tuple_offset(deleted_slot_num);
+    size_t_ deleted_tuple_size = get_tuple_size(deleted_slot_num);
+    if ((deleted_slot_num >= get_tuple_count() || deleted_tuple_offset == 0) && is_deleted(deleted_tuple_size))
         return;
     
     offset_t free_space_pointer = get_free_space_pointer();
-    size_t_ deleted_tuple_size = unset_deleted_flag(get_tuple_size(deleted_slot_num));
-    offset_t deleted_tuple_offset = get_tuple_offset(deleted_slot_num);
-
+    deleted_tuple_size = unset_deleted_flag(get_tuple_size(deleted_slot_num));
+    
     // delete the tuple's record
     delete_tuple_record(deleted_slot_num);
 
     // move the tuple's data
     memmove(get_data() + free_space_pointer - deleted_tuple_size, 
         get_data() + free_space_pointer, 
-        deleted_tuple_size - free_space_pointer);
+        deleted_tuple_offset - free_space_pointer);
 
     // update tuples' record
     size_t_ tuple_count = get_tuple_count();
@@ -96,9 +104,11 @@ bool TablePage::update_tuple(const Tuple &new_tuple, const RID &rid) {
     offset_t slot_num = rid.get_slot_num();
     offset_t tuple_offset = get_tuple_offset(slot_num);
     size_t_ tuple_size = get_tuple_size(slot_num);
+    page_id_t page_id = rid.get_page_id();
 
     // check if it's legal
-    if (slot_num >= get_tuple_count() || tuple_offset == 0 || tuple_size != new_tuple.get_size())
+    if (slot_num >= get_tuple_count() || tuple_offset == 0 || 
+        tuple_size != new_tuple.get_size() || page_id != get_page_id())
         return false;
     
     new_tuple.serialize_to(get_data() + tuple_offset);

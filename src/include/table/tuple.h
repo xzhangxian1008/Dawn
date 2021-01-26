@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
    
 #include "util/util.h"
@@ -43,24 +45,21 @@ public:
     string_t to_string(const TableSchema &schema);
 
     inline void serialize_to(char *dst) const {
-        memcpy(dst, data_, size_);
+        if (allocated_) {
+            memcpy(dst, data_, size_);
+        }
     }
 
     inline void deserialize_from(char *src) {
-        memcpy(data_, src, size_);
-    }
-
-private:
-    void init(std::vector<Value> *values, const TableSchema &schema) {
-        size_ = schema.get_tuple_size();
-        allocated_ = true;
-        data_ = new char[size_];
-
-        size_t_ col_num = schema.get_column_num();
-        for (size_t_ i = 0; i < col_num; i++) {
-            set_value(schema, &((*values)[i]), i);
+        if (allocated_) {
+            memcpy(data_, src, size_);
         }
     }
+
+    bool operator==(const Tuple &tuple);
+
+private:
+    void init(std::vector<Value> *values, const TableSchema &schema);
 
     bool allocated_ = false;
     RID rid_;

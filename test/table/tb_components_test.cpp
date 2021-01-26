@@ -7,6 +7,7 @@
 #include "meta/catalog_table.h"
 #include "table/rid.h"
 #include "table/table_schema.h"
+#include "manager/db_manager.h"
 
 namespace dawn {
 
@@ -32,7 +33,8 @@ size_t_ tb_tuple_size = Type::get_integer_size() + tb_char0_sz + Type::get_bool_
 /**
  * Test List:
  *   1. test the basic functions of the Tuple object
- *   2. test the basic functions of ...
+ *   2. test the basic functions of the TablePage object
+ *          ATTENTION tuples inserted in the TablePage should be fixed and same size in test 2
  *   3. test the basic functions of ...
  *   4. test the basic functions of ...
  */
@@ -62,6 +64,7 @@ TEST(TbComponentTest, BasicTest) {
         // prepare for TableSchema
         TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
+        // create Tuple
         Tuple tuple(&values, *table_schema, rid);
 
         ASSERT_TRUE(tuple.is_allocated());
@@ -105,6 +108,246 @@ TEST(TbComponentTest, BasicTest) {
             
         delete table_schema;
     }
+
+    const char *meta = "test";
+    const char *mtdf = "test.mtd";
+    const char *dbf = "test.db";
+    const char *logf = "test.log";
+
+    {
+        // test 2
+
+        DBManager *db_manager = new DBManager(meta, true);
+        ASSERT_TRUE(db_manager->get_status());
+        
+        BufferPoolManager *bpm = db_manager->get_buffer_pool_manager();
+
+        // get TablePage
+        Page *page = bpm->new_page();
+        TablePage *table_page = reinterpret_cast<TablePage*>(page);
+        page_id_t page_id = table_page->get_page_id();
+        table_page->init(INVALID_PAGE_ID, INVALID_PAGE_ID);
+
+        //==------------------------------------------------------------------------==//
+        /** check the initial values, set and recheck */
+        EXPECT_EQ(INVALID_PAGE_ID, table_page->get_next_page_id());
+        EXPECT_EQ(INVALID_PAGE_ID, table_page->get_prev_page_id());
+
+        const page_id_t next_page_id = 99;
+        const page_id_t prev_page_id = 98;
+        table_page->set_next_page_id(next_page_id);
+        table_page->set_prev_page_id(prev_page_id);
+        EXPECT_EQ(next_page_id, table_page->get_next_page_id());
+        EXPECT_EQ(prev_page_id, table_page->get_prev_page_id());
+
+        //==------------------------------------------------------------------------==//
+        /** check single tuple's operation */
+        integer_t v0 = 2333;
+        char v1[6] = "apple";
+        boolean_t v2 = true;
+        char v3[11] = "monkey_key";
+        decimal_t v4 = 3.1415926;
+
+        std::vector<Value> values;
+
+
+        TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
+
+        RID inserted_pos;
+
+        {
+            /** insert and check */
+
+            values.push_back(Value(v0));
+            values.push_back(Value(v1, tb_char0_sz));
+            values.push_back(Value(v2));
+            values.push_back(Value(v3, tb_char1_sz));
+            values.push_back(Value(v4));
+
+            Tuple tuple(&values, *table_schema);
+            ASSERT_TRUE(tuple.is_allocated());
+            EXPECT_TRUE(table_page->insert_tuple(tuple, &inserted_pos));
+            tuple.set_rid(inserted_pos);
+
+            Tuple tuple_container;
+            EXPECT_TRUE(table_page->get_tuple(&tuple_container, inserted_pos));
+            EXPECT_TRUE(tuple == tuple_container);
+
+            bool ok = true;
+            for (size_t_ i = 0; i < table_schema->get_column_num(); i++) {
+                Value v1 = tuple.get_value(*table_schema, i);
+                Value v2 = tuple_container.get_value(*table_schema, i);
+                if (v1 == v2)
+                    continue;
+                ok = false;
+                break;
+            }
+            EXPECT_TRUE(ok);
+        }
+
+        {
+            /** update tuple and check */
+
+            v0 = 2333;
+            fill_char_array(string_t("Make"), v1);
+            v2 = true;
+            fill_char_array(string_t("for_win!"), v3);
+            v4 = 3.1415926;
+
+            values.clear();
+            values.push_back(Value(v0));
+            values.push_back(Value(v1, tb_char0_sz));
+            values.push_back(Value(v2));
+            values.push_back(Value(v3, tb_char1_sz));
+            values.push_back(Value(v4));
+
+            Tuple new_tuple(&values, *table_schema, inserted_pos);
+            Tuple tuple_container;
+            EXPECT_TRUE(table_page->update_tuple(new_tuple, inserted_pos));
+            EXPECT_TRUE(table_page->get_tuple(&tuple_container, inserted_pos));
+            EXPECT_TRUE(new_tuple == tuple_container);
+
+            bool ok = true;
+            for (size_t_ i = 0; i < table_schema->get_column_num(); i++) {
+                Value v1 = new_tuple.get_value(*table_schema, i);
+                Value v2 = tuple_container.get_value(*table_schema, i);
+                if (v1 == v2)
+                    continue;
+                ok = false;
+                break;
+            }
+            EXPECT_TRUE(ok);
+        }
+
+        {
+            /** invalid update and check */
+
+            RID rid(100, 100); // all invalid
+            Tuple tuple;
+            EXPECT_FALSE(table_page->update_tuple(tuple, rid));
+
+            rid.set(page_id, 100); // invalid slot_num
+            EXPECT_FALSE(table_page->update_tuple(tuple, rid));
+
+            rid.set(100, inserted_pos.get_slot_num()); // invalid page_id
+            EXPECT_FALSE(table_page->update_tuple(tuple, rid));
+        }
+
+        {
+            /** invalid deletion and check */
+
+            RID rid(100, 100); // all invalid
+            Tuple tuple;
+            EXPECT_FALSE(table_page->mark_delete(rid));
+
+            rid.set(page_id, 100); // invalid slot_num
+            EXPECT_FALSE(table_page->mark_delete(rid));
+
+            rid.set(100, inserted_pos.get_slot_num()); // invalid page_id
+            EXPECT_FALSE(table_page->mark_delete(rid));
+        }
+        
+        {
+            /** delete tuple and check */
+
+            EXPECT_TRUE(table_page->mark_delete(inserted_pos));
+            table_page->apply_delete(inserted_pos);
+
+            Tuple tuple_container;
+            EXPECT_FALSE(table_page->get_tuple(&tuple_container, inserted_pos));
+        }
+
+        //==------------------------------------------------------------------------==//
+        /** check many many tuples' operation */
+
+        size_t_ v11 = PAGE_SIZE - COM_PG_HEADER_SZ - 2 * PGID_T_SIZE - OFFSET_T_SIZE - SIZE_T_SIZE - TABLE_PAGE_RESERVED;
+        size_t_ v22 = table_schema->get_tuple_size() + table_page->get_tuple_record_sz();
+        const size_t_ max_inserted_num = 
+            (PAGE_SIZE - COM_PG_HEADER_SZ - 2 * PGID_T_SIZE - OFFSET_T_SIZE - SIZE_T_SIZE - TABLE_PAGE_RESERVED) / 
+            (table_schema->get_tuple_size() + table_page->get_tuple_record_sz());
+
+        {
+            /** insert max_inserted_num and check */
+
+            values.clear();
+            v0 = 0;
+            fill_char_array("apple", v1);
+            v2 = true;
+            fill_char_array("monkey_key", v3);
+            v4 = 3.1415926;
+
+            values.push_back(Value(v0));
+            values.push_back(Value(v1, tb_char0_sz));
+            values.push_back(Value(v2));
+            values.push_back(Value(v3, tb_char1_sz));
+            values.push_back(Value(v4));
+
+            bool ok = true;
+            for (size_t_ i = 0; i < max_inserted_num; i++) {
+                values[0] = Value(i);
+                Tuple tuple(&values, *table_schema);
+
+                if (!table_page->insert_tuple(tuple, &inserted_pos)) {
+                    PRINT("max_inserted_num:", max_inserted_num);
+                    PRINT("i:", i);
+                    ok = false;
+                    break;
+                }
+            }
+            EXPECT_TRUE(ok);
+
+            {
+                // should insert fail
+                values[0] = Value(max_inserted_num);
+                Tuple tuple(&values, *table_schema);
+                EXPECT_FALSE(table_page->insert_tuple(tuple, &inserted_pos));
+            }
+
+            // check tuples have been inserted successfully
+            ok = true;
+            for (size_t_ i = 0; i < max_inserted_num; i++) {
+                values[0] = Value(i);
+                Tuple tuple(&values, *table_schema);
+                Tuple tuple_container;
+                inserted_pos.set(page_id, i);
+                tuple.set_rid(inserted_pos);
+                if (!table_page->get_tuple(&tuple_container, inserted_pos)) {
+                    ok = false;
+                    break;
+                }
+
+                if (!(tuple == tuple_container)) {
+                    ok = false;
+                    break;
+                }
+
+                for (size_t_ i = 0; i < table_schema->get_column_num(); i++) {
+                    Value v1 = tuple.get_value(*table_schema, i);
+                    Value v2 = tuple_container.get_value(*table_schema, i);
+                    if (v1 == v2)
+                        continue;
+                    ok = false;
+                    break;
+                }
+                if (!ok)
+                    break;
+            }
+            EXPECT_TRUE(ok);
+        }
+
+        {
+            /** delete many tuples and check */
+
+            
+        }
+
+        delete table_schema;
+        delete db_manager;
+    }
+
+    remove(mtdf);
+    remove(dbf);
+    remove(logf);
 }
 
 } // namespace dawn

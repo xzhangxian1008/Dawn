@@ -37,21 +37,22 @@ namespace dawn {
  */
 class TablePage : public Page {
 public:
-    ~TablePage() override {}
+    ~TablePage() {}
     
     void init(const page_id_t prev_pgid, const page_id_t next_pgid);
 
     inline page_id_t get_next_page_id() {
         return *reinterpret_cast<page_id_t*>(get_data() + NEXT_PGID_OFFSET);
     }
-
-    inline page_id_t get_table_page_id() {
-        return *reinterpret_cast<page_id_t*>(get_data() + PAGE_ID_OFFSET);
-    }
-
+    
     inline page_id_t get_prev_page_id() {
         return *reinterpret_cast<page_id_t*>(get_data() + PREV_PGID_OFFSET);
     }
+
+    inline page_id_t get_table_page_id() const {
+        return get_page_id();
+    }
+
 
     inline void set_prev_page_id(page_id_t page_id) {
         memcpy(get_data() + PREV_PGID_OFFSET, &page_id, PGID_T_SIZE);
@@ -84,6 +85,7 @@ public:
     
     bool get_next_tuple_rid(const RID &cur_rid, RID *next_rid) const;
     
+    inline size_t_ get_tuple_record_sz() const { return TUPLE_RECORD_SZ; }
 private:
     static const offset_t PREV_PGID_OFFSET = COM_PG_HEADER_SZ;
     static const offset_t NEXT_PGID_OFFSET = PREV_PGID_OFFSET + PGID_T_SIZE;
