@@ -87,9 +87,12 @@ void TablePage::apply_delete(const RID &rid) {
     delete_tuple_record(deleted_slot_num);
 
     // move the tuple's data
-    memmove(get_data() + free_space_pointer - deleted_tuple_size, 
+    memmove(get_data() + free_space_pointer + deleted_tuple_size, 
         get_data() + free_space_pointer, 
         deleted_tuple_offset - free_space_pointer);
+
+    // update free space pointer
+    set_free_space_pointer(free_space_pointer + deleted_tuple_size);
 
     // update tuples' record
     size_t_ tuple_count = get_tuple_count();

@@ -150,7 +150,6 @@ TEST(TbComponentTest, BasicTest) {
 
         std::vector<Value> values;
 
-
         TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
         RID inserted_pos;
@@ -260,8 +259,6 @@ TEST(TbComponentTest, BasicTest) {
         //==------------------------------------------------------------------------==//
         /** check many many tuples' operation */
 
-        size_t_ v11 = PAGE_SIZE - COM_PG_HEADER_SZ - 2 * PGID_T_SIZE - OFFSET_T_SIZE - SIZE_T_SIZE - TABLE_PAGE_RESERVED;
-        size_t_ v22 = table_schema->get_tuple_size() + table_page->get_tuple_record_sz();
         const size_t_ max_inserted_num = 
             (PAGE_SIZE - COM_PG_HEADER_SZ - 2 * PGID_T_SIZE - OFFSET_T_SIZE - SIZE_T_SIZE - TABLE_PAGE_RESERVED) / 
             (table_schema->get_tuple_size() + table_page->get_tuple_record_sz());
@@ -288,8 +285,6 @@ TEST(TbComponentTest, BasicTest) {
                 Tuple tuple(&values, *table_schema);
 
                 if (!table_page->insert_tuple(tuple, &inserted_pos)) {
-                    PRINT("max_inserted_num:", max_inserted_num);
-                    PRINT("i:", i);
                     ok = false;
                     break;
                 }
@@ -297,7 +292,7 @@ TEST(TbComponentTest, BasicTest) {
             EXPECT_TRUE(ok);
 
             {
-                // should insert fail
+                // insert should fail
                 values[0] = Value(max_inserted_num);
                 Tuple tuple(&values, *table_schema);
                 EXPECT_FALSE(table_page->insert_tuple(tuple, &inserted_pos));
@@ -335,10 +330,98 @@ TEST(TbComponentTest, BasicTest) {
             EXPECT_TRUE(ok);
         }
 
+        int deleted_num = 0;
         {
             /** delete many tuples and check */
+            values.clear();
+            v0 = 0;
+            fill_char_array("apple", v1);
+            v2 = true;
+            fill_char_array("monkey_key", v3);
+            v4 = 3.1415926;
 
-            
+            values.push_back(Value(v0));
+            values.push_back(Value(v1, tb_char0_sz));
+            values.push_back(Value(v2));
+            values.push_back(Value(v3, tb_char1_sz));
+            values.push_back(Value(v4));
+
+            bool ok = true;
+
+            // delete
+            for (size_t_ i = 0; i < max_inserted_num; i++) {
+                if (i % 2 == 0)
+                    continue;
+                RID rid(page_id, i);
+                if (!table_page->mark_delete(rid)) {
+                    ok = false;
+                    break;
+                }
+                table_page->apply_delete(rid);
+                deleted_num++;
+            }
+            EXPECT_TRUE(ok);
+
+            // check
+            ok = true;
+            for (size_t_ i = 0; i <max_inserted_num; i++) {
+                RID rid(page_id, i);
+                Tuple tuple;
+                bool result = table_page->get_tuple(&tuple, rid);
+                if (i % 2 != 0 && result) {
+                    ok = false;
+                    break;
+                } else if (i % 2 == 0) {
+                    if (!result) {
+                        ok = false;
+                        break;
+                    }
+
+                    // check the correctness of the existing tuples
+                    values[0] = Value(i);
+                    Tuple tuple_valid(&values, *table_schema, rid);
+                    if (!(tuple == tuple_valid)) {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+            EXPECT_TRUE(ok);
+        }
+
+        {
+            /** reinsert tuples and check */
+            values.clear();
+            v0 = 0;
+            fill_char_array("apple", v1);
+            v2 = true;
+            fill_char_array("monkey_key", v3);
+            v4 = 3.1415926;
+
+            values.push_back(Value(v0));
+            values.push_back(Value(v1, tb_char0_sz));
+            values.push_back(Value(v2));
+            values.push_back(Value(v3, tb_char1_sz));
+            values.push_back(Value(v4));
+
+            bool ok = true;
+            for (size_t_ i = 0; i < deleted_num; i++) {
+                values[0] = Value(i);
+                Tuple tuple(&values, *table_schema);
+
+                if (!table_page->insert_tuple(tuple, &inserted_pos)) {
+                    ok = false;
+                    break;
+                }
+            }
+            EXPECT_TRUE(ok);
+
+            {
+                // insert should fail
+                values[0] = Value(deleted_num);
+                Tuple tuple(&values, *table_schema);
+                EXPECT_FALSE(table_page->insert_tuple(tuple, &inserted_pos));
+            }
         }
 
         delete table_schema;
