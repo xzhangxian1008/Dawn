@@ -26,6 +26,20 @@ public:
         init(values, schema);
     }
 
+    // deep copy
+    Tuple(const Tuple &tuple) {
+        if (allocated_) {
+            delete[] data_;
+        }
+        allocated_ = tuple.allocated_;
+        size_ = tuple.size_;
+        rid_ = tuple.rid_;
+        if (allocated_) {
+            data_ = new char[size_];
+            memcpy(data_, tuple.data_, size_);
+        }
+    }
+
     ~Tuple() {
         if (allocated_) {
             delete[] data_;
@@ -57,6 +71,21 @@ public:
     }
 
     bool operator==(const Tuple &tuple);
+
+    // deep copy
+    Tuple& operator=(const Tuple &tuple) {
+        if (allocated_) {
+            delete[] data_;
+        }
+        allocated_ = tuple.allocated_;
+        size_ = tuple.size_;
+        rid_ = tuple.rid_;
+        if (allocated_) {
+            data_ = new char[size_];
+            memcpy(data_, tuple.data_, size_);
+        }
+        return *this;
+    }
 
 private:
     void init(std::vector<Value> *values, const TableSchema &schema);

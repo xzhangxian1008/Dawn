@@ -63,7 +63,9 @@ void BufferPoolManager::unpin_page(const page_id_t &page_id, const bool is_dirty
     }
 
     // no one need it, put him into replacer
-    replacer_->unpin(frame_id);
+    if (pages_[frame_id].get_pin_count() == 0)  {
+        replacer_->unpin(frame_id);
+    }
     pages_[frame_id].w_unlock();
     latch_.w_unlock();
 }

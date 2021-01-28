@@ -86,36 +86,50 @@ bool Table::get_tuple(Tuple *tuple, const RID &rid) {
 }
 
 bool Table::insert_tuple(const Tuple &tuple, RID *rid) {
-    page_id_t inserted_page_id = first_table_page_id_;
-    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(inserted_page_id));
+    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(first_table_page_id_));
 
     // TODO there may be no more space in disk, handle this!
     table_page->w_lock();
-    while (table_page->insert_tuple(tuple, rid)) {
+    while (!table_page->insert_tuple(tuple, rid)) {
         page_id_t next_page_id = table_page->get_next_page_id();
         if (next_page_id == INVALID_PAGE_ID) {
+            // get a new page
             TablePage* new_page = reinterpret_cast<TablePage*>(bpm_->new_page());
             if (new_page == nullptr) {
                 table_page->w_unlock();
-                bpm_->unpin_page(inserted_page_id, false);
+                bpm_->unpin_page(table_page->get_page_id(), false);
                 return false;
             }
+
+            // update new page's info
+            new_page->w_lock();
+            new_page->init(table_page->get_page_id(), INVALID_PAGE_ID);
 
             // update table_page's info
             table_page->set_next_page_id(new_page->get_page_id());
             table_page->w_unlock();
-            bpm_->unpin_page(inserted_page_id, true);
+            bpm_->unpin_page(table_page->get_page_id(), true);
 
-            // update new page's info and jump to the new page
-            new_page->w_lock();
-            new_page->init(inserted_page_id, INVALID_PAGE_ID);
-            inserted_page_id = new_page->get_page_id();
+            // jump to the new page
             table_page = new_page;
+        } else {
+            table_page->w_unlock();
+            bpm_->unpin_page(table_page->get_page_id(), false);
+
+            // jump to the next page
+            table_page = reinterpret_cast<TablePage*>(bpm_->get_page(next_page_id));
+            if (table_page == nullptr) {
+                // get next page fail
+                std::stringstream os;
+                os << "db meta data inconsistency, get page " << next_page_id << " fail!";
+                LOG(os.str());
+                exit(-1);
+            }
+            table_page->w_lock();
         }
     }
     table_page->w_unlock();
-    bpm_->unpin_page(inserted_page_id, true);
-
+    bpm_->unpin_page(table_page->get_page_id(), true);
     return true;
 }
 

@@ -48,7 +48,7 @@ void ClockReplacer::victim(frame_id_t *frame_id) {
             clock_pointer_to_next();
             continue;
         }
-
+        PRINT("exit num:", exit_num);
         clock_pointer_to_next();
     }
 }
