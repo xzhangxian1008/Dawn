@@ -75,27 +75,48 @@ void Table::rollback_delete(const RID &rid) {
 bool Table::get_tuple(Tuple *tuple, const RID &rid) {
     page_id_t page_id = rid.get_page_id();
     if (page_id < 0)
-        return;
+        return false;
     
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
     table_page->w_lock();
     bool ok = table_page->get_tuple(tuple, rid);
     table_page->w_unlock();
     bpm_->unpin_page(page_id, false);
+    return ok;
 }
 
 bool Table::insert_tuple(const Tuple &tuple, RID *rid) {
     page_id_t inserted_page_id = first_table_page_id_;
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(inserted_page_id));
 
-    // TODO there may be no more space in disk, handle this
+    // TODO there may be no more space in disk, handle this!
+    table_page->w_lock();
     while (table_page->insert_tuple(tuple, rid)) {
         page_id_t next_page_id = table_page->get_next_page_id();
         if (next_page_id == INVALID_PAGE_ID) {
-            
+            TablePage* new_page = reinterpret_cast<TablePage*>(bpm_->new_page());
+            if (new_page == nullptr) {
+                table_page->w_unlock();
+                bpm_->unpin_page(inserted_page_id, false);
+                return false;
+            }
+
+            // update table_page's info
+            table_page->set_next_page_id(new_page->get_page_id());
+            table_page->w_unlock();
+            bpm_->unpin_page(inserted_page_id, true);
+
+            // update new page's info and jump to the new page
+            new_page->w_lock();
+            new_page->init(inserted_page_id, INVALID_PAGE_ID);
+            inserted_page_id = new_page->get_page_id();
+            table_page = new_page;
         }
     }
+    table_page->w_unlock();
     bpm_->unpin_page(inserted_page_id, true);
+
+    return true;
 }
 
 } // namespace dawn

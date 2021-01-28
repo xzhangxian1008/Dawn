@@ -29,6 +29,7 @@ public:
     bool delete_page_test(page_id_t page_id) { return delete_page(page_id); }
     void unpin_page_test(page_id_t page_id, bool is_dirty) { unpin_page(page_id, is_dirty); }
     bool flush_page_test(page_id_t page_id) { return flush_page(page_id); }
+    bool flush_all() { return flush_all(); }
 
     /**
      * ATTENTION USE THIS FUNCTION CAREFULLY!

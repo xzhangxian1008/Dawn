@@ -10,19 +10,22 @@ namespace dawn {
 
 class DBManager {
 public:
-    explicit DBManager(const string_t &meta_name, bool from_scratch = false) : status(false) {
+    explicit DBManager(const string_t &meta_name, bool from_scratch = false) 
+        : status(false) {
         disk_manager_ = DiskManagerFactory::create_DiskManager(meta_name, from_scratch);
         if (disk_manager_ == nullptr)
             return;
         
-        bpm_ = new BufferPoolManager(disk_manager_, POOL_SIZE);
+        bpm_ = new BufferPoolManager(disk_manager_, DEFAULT_POOL_SIZE);
         catalog_page_id_ = disk_manager_->get_catalog_pgid();
         catalog_ = new Catalog(bpm_, catalog_page_id_, from_scratch);
         status = true;
     }
 
     ~DBManager() {
-        // TODO flush all
+        if (!bpm_->flush_all()) {
+            LOG("Flush all fail");
+        }
         delete catalog_;
         delete bpm_;
         delete disk_manager_;
@@ -34,8 +37,17 @@ public:
     inline Catalog* get_catalog() const { return catalog_; }
     inline bool get_status() const { return status; }
 
+    static inline void set_default_pool_size(size_t_ pool_size) {
+        size_t_ *default_pool_size = const_cast<size_t_*>(&DEFAULT_POOL_SIZE);
+        *default_pool_size = pool_size;
+    }
+
+    static inline size_t_ get_default_pool_size() {
+        return DEFAULT_POOL_SIZE;
+    }
+
 private:
-    static constexpr size_t_ POOL_SIZE = 100;
+    static constexpr size_t_ DEFAULT_POOL_SIZE = 100;
 
     DiskManager *disk_manager_;
     BufferPoolManager *bpm_;

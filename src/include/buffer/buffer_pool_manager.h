@@ -26,10 +26,18 @@ public:
 
     Page* get_page(const page_id_t &page_id);
     Page* new_page();
-    bool delete_page(const page_id_t &page_id);
     void unpin_page(const page_id_t &page_id, const bool is_dirty);
     bool flush_page(const page_id_t &page_id);
-    void flush_all();
+
+    /**
+     * @return false if flush some pages fail
+     */
+    bool flush_all();
+
+    /**
+     * @return false if someone is using it and it's caller's duty to decide what to do next
+     */
+    bool delete_page(const page_id_t &page_id);
 
 protected:
     // ATTENTION no lock protects it

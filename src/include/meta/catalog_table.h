@@ -90,7 +90,7 @@ public:
 
     TableMetaData* get_table_meta_data(table_id_t table_id);
 
-    bool new_table(const string_t &table_name, const TableSchema &schema);
+    bool create_table(const string_t &table_name, const TableSchema &schema);
     bool delete_table(const string_t &table_name);
     bool delete_table(table_id_t table_id);
     std::vector<string_t> get_all_table_name();

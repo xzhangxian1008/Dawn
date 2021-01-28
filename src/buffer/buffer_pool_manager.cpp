@@ -32,12 +32,14 @@ Page* BufferPoolManager::new_page() {
     latch_.w_unlock();
     
     // initialize the page
+    pages_[frame_id].w_lock();
     pages_[frame_id].set_is_dirty(true); // new page is always dirty
     pages_[frame_id].set_pin_count_zero();
     pages_[frame_id].add_pin_count();
     pages_[frame_id].set_lsn(-1);
     pages_[frame_id].set_page_id(page_id);
     pages_[frame_id].set_status();
+    pages_[frame_id].w_unlock();
     
     return &(pages_[frame_id]);
 }
@@ -51,15 +53,18 @@ void BufferPoolManager::unpin_page(const page_id_t &page_id, const bool is_dirty
     }
 
     frame_id_t frame_id = iter->second;
+    pages_[frame_id].w_lock();
     pages_[frame_id].set_is_dirty(is_dirty);
     pages_[frame_id].decrease_pin_count();
     if (pages_[frame_id].get_pin_count() > 0) {
+        pages_[frame_id].w_unlock();
         latch_.w_unlock();
         return;
     }
 
     // no one need it, put him into replacer
     replacer_->unpin(frame_id);
+    pages_[frame_id].w_unlock();
     latch_.w_unlock();
 }
 
@@ -82,13 +87,21 @@ bool BufferPoolManager::flush_page(const page_id_t &page_id) {
         return false;
     }
 
-    pages_[frame_id].w_unlock();
     pages_[frame_id].set_is_dirty(false);
+    pages_[frame_id].w_unlock();
     return true;
 }
 
-void BufferPoolManager::flush_all() {
-    
+bool BufferPoolManager::flush_all() {
+    latch_.r_lock();
+    bool ok = true;
+    for (auto item : mapping_) {
+        if (!flush_page(item.first)) {
+            ok = false;
+        }
+    }
+    latch_.r_unlock();
+    return ok;
 }
 
 void BufferPoolManager::evict_page(const page_id_t &page_id, const frame_id_t &frame_id) {
@@ -100,6 +113,8 @@ void BufferPoolManager::evict_page(const page_id_t &page_id, const frame_id_t &f
         latch_.w_unlock();
         return;
     }
+
+    pages_[frame_id].set_page_id(INVALID_PAGE_ID);
 
     // update meta data
     mapping_.erase(iter);
@@ -155,11 +170,13 @@ Page* BufferPoolManager::get_page(const page_id_t &page_id) {
         }
 
         // initialize the page
+        pages_[frame_id].w_lock();
         pages_[frame_id].set_is_dirty(false);
         pages_[frame_id].set_page_id(page_id);
         pages_[frame_id].set_lsn(-1);
         pages_[frame_id].set_pin_count_zero();
         pages_[frame_id].add_pin_count();
+        pages_[frame_id].w_unlock();
 
         // update meta data
         mapping_.insert(std::make_pair(page_id, frame_id));
@@ -191,10 +208,13 @@ bool BufferPoolManager::delete_page(const page_id_t &page_id) {
         return false;
     }
 
+    pages_[iter->second].w_lock();
+    pages_[iter->second].set_page_id(INVALID_PAGE_ID);
+    pages_[iter->second].w_unlock();
+
     // update meta data
     free_list_.push_back(iter->second);
     mapping_.erase(iter);
-
     latch_.w_unlock();
 
     // delete it immediately and we suppose it always successes

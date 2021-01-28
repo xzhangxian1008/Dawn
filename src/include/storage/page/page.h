@@ -66,24 +66,18 @@ public:
     inline void set_is_dirty(bool is_dirty) { is_dirty_ = is_dirty; }
 
     void set_page_id(page_id_t page_id) {
-        latch_.w_lock();
         memcpy(data_ + PAGE_ID_OFFSET, &page_id, sizeof(page_id_t));
         page_id_ = page_id;
-        latch_.w_unlock();
     }
 
     void set_lsn(lsn_t lsn) {
-        latch_.w_lock();
         memcpy(data_ + LSN_OFFSET, &lsn, sizeof(lsn_t));
         lsn_ = lsn;
-        latch_.w_unlock();
     }
 
     void set_status() {
         char s = STATUS_EXIST;
-        latch_.w_lock();
         memcpy(data_ + STATUS_OFFSET, &s, 1);
-        latch_.w_unlock();
     }
 private:
     void reset_mem() { memset(data_, 0, PAGE_SIZE); }

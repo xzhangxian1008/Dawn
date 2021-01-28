@@ -22,7 +22,7 @@ namespace dawn {
  * | integer | char (20) | bool | char (10) | decimal | 
  * ----------------------------------------------------
  */
-string_t table("table4");
+string_t table_name("table4");
 std::vector<TypeId> tb_col_types{TypeId::INTEGER, TypeId::CHAR, TypeId::BOOLEAN, TypeId::CHAR, TypeId::DECIMAL};
 std::vector<string_t> tb_col_names{"tb4_col1", "tb4_col2", "tb4_col3", "tb4_col4", "tb4_col5"};
 size_t_ tb_char0_sz = 5;
@@ -35,7 +35,7 @@ size_t_ tb_tuple_size = Type::get_integer_size() + tb_char0_sz + Type::get_bool_
  *   1. test the basic functions of the Tuple object
  *   2. test the basic functions of the TablePage object
  *          ATTENTION tuples inserted in the TablePage should be fixed and same size in test 2
- *   3. test the basic functions of ...
+ *   3. test the basic functions of the Table object
  *   4. test the basic functions of ...
  */
 TEST(TbComponentTest, BasicTest) {
@@ -114,6 +114,15 @@ TEST(TbComponentTest, BasicTest) {
     const char *dbf = "test.db";
     const char *logf = "test.log";
 
+    TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
+
+    integer_t v0;
+    char v1[6];
+    boolean_t v2;
+    char v3[11];
+    decimal_t v4;
+    std::vector<Value> values;
+
     {
         // test 2
 
@@ -142,15 +151,11 @@ TEST(TbComponentTest, BasicTest) {
 
         //==------------------------------------------------------------------------==//
         /** check single tuple's operation */
-        integer_t v0 = 2333;
-        char v1[6] = "apple";
-        boolean_t v2 = true;
-        char v3[11] = "monkey_key";
-        decimal_t v4 = 3.1415926;
-
-        std::vector<Value> values;
-
-        TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
+        v0 = 2333;
+        fill_char_array("apple", v1);
+        v2 = true;
+        fill_char_array("monkey_key", v3);
+        v4 = 3.1415926;
 
         RID inserted_pos;
 
@@ -430,6 +435,48 @@ TEST(TbComponentTest, BasicTest) {
     remove(mtdf);
     remove(dbf);
     remove(logf);
+
+    {
+        // test 3
+
+        // size_t_ insert_num = 56789;
+        {
+            DBManager *db_manager = new DBManager(meta, true);
+            ASSERT_TRUE(db_manager->get_status());
+
+            Catalog *catalog = db_manager->get_catalog();
+            CatalogTable *catalog_table = catalog->get_catalog_table();
+            ASSERT_TRUE(catalog_table->create_table(table_name, *table_schema));
+
+            TableMetaData *table_md = catalog_table->get_table_meta_data(table_name);
+            ASSERT_NE(nullptr, table_md);
+
+            Table *table = table_md->get_table();
+            ASSERT_NE(nullptr, table);
+
+            v0 = 2333;
+            fill_char_array("apple", v1);
+            v2 = true;
+            fill_char_array("monkey_key", v3);
+            v4 = 3.1415926;
+
+            values.clear();
+            values.push_back(v0);
+            values.push_back(v1);
+            values.push_back(v2);
+            values.push_back(v3);
+            values.push_back(v4);
+
+
+
+            // bool ok = true;
+            // for (size_t_ i = 0; i < insert_num; i++) {
+            //     values[0] = Value(static_cast<integer_t>(i));
+            //     Tuple tuple(&values, *table_schema);
+            //     if (!table->insert_tuple(tuple))
+            // }
+        }
+    }
 }
 
 } // namespace dawn

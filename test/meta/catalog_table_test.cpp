@@ -135,7 +135,7 @@ TEST(CatalogTableTest, BasicTest) {
             table_schema[i] = create_table_schema(tb_col_types[i], tb_col_names[i], tb_char_size[i]);
             EXPECT_NE(table_schema[i], nullptr);
             EXPECT_EQ(table_schema[i]->get_tuple_size(), tb_tuple_size[i]);
-            EXPECT_TRUE(catalog_table->new_table(tables[i], *(table_schema[i])));
+            EXPECT_TRUE(catalog_table->create_table(tables[i], *(table_schema[i])));
             table_id[i] = catalog_table->get_table_id(tables[i]);
         }
     }
