@@ -76,7 +76,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
 
     size_t_ col_num = schema.get_column_num();
 
-    // write data to the disk
+    // write data to the memory
     *reinterpret_cast<page_id_t*>(data_ + FIRST_TABLE_PGID_OFFSET) = first_table_page_id_;
     *reinterpret_cast<page_id_t*>(data_ + INDEX_HEADER_PGID_OFFSET) = index_header_page_id_;
     *reinterpret_cast<size_t_*>(data_ + COLUMN_NUM_OFFSET) = col_num;
@@ -108,8 +108,10 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
         col_size = FIXED_COLUMN_SIZE + name_len + 1;
     }
 
+    // flush TableMetaData's data to disk
     bpm_->flush_page(self_page_id_);
 
+    // create table's first page
     Page *page = bpm_->new_page();
     if (page == nullptr) {
         LOG("ERROR! can't get new page");
@@ -119,6 +121,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
     *pgid = page->get_page_id();
     bpm_->unpin_page(*pgid, false);
 
+    // create index_header's page
     page = bpm_->new_page();
     if (page == nullptr) {
         LOG("ERROR! can't get new page");

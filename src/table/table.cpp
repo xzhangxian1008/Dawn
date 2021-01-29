@@ -104,6 +104,7 @@ bool Table::insert_tuple(const Tuple &tuple, RID *rid) {
             // update new page's info
             new_page->w_lock();
             new_page->init(table_page->get_page_id(), INVALID_PAGE_ID);
+            new_page->set_is_dirty(true);
 
             // update table_page's info
             table_page->set_next_page_id(new_page->get_page_id());
@@ -113,6 +114,8 @@ bool Table::insert_tuple(const Tuple &tuple, RID *rid) {
             // jump to the new page
             table_page = new_page;
         } else {
+            if (next_page_id < 0)
+                PRINT("page -> page:", table_page->get_page_id(), next_page_id);
             table_page->w_unlock();
             bpm_->unpin_page(table_page->get_page_id(), false);
 

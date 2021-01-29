@@ -66,7 +66,7 @@ public:
  */
 
 // test 1
-TEST(TbComponentTest, TupleBasicTest) {
+TEST(TbComponentTest, DISABLED_TupleBasicTest) {
     // prepare for Value
     v0 = 2333;
     fill_char_array("apple", v1);
@@ -133,7 +133,7 @@ TEST(TbComponentTest, TupleBasicTest) {
 }
 
 // test 2
-TEST(TbComponentTest, TablePageBasicTest) {
+TEST(TbComponentTest, DISABLED_TablePageBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     DBManager *db_manager = new DBManager(meta, true);
@@ -446,7 +446,7 @@ TEST(TbComponentTest, TablePageBasicTest) {
 TEST(TbComponentTest, TableBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
-    size_t_ insert_num = 56789;
+    size_t_ insert_num = 15432;
     std::vector<Tuple> insert_tuples;
 
     {
@@ -483,11 +483,9 @@ TEST(TbComponentTest, TableBasicTest) {
         for (size_t_ i = 0; i < insert_num; i++) {
             values[0] = Value(static_cast<integer_t>(i));
             Tuple tuple(&values, *table_schema);
-            PRINT("start insert", i);
             if (!table->insert_tuple(tuple, &rid)) {
                 ok = false;
             }
-            PRINT("insert", i, "successfully");
             tuple.set_rid(rid);
             insert_tuples.push_back(tuple);
         }

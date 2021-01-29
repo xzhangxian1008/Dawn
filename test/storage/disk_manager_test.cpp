@@ -441,9 +441,4 @@ TEST_F(DiskManagerTest, DMFunctionTest) {
     remove(logf);
 }
 
-// TODO test concurrency environment
-TEST(ConcurrencyDMTest, DISABLED_CDMTest) {
-
-}
-
 } // namespace dawn

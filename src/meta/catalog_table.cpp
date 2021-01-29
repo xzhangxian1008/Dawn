@@ -72,12 +72,14 @@ bool CatalogTable::create_table(const string_t &table_name, const TableSchema &s
         return false; // no more space to store
     }
 
+    // get a new page to store TableMetaData's data
     Page *new_page = bpm_->new_page();
     if (new_page == nullptr) {
         latch_.w_unlock();
         return false;
     }
 
+    // update CatalogTable's meta data
     tb_id_to_meta_.insert(std::make_pair(new_page->get_page_id(), 
         new TableMetaData(bpm_, table_name, schema, new_page->get_page_id())));
     tb_id_to_name_.insert(std::make_pair(new_page->get_page_id(), table_name));
@@ -86,6 +88,7 @@ bool CatalogTable::create_table(const string_t &table_name, const TableSchema &s
     table_num_++;
     *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET) = table_num_;
 
+    // persist the CatalogTable's meta data
     size_t_ len = table_name.length();
     free_space_pointer_ -= len + 1;
     for (int i = 0; i < len; i++)

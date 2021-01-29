@@ -44,7 +44,7 @@ Page* BufferPoolManager::new_page() {
     return &(pages_[frame_id]);
 }
 
-void BufferPoolManager::unpin_page(const page_id_t &page_id, const bool is_dirty) {
+void BufferPoolManager::unpin_page(const page_id_t &page_id, const bool dirty) {
     latch_.w_lock();
     auto iter = mapping_.find(page_id);
     if (iter == mapping_.end()) {
@@ -54,7 +54,9 @@ void BufferPoolManager::unpin_page(const page_id_t &page_id, const bool is_dirty
 
     frame_id_t frame_id = iter->second;
     pages_[frame_id].w_lock();
-    pages_[frame_id].set_is_dirty(is_dirty);
+    if (dirty) {
+        pages_[frame_id].set_is_dirty(dirty);
+    }
     pages_[frame_id].decrease_pin_count();
     if (pages_[frame_id].get_pin_count() > 0) {
         pages_[frame_id].w_unlock();
@@ -137,13 +139,16 @@ void BufferPoolManager::evict_page(const page_id_t &page_id, const frame_id_t &f
  *   2. fetch a page from disk
  */
 Page* BufferPoolManager::get_page(const page_id_t &page_id) {
+    if (page_id <= INVALID_PAGE_ID)
+        return nullptr;
+
     // firstly, judge we are in which situation
     latch_.w_lock();
     auto iter = mapping_.find(page_id);
     if (iter != mapping_.end()) {
         // situation 1
         pages_[iter->second].add_pin_count();
-        replacer_->pin(pages_[iter->second].get_page_id());
+        replacer_->pin(iter->second);
         latch_.w_unlock();
         return &(pages_[iter->second]);
     } else {
@@ -169,7 +174,7 @@ Page* BufferPoolManager::get_page(const page_id_t &page_id) {
         char *data = pages_[frame_id].get_data();
         if (*reinterpret_cast<char*>(data + STATUS_OFFSET) != STATUS_EXIST) {
             latch_.w_unlock();
-            LOG("get a invalid page");
+            LOG("get a invalid page, page id " + std::to_string(page_id));
             return nullptr;
         }
 

@@ -91,7 +91,8 @@ public:
 
     inline static size_t_ get_tp_load_data_space() { return LOAD_DATA_SPACE; }
 private:
-    static const offset_t PREV_PGID_OFFSET = COM_PG_HEADER_SZ;
+    static const offset_t START_OFFSET = COM_PG_HEADER_SZ;
+    static const offset_t PREV_PGID_OFFSET = START_OFFSET;
     static const offset_t NEXT_PGID_OFFSET = PREV_PGID_OFFSET + PGID_T_SIZE;
     static const offset_t FREE_SPACE_PTR_OFFSET = NEXT_PGID_OFFSET + PGID_T_SIZE;
     static const offset_t TUPLE_CNT_OFFSET = FREE_SPACE_PTR_OFFSET + PGID_T_SIZE + TABLE_PAGE_RESERVED;
