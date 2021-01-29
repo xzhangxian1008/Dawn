@@ -46,6 +46,8 @@ protected:
     // we assume this function will always success.
     void evict_page(const page_id_t &page_id, const frame_id_t &frame_id);
 
+    size_t_ get_size() { return replacer_->size(); } // delete it
+
     ReaderWriterLatch latch_;
 private:
     // a page pool

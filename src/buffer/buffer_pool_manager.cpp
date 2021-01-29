@@ -113,6 +113,7 @@ void BufferPoolManager::evict_page(const page_id_t &page_id, const frame_id_t &f
     if (iter == mapping_.end()) {
         pages_[frame_id].w_unlock();
         latch_.w_unlock();
+        PRINT("evict fail");
         return;
     }
 
@@ -142,6 +143,7 @@ Page* BufferPoolManager::get_page(const page_id_t &page_id) {
     if (iter != mapping_.end()) {
         // situation 1
         pages_[iter->second].add_pin_count();
+        replacer_->pin(pages_[iter->second].get_page_id());
         latch_.w_unlock();
         return &(pages_[iter->second]);
     } else {
@@ -150,10 +152,10 @@ Page* BufferPoolManager::get_page(const page_id_t &page_id) {
         while (free_list_.empty()) {
             latch_.w_unlock();
             replacer_->victim(&frame_id);
-            evict_page(page_id, frame_id);
+            evict_page(pages_[frame_id].get_page_id(), frame_id);
             latch_.w_lock();
         }
-
+        
         // get a free frame id
         frame_id = free_list_.front();
 

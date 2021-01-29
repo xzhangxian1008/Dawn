@@ -11,25 +11,28 @@ ClockReplacer::ClockReplacer(int pool_size)
 
 void ClockReplacer::pin(frame_id_t frame_id) {
     std::lock_guard<std::mutex> lk(latch_);
-    exit_num--;
-    flags[frame_id] = FRAME_NOT_EXIST;
+    if (flags[frame_id] != FRAME_NOT_EXIST){
+        exit_num--;
+        flags[frame_id] = FRAME_NOT_EXIST;
+    }
 }
 
 void ClockReplacer::unpin(frame_id_t frame_id) {
     std::lock_guard<std::mutex> lk(latch_);
-    exit_num++;
-    flags[frame_id] = FRAME_EXIST_TRUE;
+    if (flags[frame_id] == FRAME_NOT_EXIST) {
+        exit_num++;
+        flags[frame_id] = FRAME_EXIST_TRUE;
+    }
 }
 
 void ClockReplacer::victim(frame_id_t *frame_id) {
     std::unique_lock<std::mutex> lk(latch_, std::defer_lock);
     while (true) {
         lk.lock();
-        if (exit_num != 0) {
+        if (exit_num > 0) {
             break;
         }
         lk.unlock();
-
         // wait for a frame
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -48,7 +51,7 @@ void ClockReplacer::victim(frame_id_t *frame_id) {
             clock_pointer_to_next();
             continue;
         }
-        PRINT("exit num:", exit_num);
+
         clock_pointer_to_next();
     }
 }
