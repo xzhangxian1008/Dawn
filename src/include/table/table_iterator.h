@@ -30,9 +30,9 @@ public:
 
     ~TableIterator() { delete tuple_; }
 
-    const Tuple &TableIterator::operator*() { return *tuple_; }
+    const Tuple& operator*() { return *tuple_; }
 
-    Tuple *TableIterator::operator->() { return tuple_; }
+    Tuple* operator->() { return tuple_; }
 
     TableIterator &operator++();
 
