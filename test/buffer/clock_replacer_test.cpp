@@ -59,7 +59,7 @@ TEST(ClockReplacer, OneThreadTest) {
         int size = frames.size();
         auto iter = frames.begin();
         for (int i = 0; i < size/2; i++) {
-            cr.pin(*iter);
+            cr.pin(*iter); // when a frame has been pinned, it should be removed from frames.
             auto tmp_iter = iter;
             iter++;
             frames.erase(tmp_iter);

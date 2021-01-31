@@ -7,7 +7,9 @@
 #include "buffer/buffer_pool_manager.h"
 #include "storage/disk/disk_manager.h"
 
+
 namespace dawn {
+using page_list = std::vector<Page*>;
 
 template<typename T>
 void write_num_to_char(T num, char *dst) {
@@ -15,6 +17,110 @@ void write_num_to_char(T num, char *dst) {
     for (size_t i = 0; i < num_str.length(); i++)
         dst[i] = num_str[i];
     dst[num_str.length()] = '\0';
+}
+
+bool checkData(const int& data_size, char* data_buf, const char* data_check)
+{
+    bool ok = true;
+    for (int i = 0; i < data_size; i++) {
+            if (data_buf[i+COM_PG_HEADER_SZ] != data_check[i]) {
+                ok = false;
+                break;
+            }
+        }
+    return ok;
+}
+class BpmTestLyb: public BufferPoolManager
+{
+   public:
+    explicit BpmTestLyb(DiskManager* disk_manager, int pool_size): BufferPoolManager(disk_manager, pool_size){}
+   Page* getPage(page_id_t page_id)
+   { return get_page(page_id);}
+   
+   Page* getNewPage()
+   {
+       return new_page();
+   }
+
+   bool deletePage(page_id_t page_id)
+   {
+       return delete_page(page_id);
+   }
+
+   void unpinPage(page_id_t page_id, bool is_dirty)
+   {
+       unpin_page(page_id, is_dirty);
+   }
+   
+   bool flushPage(page_id_t page_id)
+   {
+       return flush_page(page_id);
+   }
+   bool flushAllPage()
+   {
+       return flush_all();
+   }
+
+   void evictPage(page_id_t page_id)
+   {
+       evict_page(page_id, get_frame_id(page_id));
+   }
+   bool isInBPM(const page_id_t& page_id)
+   {
+       latch_.r_lock();
+       frame_id_t frame_id = get_frame_id(page_id);
+       latch_.r_unlock();
+       return (frame_id != -1) ? true: false;
+   }
+   
+   inline void writePage(Page* page, const offset_t& offset, const char* src, const int size)
+   {
+       page->w_lock();
+       memcpy(page->get_data() + offset, src, size);
+       page->w_unlock();
+   }
+   inline void readPage(Page* page, const offset_t& offset, char* dst, const int& size)
+   {
+       page->r_lock();
+       memcpy(dst, page->get_data() + offset, size);
+       page->r_unlock();
+   }
+};
+
+//clear list page created by me
+void clearPageList(page_list& pageList)
+{
+    if(pageList.size() != 0)
+    {
+      for(size_t i = 0; i < pageList.size(); i++)
+        {
+           if(pageList[i] != nullptr)
+          {
+            delete pageList[i];
+            pageList[i] = nullptr;
+          }
+        }
+      pageList.clear();
+      return;
+    }
+    else{
+      return;
+    }
+      
+}
+
+// initialize list of pages created by me.
+page_list& initPageList(page_list& pageList, size_t& LIST_SIZE, BpmTestLyb& BpmLyb)
+{
+    //clear
+    clearPageList(pageList);
+    //initialize pagelist
+    pageList = page_list(LIST_SIZE, nullptr);
+    for(size_t i = 0; i < LIST_SIZE; i++)
+    {
+        pageList[i] = BpmLyb.getNewPage();
+    }
+    return pageList;
 }
 
 
@@ -63,6 +169,179 @@ read_page(Page *page, const offset_t &offset, char *dst, const int &size) {
     memcpy(dst, page->get_data() + offset, size);
     page->r_unlock();
 }
+
+
+
+TEST(TEST_FOR_FLUSH, TEST_1)
+{
+    PRINT("test for bpm started(2021/01/30)");
+    const int POOL_SIZE = 20;
+     const char* meta = "bpm_test_0130";
+    const char *mtdf = "bpm_test_0130.mtd";
+    const char *dbf = "bpm_test_0130.db";
+    const char *logf = "bpm_test_0130.log";
+    string_t mtdf_s(mtdf);
+    string_t dbf_s(dbf);
+    string_t logf_s(logf);
+    DiskManager* dm = DiskManagerFactory::create_DiskManager(meta, true);
+    ASSERT_NE(dm, nullptr);
+    
+    BpmTestLyb BpmLyb(dm, POOL_SIZE);
+
+    page_list pageList;
+    size_t size_test = 10;
+    initPageList(pageList, size_test, BpmLyb);
+    
+    size_t size_list = pageList.size();
+    ASSERT_EQ(size_test, size_list);
+    PRINT("====pagelist's length -> ", pageList.size(), "====");
+    for(size_t i = 0; i < pageList.size(); i++)
+    {
+        ASSERT_TRUE(BpmLyb.isInBPM(pageList[i]->get_page_id()));
+        PRINT("==== page", pageList[i]->get_page_id(), "has been created in BPM ====");
+    }
+
+
+    //prepare the data set.
+    const char* Kuga = "Kuga";
+    const char* Kabuto = "Kabuto";
+    const char* Blade = "Blade";
+    const char* Black = "Black";
+    const char* BlackRX = "BlackRX";
+    const char* Faiz = "Faiz";
+    const char* Decade = "Decade";
+    const char* OOO = "OOO";
+    const char* Amazon = "Amazon";
+    const char* Agito = "Agito";
+    std::vector<const char*> data_list{Kuga, Kabuto, Blade, Black, BlackRX, Faiz, Decade, OOO, Amazon, Agito,};
+    std::vector<const char*>::const_iterator data_iter = data_list.begin();
+
+    const std::vector<int> size_group{5, 7, 6, 6, 8, 5, 7, 4, 7, 6};
+    std::vector<int>::const_iterator size_iter = size_group.begin();
+
+    //write data set to pages
+    for(size_t i = 0; i < data_list.size(); i++)
+    {
+        auto data = *data_iter;
+        auto size = *size_iter;
+        BpmLyb.writePage(pageList[i], COM_PG_HEADER_SZ, data, size);
+        PRINT("==== writing", std::string(data), "to", "page", pageList[i]->get_page_id(), " ====");
+        //end
+        size_iter++;
+        data_iter++;
+    }
+    data_iter = data_list.begin();
+    size_iter = size_group.begin();
+    //flush all
+    ASSERT_TRUE(BpmLyb.flushAllPage());
+    PRINT("==========================================================");
+    //make sure there are all of the data we defined before which has been flushed into disk
+    bool ok;
+    char data_test[PAGE_SIZE];
+    for(size_t i = 0; i < data_list.size(); i++)
+    {
+        ASSERT_TRUE(dm->read_page(pageList[i]->get_page_id(), data_test));
+        PRINT("==== reading data->", std::string(*data_iter), "finsihed ====");
+        //check data
+        ok = checkData(*size_iter, data_test, *(data_iter));
+        ASSERT_TRUE(ok);
+        size_iter++;
+        data_iter++;
+        memset(data_test, '\0', sizeof(data_test)); //reset data_buf.
+        PRINT("==== the match is successful ====");
+    }
+    delete dm;
+}
+
+
+TEST(TEST_FOR_BPM, TEST_1)
+{
+    PRINT("test for bpm started(2021/01/28)");
+    const int POOL_SIZE = 20;
+    const char* meta = "bpm_test_0128";
+    const char *mtdf = "bpm_test_0128.mtd";
+    const char *dbf = "bpm_test_0128.db";
+    const char *logf = "bpm_test_0128.log";
+    string_t mtdf_s(mtdf);
+    string_t dbf_s(dbf);
+    string_t logf_s(logf);
+    //test 1
+    DiskManager* dm = DiskManagerFactory::create_DiskManager(meta, true);
+    ASSERT_NE(dm, nullptr);
+
+    //a bufferPoolManager
+    BpmTestLyb BpmLyb(dm, POOL_SIZE);
+    Page* page = BpmLyb.getNewPage(); 
+    ASSERT_NE(page, nullptr);
+    page_id_t page_id = page->get_page_id();
+    PRINT("page_id-> ",page_id);
+    ASSERT_TRUE(BpmLyb.isInBPM(page_id));
+    ASSERT_FALSE(dm->is_free(page_id));
+    ASSERT_TRUE(dm->is_allocated(page_id));
+
+    // write
+    const int size1 = 7;
+    const char* s1 = "Martin";
+    BpmLyb.writePage(page, COM_PG_HEADER_SZ, s1, size1);
+
+    //evict
+    BpmLyb.evictPage(page->get_page_id());
+    ASSERT_FALSE(BpmLyb.isInBPM(page_id));
+
+    //get
+
+    page = BpmLyb.getPage(page_id);
+    ASSERT_TRUE(BpmLyb.isInBPM(page_id));
+
+    //read 
+    char buf[10];
+    bool ok = true;
+    BpmLyb.readPage(page, COM_PG_HEADER_SZ, buf, size1);
+    for(int i = 0; i < size1; i++)
+    {
+        if(s1[i] != buf[i])
+        {
+            ok = false;
+            break;
+        }
+    }
+    EXPECT_TRUE(ok);
+
+    // write
+    const int size2 = 9;
+    const char* s2 = "abcdefgh";
+    BpmLyb.writePage(page, COM_PG_HEADER_SZ, s2, size2);
+    BpmLyb.unpinPage(page->get_page_id(), true);
+    
+    //flush
+    ASSERT_TRUE(BpmLyb.flushPage(page->get_page_id()));
+
+    //read with DiskManager
+    page = BpmLyb.getPage(page_id);
+    char page_buf[PAGE_SIZE];
+    ASSERT_TRUE(dm->read_page(page->get_page_id(), page_buf));
+    BpmLyb.unpinPage(page->get_page_id(), false);
+    // check
+    ok = true;
+    for (int i = 0; i < size2; i++) {
+    if (page_buf[i+COM_PG_HEADER_SZ] != s2[i]) {
+                ok = false;
+                break;
+            }
+    }
+    EXPECT_TRUE(ok);
+    //delete page
+    page_id = page->get_page_id();
+    ASSERT_TRUE(BpmLyb.deletePage(page_id));
+    EXPECT_FALSE(BpmLyb.isInBPM(page_id));
+    EXPECT_TRUE(dm->is_free(page_id));
+    EXPECT_FALSE(dm->is_allocated(page_id));
+    delete dm;
+    remove(mtdf);
+    remove(dbf);
+    remove(logf);
+}
+
 
 /**
  * Test list:

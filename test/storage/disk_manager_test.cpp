@@ -20,6 +20,7 @@ int buf_sz = 1024;
 
 bool create_meta_file(const char *name, page_id_t max_ava_pgid);
 
+
 class DiskManager_T : public DiskManager {
 public:
     DiskManager_T(const string_t &meta_name, bool create = false) : DiskManager(meta_name, create) {}
@@ -184,6 +185,27 @@ bool read_write_pages_check(DiskManager_T &dmt, int page_num) {
     }
 
     return ok;
+}
+
+TEST_F(DiskManagerTest, CasualTest)
+{
+    const char* meta = "casualTest";
+    const char *mtdf = "casualTest.mtd";
+    const char *dbf = "casualTest.db";
+    const char *logf = "casualTest.log";
+
+    string_t mtdf_s(mtdf);
+    string_t dbf_s(dbf);
+    string_t logf_s(logf);
+
+    remove(mtdf);
+    remove(dbf);
+    remove(logf);
+
+    {
+        DiskManager_T DmtLyb(meta, true);
+        EXPECT_TRUE(DmtLyb.get_status());
+    }
 }
 
 /**
