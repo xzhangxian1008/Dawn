@@ -1,6 +1,9 @@
 #include "meta/table_meta_data.h"
 
 namespace dawn {
+/** 
+ * create TableMetaData with previous stored data
+ */
 TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const table_id_t table_id)
     : bpm_(bpm), table_name_(table_name), table_id_(table_id), self_page_id_((page_id_t)table_id),
     first_table_page_id_(-1), index_header_page_id_(-1) {
@@ -62,6 +65,9 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
     table_ = new Table(bpm_, first_table_page_id_, false);
 }
 
+/** 
+ * create TableMetaData from scratch
+ */
 TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema, const table_id_t table_id)
     : bpm_(bpm), table_name_(table_name), table_id_(table_id), self_page_id_(table_id), first_table_page_id_(-1), index_header_page_id_(-1) {
     table_schema_ = new TableSchema(schema);
@@ -77,8 +83,6 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
     size_t_ col_num = schema.get_column_num();
 
     // write data to the memory
-    *reinterpret_cast<page_id_t*>(data_ + FIRST_TABLE_PGID_OFFSET) = first_table_page_id_;
-    *reinterpret_cast<page_id_t*>(data_ + INDEX_HEADER_PGID_OFFSET) = index_header_page_id_;
     *reinterpret_cast<size_t_*>(data_ + COLUMN_NUM_OFFSET) = col_num;
 
     size_t_ col_size = 0; // record how large space this column's info occupy
@@ -120,6 +124,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
     page_id_t *pgid = const_cast<page_id_t*>(&first_table_page_id_);
     *pgid = page->get_page_id();
     bpm_->unpin_page(*pgid, false);
+    *reinterpret_cast<page_id_t*>(data_ + FIRST_TABLE_PGID_OFFSET) = first_table_page_id_;
 
     // create index_header's page
     page = bpm_->new_page();
@@ -130,6 +135,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
     pgid = const_cast<page_id_t*>(&index_header_page_id_);
     *pgid = page->get_page_id();
     bpm_->unpin_page(*pgid, false);
+    *reinterpret_cast<page_id_t*>(data_ + INDEX_HEADER_PGID_OFFSET) = index_header_page_id_;
 
     table_ = new Table(bpm_, first_table_page_id_, true);
 }

@@ -64,15 +64,16 @@ bool CatalogTable::create_table(const string_t &table_name, const TableSchema &s
         return false;
     }
 
+    // find where to store TableMetaData's meta data and ensure there are enough space to store
     size_t_ tb_num = *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET);
     offset_t insert_offset = TABLE_NUM_OFFSET + sizeof(size_t_) + tb_num * TABLE_RECORD_SZ;
     size_t_ available_space = free_space_pointer_ - insert_offset;
-    if ((size_t_)(table_name.length() + TABLE_RECORD_SZ) > available_space) {
+    if (static_cast<size_t_>(table_name.length() + TABLE_RECORD_SZ) > available_space) {
         latch_.w_unlock();
         return false; // no more space to store
     }
 
-    // get a new page to store TableMetaData's data
+    // get a new page to for TableMetaData
     Page *new_page = bpm_->new_page();
     if (new_page == nullptr) {
         latch_.w_unlock();
@@ -181,6 +182,8 @@ bool CatalogTable::delete_table(table_id_t table_id) {
 TableMetaData* CatalogTable::get_table_meta_data(table_id_t table_id) {
     latch_.w_lock();
     auto iter = tb_id_to_meta_.find(table_id);
+
+    // read from disk if the TableMetaTable is nonexistent in memory
     if (iter == tb_id_to_meta_.end()) {
         // find his name
         auto name_iter = tb_id_to_name_.find(table_id);
