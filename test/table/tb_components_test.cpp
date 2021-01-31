@@ -446,11 +446,12 @@ TEST(TbComponentTest, DISABLED_TablePageBasicTest) {
 TEST(TbComponentTest, TableBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
-    size_t_ insert_num = 15432;
+    size_t_ insert_num = 8765;
     std::vector<Tuple> insert_tuples;
 
     {
         /** insert a lot of tuples and check */
+        PRINT("start inserting large number of tuples...");
         DBManager *db_manager = new DBManager(meta, true);
         ASSERT_TRUE(db_manager->get_status());
 
@@ -505,8 +506,122 @@ TEST(TbComponentTest, TableBasicTest) {
                 break;
             }
         }
-        EXPECT_TRUE(ok);
+        ASSERT_TRUE(ok);
+        PRINT("insert successfully!");
 
+        /** delete and update a lot of tuples, then check */
+        PRINT("start deleting and updating tuples...");
+        for (size_t_ i = 0; i < insert_num; i++) {
+            // delete tuples with odd index and update tuples with even index
+            if (i % 2 == 0) {
+                Value v(static_cast<integer_t>(i * 2));
+                insert_tuples[i].set_value(*table_schema, &v, 0);
+                if (!table->update_tuple(insert_tuples[i], insert_tuples[i].get_rid())) {
+                    ok = false;
+                    break;
+                }
+                continue;
+            }
+            
+            if (!table->mark_delete(insert_tuples[i].get_rid())) {
+                ok = false;
+                break;
+            }
+            table->apply_delete(insert_tuples[i].get_rid());
+        }
+        ASSERT_TRUE(ok);
+
+        // check
+        Tuple container;
+        for (size_t_ i = 0; i < insert_num; i++) {
+            if (i % 2 == 0) {
+                if (!table->get_tuple(&container, insert_tuples[i].get_rid()) || !(insert_tuples[i] == container)) {
+                    ok = false;
+                    break;
+                }
+                continue;
+            }
+
+            if (table->get_tuple(&container, insert_tuples[i].get_rid())) {
+                ok = false;
+                break;
+            }
+        }
+        ASSERT_TRUE(ok);
+        PRINT("delete and update successfully!");
+
+        delete db_manager;
+    }
+
+    {
+        /** restart the db to check if data have been persisted on the disk */
+        PRINT("restart the db to ensure the data have been persisted on the disk");
+        DBManager *db_manager = new DBManager(meta);
+        ASSERT_TRUE(db_manager->get_status());
+
+        Catalog *catalog = db_manager->get_catalog();
+        CatalogTable *catalog_table = catalog->get_catalog_table();
+
+        TableMetaData *table_md = catalog_table->get_table_meta_data(table_name);
+        ASSERT_NE(nullptr, table_md);
+
+        Table *table = table_md->get_table();
+        ASSERT_NE(nullptr, table);
+
+        // check
+        bool ok = true;
+        Tuple container;
+        for (size_t_ i = 0; i < insert_num; i++) {
+            if (i % 2 == 0) {
+                if (!table->get_tuple(&container, insert_tuples[i].get_rid()) || !(container == insert_tuples[i])) {
+                    ok = false;
+                    break;
+                }
+                continue;
+            }
+
+            if (table->get_tuple(&container, insert_tuples[i].get_rid())) {
+                ok = false;
+                break;
+            }
+        }
+        
+        ASSERT_TRUE(ok);
+        PRINT("persist data successfully!");
+
+        /** reinsert the deleted tuples and check */
+
+        // reinsert deleted tuples
+        PRINT("start reinsert tuples...");
+        RID rid;
+        for (size_t_ i = 0; i < insert_num; i++) {
+            if (i % 2 == 0) {
+                continue;
+            }
+
+            if (!table->insert_tuple(insert_tuples[i], &rid)) {
+                ok = false;
+                break;
+            }
+            insert_tuples[i].set_rid(rid);
+        }
+        ASSERT_TRUE(ok);
+
+        // check
+        Tuple tuple_container;
+        for (auto tuple : insert_tuples) {
+            if (!table->get_tuple(&tuple_container, tuple.get_rid())) {
+                ok = false;
+                break;
+            }
+
+            if (!(tuple_container == tuple)) {
+                ok = false;
+                break;
+            }
+        }
+        ASSERT_TRUE(ok);
+        PRINT("reinsert tuples successfully!");
         delete db_manager;
     }
 

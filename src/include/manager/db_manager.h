@@ -47,7 +47,7 @@ public:
     }
 
 private:
-    static constexpr size_t_ DEFAULT_POOL_SIZE = 100;
+    static constexpr size_t_ DEFAULT_POOL_SIZE = 50;
 
     DiskManager *disk_manager_;
     BufferPoolManager *bpm_;

@@ -31,6 +31,7 @@ public:
     void apply_delete(const RID &rid);
     void rollback_delete(const RID &rid);
     bool get_tuple(Tuple *tuple, const RID &rid);
+    bool update_tuple(const Tuple &tuple, const RID &rid);
 private:
     BufferPoolManager *bpm_;
     const page_id_t first_table_page_id_;

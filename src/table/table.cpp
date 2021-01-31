@@ -26,6 +26,10 @@ void Table::delete_all_data() {
     while (next_page_id != -1) {
         deleted_pages.insert(next_page_id);
         TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(next_page_id));
+        if (table_page == nullptr) {
+            LOG("delete all data fail");
+            return;
+        }
         bpm_->unpin_page(next_page_id, false);
         next_page_id = table_page->get_next_page_id();
     }
@@ -41,6 +45,8 @@ bool Table::mark_delete(const RID &rid) {
         return false;
     
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    if (table_page == nullptr)
+        return false;    
     table_page->w_lock();
     bool ok = table_page->mark_delete(rid);
     table_page->w_unlock();
@@ -54,6 +60,8 @@ void Table::apply_delete(const RID &rid) {
         return;
     
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    if (table_page == nullptr)
+        return;    
     table_page->w_lock();
     table_page->apply_delete(rid);
     table_page->w_unlock();
@@ -66,6 +74,8 @@ void Table::rollback_delete(const RID &rid) {
         return;
     
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    if (table_page == nullptr)
+        return;    
     table_page->w_lock();
     table_page->rollback_delete(rid);
     table_page->w_unlock();
@@ -78,6 +88,8 @@ bool Table::get_tuple(Tuple *tuple, const RID &rid) {
         return false;
     
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    if (table_page == nullptr)
+        return false;
     table_page->w_lock();
     bool ok = table_page->get_tuple(tuple, rid);
     table_page->w_unlock();
@@ -87,6 +99,10 @@ bool Table::get_tuple(Tuple *tuple, const RID &rid) {
 
 bool Table::insert_tuple(const Tuple &tuple, RID *rid) {
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(first_table_page_id_));
+    if (table_page == nullptr) {
+        PRINT("page id", first_table_page_id_);
+        return false;
+    }
 
     // TODO there may be no more space in disk, handle this!
     table_page->w_lock();
@@ -134,6 +150,19 @@ bool Table::insert_tuple(const Tuple &tuple, RID *rid) {
     table_page->w_unlock();
     bpm_->unpin_page(table_page->get_page_id(), true);
     return true;
+}
+
+bool Table::update_tuple(const Tuple &tuple, const RID &rid) {
+    page_id_t page_id = rid.get_page_id();
+    if (page_id < 0)
+        return false;
+
+    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    table_page->w_lock();
+    bool ok = table_page->update_tuple(tuple, rid);
+    table_page->w_unlock();
+    bpm_->unpin_page(page_id, true);
+    return ok;
 }
 
 } // namespace dawn
