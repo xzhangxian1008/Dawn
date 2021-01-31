@@ -3,7 +3,7 @@
 namespace dawn {
 
 void TablePage::init(const page_id_t prev_pgid, const page_id_t next_pgid) {
-    memset(get_data(), 0, PAGE_SIZE);
+    memset(get_data() + START_OFFSET, 0, PAGE_SIZE - COM_PG_HEADER_SZ);
     *reinterpret_cast<page_id_t*>(get_data() + PREV_PGID_OFFSET) = prev_pgid;
     *reinterpret_cast<page_id_t*>(get_data() + NEXT_PGID_OFFSET) = next_pgid;
     *reinterpret_cast<size_t_*>(get_data() + TUPLE_CNT_OFFSET) = 0;

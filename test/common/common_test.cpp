@@ -19,23 +19,31 @@ using std::ends;
 
 namespace dawn {
 
-class Base {
+//全局
+class GlobalTest:public testing::Environment {
 public:
-    Base() = default;
-    virtual ~Base() {};
-    virtual void func() = 0;
+    virtual void SetUp(){cout<<"gtest introduction example. SetUp"<<endl;}
+    virtual void TearDown(){cout<<"gtest introduction example. TearDown"<<endl;}
 };
 
-class Derived : public Base {
+//在第一个test之前，最后一个test之后调用SetUpTestCase()和TearDownTestCase()
+class CommonTest1:public testing::Test {
 public:
-    ~Derived() override {}
-    void func() override {}
-    int x;
+    static void SetUpTestCase(){cout<<"Map. SetUpTestCase()"<<endl;}
+    static void TearDownTestCase(){cout<<"Map. TearDownTestCase()"<<endl;}
+    void SetUp() {cout<<"Map. SetUp()"<<endl;}
+    void TearDown(){cout<<"Map. TearDown()"<<endl;}
 };
 
-TEST(CommonTest, CommonTEST) {
-    Base *b = new Derived;
-    delete b;
-}
+class CommonTest2:public testing::Test {
+public:
+    static void SetUpTestCase(){cout<<"Fun. SetUpTestCase()"<<endl;}
+    static void TearDownTestCase(){cout<<"Fun. TearDownTestCase()"<<endl;}
+};
+
+TEST_F(CommonTest1, CommonTEST11) {}
+TEST_F(CommonTest1, CommonTEST12) {}
+TEST_F(CommonTest2, CommonTEST21) {}
+TEST_F(CommonTest2, CommonTEST22) {}
 
 } // namespace dawn

@@ -11,6 +11,15 @@
 namespace dawn {
 using page_list = std::vector<Page*>;
 
+const int POOL_SIZE = 20;
+const char *meta = "bpm_test";
+const char *mtdf = "bpm_test.mtd";
+const char *dbf = "bpm_test.db";
+const char *logf = "bpm_test.log";
+string_t mtdf_s(mtdf);
+string_t dbf_s(dbf);
+string_t logf_s(logf);
+
 template<typename T>
 void write_num_to_char(T num, char *dst) {
     string_t num_str = std::to_string(num);
@@ -123,6 +132,20 @@ page_list& initPageList(page_list& pageList, size_t& LIST_SIZE, BpmTestLyb& BpmL
     return pageList;
 }
 
+class BPBasicTest : public testing::Test {
+public:
+    void SetUp() {
+        remove(mtdf);
+        remove(dbf);
+        remove(logf);
+    }
+
+    void TearDown() {
+        remove(mtdf);
+        remove(dbf);
+        remove(logf);
+    }
+};
 
 // ATTENTION encapsulate buffer pool manager's functions, thus it will be modified in the future
 class BufferPoolManagerTest : public BufferPoolManager {
@@ -352,173 +375,209 @@ TEST(TEST_FOR_BPM, TEST_1)
  *      third phase: check if pinned pages pushed in the first phase are in the bpm
  *                   and unpinned pages pushed in the first phase are not in it and 
  *                   their written data have been persisted on the disk.
+ *   3. first phase: get large number of pages, write, unpin and flush them
+ *      second phase: get them from bpm and check the content has been written
  */
-TEST(BPMTest, BasicTest) {
-    const int POOL_SIZE = 20;
-    const char *meta = "bpm_test";
-    const char *mtdf = "bpm_test.mtd";
-    const char *dbf = "bpm_test.db";
-    const char *logf = "bpm_test.log";
-    string_t mtdf_s(mtdf);
-    string_t dbf_s(dbf);
-    string_t logf_s(logf);
+TEST(BPBasicTest, Test1) {
+    DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
+    ASSERT_NE(dm, nullptr);
 
-    {
-        // test 1
-        DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
-        ASSERT_NE(dm, nullptr);
+    BufferPoolManagerTest bpmt(dm, POOL_SIZE);
 
-        BufferPoolManagerTest bpmt(dm, POOL_SIZE);
+    // new
+    Page *page = bpmt.new_page_test();
+    ASSERT_NE(page, nullptr);
+    page_id_t page_id = page->get_page_id();
+    ASSERT_TRUE(bpmt.is_in_bpm(page_id));
+    ASSERT_FALSE(dm->is_free(page_id));
+    ASSERT_TRUE(dm->is_allocated(page_id));
 
-        // new
-        Page *page = bpmt.new_page_test();
-        ASSERT_NE(page, nullptr);
-        page_id_t page_id = page->get_page_id();
-        ASSERT_TRUE(bpmt.is_in_bpm(page_id));
-        ASSERT_FALSE(dm->is_free(page_id));
-        ASSERT_TRUE(dm->is_allocated(page_id));
-        
-        // write
-        const int size1 = 6;
-        const char *s1 = "12345";
-        bpmt.write_page(page, COM_PG_HEADER_SZ, s1, size1);
+    // write
+    const int size1 = 6;
+    const char *s1 = "12345";
+    bpmt.write_page(page, COM_PG_HEADER_SZ, s1, size1);
 
-        // evict
-        bpmt.evict_page_test(page->get_page_id());
-        ASSERT_FALSE(bpmt.is_in_bpm(page_id));
+    // evict
+    bpmt.evict_page_test(page->get_page_id());
+    ASSERT_FALSE(bpmt.is_in_bpm(page_id));
 
-        // get
-        page = bpmt.get_page_test(page_id);
-        ASSERT_TRUE(bpmt.is_in_bpm(page_id));
+    // get
+    page = bpmt.get_page_test(page_id);
+    ASSERT_TRUE(bpmt.is_in_bpm(page_id));
 
-        // read
-        char buf[10];
-        bool ok = true;
-        bpmt.read_page(page, COM_PG_HEADER_SZ, buf, size1);
-        for (int i = 0; i < size1; i++) {
-            if (s1[i] != buf[i]) {
-                ok = false;
-                break;
-            }
+    // read
+    char buf[10];
+    bool ok = true;
+    bpmt.read_page(page, COM_PG_HEADER_SZ, buf, size1);
+    for (int i = 0; i < size1; i++) {
+        if (s1[i] != buf[i]) {
+            ok = false;
+            break;
         }
-        EXPECT_TRUE(ok);
+    }
+    EXPECT_TRUE(ok);
 
-        // write
-        const int size2 = 9;
-        const char *s2 = "abcdefgh";
-        bpmt.write_page(page, COM_PG_HEADER_SZ, s2, size2);
-        bpmt.unpin_page_test(page->get_page_id(), true);
+    // write
+    const int size2 = 9;
+    const char *s2 = "abcdefgh";
+    bpmt.write_page(page, COM_PG_HEADER_SZ, s2, size2);
+    bpmt.unpin_page_test(page->get_page_id(), true);
 
-        // flush
-        ASSERT_TRUE(bpmt.flush_page_test(page->get_page_id()));
+    // flush
+    ASSERT_TRUE(bpmt.flush_page_test(page->get_page_id()));
 
-        // read with DiskManager
-        page = bpmt.get_page_test(page_id);
-        char page_buf[PAGE_SIZE];
-        ASSERT_TRUE(dm->read_page(page->get_page_id(), page_buf));
-        bpmt.unpin_page_test(page->get_page_id(), false);
+    // read with DiskManager
+    page = bpmt.get_page_test(page_id);
+    char page_buf[PAGE_SIZE];
+    ASSERT_TRUE(dm->read_page(page->get_page_id(), page_buf));
+    bpmt.unpin_page_test(page->get_page_id(), false);
 
-        // check
-        ok = true;
-        for (int i = 0; i < size2; i++) {
-            if (page_buf[i+COM_PG_HEADER_SZ] != s2[i]) {
-                ok = false;
-                break;
-            }
+    // check
+    ok = true;
+    for (int i = 0; i < size2; i++) {
+        if (page_buf[i+COM_PG_HEADER_SZ] != s2[i]) {
+            ok = false;
+            break;
         }
-        EXPECT_TRUE(ok);
+    }
+    EXPECT_TRUE(ok);
 
-        // delete page
-        page_id = page->get_page_id();
-        ASSERT_TRUE(bpmt.delete_page_test(page_id));
-        EXPECT_FALSE(bpmt.is_in_bpm(page_id));
-        EXPECT_TRUE(dm->is_free(page_id));
-        EXPECT_FALSE(dm->is_allocated(page_id));
+    // delete page
+    page_id = page->get_page_id();
+    ASSERT_TRUE(bpmt.delete_page_test(page_id));
+    EXPECT_FALSE(bpmt.is_in_bpm(page_id));
+    EXPECT_TRUE(dm->is_free(page_id));
+    EXPECT_FALSE(dm->is_allocated(page_id));
 
-        delete dm;
-        remove(mtdf);
-        remove(dbf);
-        remove(logf);
+    delete dm;
+}
+
+TEST(BPBasicTest, Test2) {
+    DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
+    ASSERT_NE(dm, nullptr);
+
+    BufferPoolManagerTest bpmt(dm, POOL_SIZE);
+
+    std::unordered_set<page_id_t> pinned;
+    std::unordered_set<page_id_t> unpinned;
+    std::unordered_map<page_id_t, Page*> unpinned_pages;
+
+    size_t_ data_size = 20;
+    char data[data_size];
+
+    // phase 1
+    for (int i = 0; i < POOL_SIZE; i++) {
+        memset(data, 0, data_size);
+        Page *p = bpmt.new_page_test();
+        page_id_t pgid = p->get_page_id();
+        if (pgid % 2 == 0) {
+            // unpin
+            unpinned.insert(pgid);
+            unpinned_pages.insert(std::make_pair(pgid, p));
+            write_num_to_char(pgid, data);
+            bpmt.write_page(p, COM_PG_HEADER_SZ, data, strlen(data)+1);
+            bpmt.unpin_page_test(pgid, true);
+            continue;
+        }
+        pinned.insert(pgid);
     }
 
-    {
-        // test 2
-        DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
-        ASSERT_NE(dm, nullptr);
-
-        BufferPoolManagerTest bpmt(dm, POOL_SIZE);
-
-        std::unordered_set<page_id_t> pinned;
-        std::unordered_set<page_id_t> unpinned;
-        std::unordered_map<page_id_t, Page*> unpinned_pages;
-
-        char data[20];
-
-        // phase 1
-        for (int i = 0; i < POOL_SIZE; i++) {
-            Page *p = bpmt.new_page_test();
-            page_id_t pgid = p->get_page_id();
-            if (pgid % 2 == 0) {
-                // unpin
-                unpinned.insert(pgid);
-                unpinned_pages.insert(std::make_pair(pgid, p));
-                write_num_to_char(pgid, data);
-                bpmt.write_page(p, COM_PG_HEADER_SZ, data, strlen(data)+1);
-                bpmt.unpin_page_test(pgid, true);
-                continue;
-            }
-            pinned.insert(pgid);
-        }
-
-        // phase 2
-        for (int i = 0; i < 5 * POOL_SIZE; i++) {
-            Page *p = bpmt.new_page_test();
-            bpmt.unpin_page_test(p->get_page_id(), false);
-        }
-
-        // phase 3
-        bool ok = true;
-        for (auto &pgid : pinned) {
-            if (!bpmt.is_in_bpm(pgid)) {
-                ok = false;
-                break;
-            }
-        }
-
-        EXPECT_TRUE(ok);
-
-        ok = true;
-        char page_buf[PAGE_SIZE];
-        for (auto &pgid : unpinned) {
-            if (bpmt.is_in_bpm(pgid)) {
-                ok = false;
-                break;
-            }
-
-            // directly read page's written data from diskmanager
-            ASSERT_TRUE(dm->read_page(pgid, page_buf));
-            string_t pgid_str = std::to_string(pgid);
-
-            // check data
-            for (size_t i = 0; i < pgid_str.length(); i++) {
-                if (page_buf[COM_PG_HEADER_SZ + i] != pgid_str[i]) {
-                    ok = false;
-                    break;
-                }
-            }
-            if (page_buf[COM_PG_HEADER_SZ + pgid_str.length()] != '\0')
-                ok = false;
-            if (!ok)
-                break;
-        }
-
-        EXPECT_TRUE(ok);
-
-        delete dm;
-        remove(mtdf);
-        remove(dbf);
-        remove(logf);
+    // phase 2
+    for (int i = 0; i < 5 * POOL_SIZE; i++) {
+        Page *p = bpmt.new_page_test();
+        bpmt.unpin_page_test(p->get_page_id(), false);
     }
+
+    // phase 3
+    bool ok = true;
+    for (auto &pgid : pinned) {
+        if (!bpmt.is_in_bpm(pgid)) {
+            ok = false;
+            break;
+        }
+    }
+
+    EXPECT_TRUE(ok);
+
+    ok = true;
+    char page_buf[PAGE_SIZE];
+    for (auto &pgid : unpinned) {
+        if (bpmt.is_in_bpm(pgid)) {
+            ok = false;
+            break;
+        }
+
+        // directly read page's written data from diskmanager
+        ASSERT_TRUE(dm->read_page(pgid, page_buf));
+        string_t pgid_str = std::to_string(pgid);
+
+        // check data
+        for (size_t i = 0; i < pgid_str.length(); i++) {
+            if (page_buf[COM_PG_HEADER_SZ + i] != pgid_str[i]) {
+                ok = false;
+                break;
+            }
+        }
+        if (page_buf[COM_PG_HEADER_SZ + pgid_str.length()] != '\0')
+            ok = false;
+        if (!ok)
+            break;
+    }
+
+    EXPECT_TRUE(ok);
+
+    delete dm;
+}
+
+TEST(BPBasicTest, Test3) {
+    DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
+    ASSERT_NE(dm, nullptr);
+
+    BufferPoolManagerTest bpmt(dm, POOL_SIZE);
+
+    size_t_ data_size = 50;
+    char data[data_size];
+    std::set<page_id_t> page_ids;
+
+    // phase 1
+    for (int i = 0; i < 5 * POOL_SIZE; i++) {
+        memset(data, 0, data_size);
+        Page *p = bpmt.new_page_test();
+        page_id_t pgid = p->get_page_id();
+        page_ids.insert(pgid);
+        write_num_to_char(pgid, data);
+        bpmt.write_page(p, COM_PG_HEADER_SZ, data, strlen(data)+1);
+        bpmt.unpin_page_test(pgid, true);
+        bpmt.flush_page_test(pgid);
+    }
+
+
+    // phase 2
+    bool ok = true;
+    for (auto id : page_ids) {
+        Page *p = bpmt.get_page_test(id);
+        if (p == nullptr) {
+            ok = false;
+            break;
+        }
+        string_t pgid_str = std::to_string(id);
+
+        // check data
+        for (size_t i = 0; i < pgid_str.length(); i++) {
+            if (p->get_data()[COM_PG_HEADER_SZ + i] != pgid_str[i]) {
+                ok = false;
+                break;
+            }
+        }
+        if (p->get_data()[COM_PG_HEADER_SZ + pgid_str.length()] != '\0')
+            ok = false;
+        if (!ok)
+            break;
+        bpmt.unpin_page_test(id, false);
+    }
+    EXPECT_TRUE(ok);
+
+    delete dm;
 }
 
 } // namespace dawn
