@@ -55,6 +55,10 @@ TEST(ValueTest, BasicTest) {
     {
         // TODO test Decimal
     }
+
+    {
+        // TODO test CHAR
+    }
 }
 
 } // namespace dawn

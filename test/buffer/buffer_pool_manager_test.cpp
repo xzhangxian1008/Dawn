@@ -39,6 +39,7 @@ bool checkData(const int& data_size, char* data_buf, const char* data_check)
         }
     return ok;
 }
+
 class BpmTestLyb: public BufferPoolManager
 {
    public:
@@ -197,9 +198,8 @@ read_page(Page *page, const offset_t &offset, char *dst, const int &size) {
 
 TEST(TEST_FOR_FLUSH, TEST_1)
 {
-    PRINT("test for bpm started(2021/01/30)");
     const int POOL_SIZE = 20;
-     const char* meta = "bpm_test_0130";
+    const char* meta = "bpm_test_0130";
     const char *mtdf = "bpm_test_0130.mtd";
     const char *dbf = "bpm_test_0130.db";
     const char *logf = "bpm_test_0130.log";
@@ -274,95 +274,6 @@ TEST(TEST_FOR_FLUSH, TEST_1)
         PRINT("==== the match is successful ====");
     }
     delete dm;
-}
-
-
-TEST(TEST_FOR_BPM, TEST_1)
-{
-    PRINT("test for bpm started(2021/01/28)");
-    const int POOL_SIZE = 20;
-    const char* meta = "bpm_test_0128";
-    const char *mtdf = "bpm_test_0128.mtd";
-    const char *dbf = "bpm_test_0128.db";
-    const char *logf = "bpm_test_0128.log";
-    string_t mtdf_s(mtdf);
-    string_t dbf_s(dbf);
-    string_t logf_s(logf);
-    //test 1
-    DiskManager* dm = DiskManagerFactory::create_DiskManager(meta, true);
-    ASSERT_NE(dm, nullptr);
-
-    //a bufferPoolManager
-    BpmTestLyb BpmLyb(dm, POOL_SIZE);
-    Page* page = BpmLyb.getNewPage(); 
-    ASSERT_NE(page, nullptr);
-    page_id_t page_id = page->get_page_id();
-    PRINT("page_id-> ",page_id);
-    ASSERT_TRUE(BpmLyb.isInBPM(page_id));
-    ASSERT_FALSE(dm->is_free(page_id));
-    ASSERT_TRUE(dm->is_allocated(page_id));
-
-    // write
-    const int size1 = 7;
-    const char* s1 = "Martin";
-    BpmLyb.writePage(page, COM_PG_HEADER_SZ, s1, size1);
-
-    //evict
-    BpmLyb.evictPage(page->get_page_id());
-    ASSERT_FALSE(BpmLyb.isInBPM(page_id));
-
-    //get
-
-    page = BpmLyb.getPage(page_id);
-    ASSERT_TRUE(BpmLyb.isInBPM(page_id));
-
-    //read 
-    char buf[10];
-    bool ok = true;
-    BpmLyb.readPage(page, COM_PG_HEADER_SZ, buf, size1);
-    for(int i = 0; i < size1; i++)
-    {
-        if(s1[i] != buf[i])
-        {
-            ok = false;
-            break;
-        }
-    }
-    EXPECT_TRUE(ok);
-
-    // write
-    const int size2 = 9;
-    const char* s2 = "abcdefgh";
-    BpmLyb.writePage(page, COM_PG_HEADER_SZ, s2, size2);
-    BpmLyb.unpinPage(page->get_page_id(), true);
-    
-    //flush
-    ASSERT_TRUE(BpmLyb.flushPage(page->get_page_id()));
-
-    //read with DiskManager
-    page = BpmLyb.getPage(page_id);
-    char page_buf[PAGE_SIZE];
-    ASSERT_TRUE(dm->read_page(page->get_page_id(), page_buf));
-    BpmLyb.unpinPage(page->get_page_id(), false);
-    // check
-    ok = true;
-    for (int i = 0; i < size2; i++) {
-    if (page_buf[i+COM_PG_HEADER_SZ] != s2[i]) {
-                ok = false;
-                break;
-            }
-    }
-    EXPECT_TRUE(ok);
-    //delete page
-    page_id = page->get_page_id();
-    ASSERT_TRUE(BpmLyb.deletePage(page_id));
-    EXPECT_FALSE(BpmLyb.isInBPM(page_id));
-    EXPECT_TRUE(dm->is_free(page_id));
-    EXPECT_FALSE(dm->is_allocated(page_id));
-    delete dm;
-    remove(mtdf);
-    remove(dbf);
-    remove(logf);
 }
 
 

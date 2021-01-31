@@ -165,4 +165,27 @@ bool Table::update_tuple(const Tuple &tuple, const RID &rid) {
     return ok;
 }
 
+bool Table::get_the_first_tuple(Tuple *tuple) const {
+    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(first_table_page_id_));
+
+    table_page->r_lock();
+    while (!table_page->get_the_first_tuple(tuple)) {
+        page_id_t next_page_id = table_page->get_next_page_id();
+        table_page->r_unlock();
+        bpm_->unpin_page(table_page->get_page_id(), false);
+        if (next_page_id == INVALID_PAGE_ID) {
+            tuple->set_rid(RID(INVALID_PAGE_ID, INVALID_SLOT_NUM));
+            return false;
+        }
+
+        // jump to the next page
+        table_page = reinterpret_cast<TablePage*>(bpm_->get_page(next_page_id));
+        table_page->r_lock();
+    }
+
+    table_page->r_unlock();
+    bpm_->unpin_page(table_page->get_page_id(), false);
+    return true;
+}
+
 } // namespace dawn

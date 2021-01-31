@@ -86,7 +86,8 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
   - 表系统目录(CatalogTable)
 - 表与表相关元数据的设计
   - 表元(TableMetaData)
-  - (TODO)表管理(Table)
+  - 表管理(Table)
+  - (TODO)表迭代器(TableIterator)
   - 表页(TablePage)
   - 表视图(TableSchema)
   - 元组(Tuple)
@@ -162,7 +163,10 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
   - 实现表的创建和删除，并且保证操作的持久化
 
 - 表(Table)测试
-  - (TODO)对表中元组的增删改查
+  - 对表中元组的增删改查
+
+- 表迭代器(TableIterator)测试
+  - (TODO)遍历整张表
 
 - 表页(TablePage)测试
   - 对表页中元组增删改查

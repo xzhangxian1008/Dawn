@@ -2,6 +2,7 @@
 
 #include "data/types.h"
 #include "data/values.h"
+#include "util/config.h"
 
 namespace dawn {
 
