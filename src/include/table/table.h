@@ -19,12 +19,14 @@ namespace dawn {
  * Do we need to maintain another data structure to ensure the RID are legal?
  */
 class Table {
+    friend class TableIterator;
 public:
     // if from_scratch == true, it means that the Table should initialize the page in the disk
     Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool from_scratch = false);
     ~Table() = default;
     void delete_all_data();
     page_id_t get_first_table_page_id() const { return first_table_page_id_; }
+    bool get_the_first_tuple(Tuple *tuple) const;
 
     bool insert_tuple(const Tuple &tuple, RID *rid);
     bool mark_delete(const RID &rid);

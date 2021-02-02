@@ -155,4 +155,19 @@ bool TablePage::get_next_tuple_rid(const RID &cur_rid, RID *next_rid) const {
     return false;
 }
 
+bool TablePage::get_the_first_tuple(Tuple *tuple) const {
+    size_t_ count = get_tuple_count();
+    for (size_t_ slot_num = 0; slot_num < count; slot_num++) {
+        offset_t offset = get_tuple_offset(slot_num);
+        if (offset != 0) {
+            Tuple tmp(RID(get_page_id(), slot_num), get_tuple_size(slot_num));
+            tmp.deserialize_from(get_data() + offset);
+            *tuple = tmp;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 } // namespace dawn

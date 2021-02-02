@@ -114,18 +114,18 @@ public:
     // string should end with '\0'
     inline void serialize_to(char *storage) {
         if (type_id_ == TypeId::CHAR) {
-            singleton[(int)type_id_]->serialize_to(storage, value_.char_);
+            singleton[static_cast<int>(type_id_)]->serialize_to(storage, value_.char_);
             return;
         }
-        singleton[(int)type_id_]->serialize_to(storage, (char*)(&value_));
+        singleton[static_cast<int>(type_id_)]->serialize_to(storage, (char*)(&value_));
     }
 
     inline void deserialize_from(char *src) {
         if (type_id_ == TypeId::CHAR) {
-            singleton[(int)type_id_]->deserialize_from(value_.char_, src);
+            singleton[static_cast<int>(type_id_)]->deserialize_from(value_.char_, src);
             return;
         }
-        singleton[(int)type_id_]->deserialize_from((char*)(&value_), src);
+        singleton[static_cast<int>(type_id_)]->deserialize_from((char*)(&value_), src);
     }
 
     string_t get_value_string() {

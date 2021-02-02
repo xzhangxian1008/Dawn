@@ -39,6 +39,7 @@ bool checkData(const int& data_size, char* data_buf, const char* data_check)
         }
     return ok;
 }
+
 class BpmTestLyb: public BufferPoolManager
 {
    public:
@@ -193,6 +194,87 @@ read_page(Page *page, const offset_t &offset, char *dst, const int &size) {
     page->r_unlock();
 }
 
+
+
+TEST(TEST_FOR_FLUSH, TEST_1)
+{
+    const int POOL_SIZE = 20;
+    const char* meta = "bpm_test_0130";
+    const char *mtdf = "bpm_test_0130.mtd";
+    const char *dbf = "bpm_test_0130.db";
+    const char *logf = "bpm_test_0130.log";
+    string_t mtdf_s(mtdf);
+    string_t dbf_s(dbf);
+    string_t logf_s(logf);
+    DiskManager* dm = DiskManagerFactory::create_DiskManager(meta, true);
+    ASSERT_NE(dm, nullptr);
+    
+    BpmTestLyb BpmLyb(dm, POOL_SIZE);
+
+    page_list pageList;
+    size_t size_test = 10;
+    initPageList(pageList, size_test, BpmLyb);
+    
+    size_t size_list = pageList.size();
+    ASSERT_EQ(size_test, size_list);
+    PRINT("====pagelist's length -> ", pageList.size(), "====");
+    for(size_t i = 0; i < pageList.size(); i++)
+    {
+        ASSERT_TRUE(BpmLyb.isInBPM(pageList[i]->get_page_id()));
+        PRINT("==== page", pageList[i]->get_page_id(), "has been created in BPM ====");
+    }
+
+
+    //prepare the data set.
+    const char* Kuga = "Kuga";
+    const char* Kabuto = "Kabuto";
+    const char* Blade = "Blade";
+    const char* Black = "Black";
+    const char* BlackRX = "BlackRX";
+    const char* Faiz = "Faiz";
+    const char* Decade = "Decade";
+    const char* OOO = "OOO";
+    const char* Amazon = "Amazon";
+    const char* Agito = "Agito";
+    std::vector<const char*> data_list{Kuga, Kabuto, Blade, Black, BlackRX, Faiz, Decade, OOO, Amazon, Agito,};
+    std::vector<const char*>::const_iterator data_iter = data_list.begin();
+
+    const std::vector<int> size_group{5, 7, 6, 6, 8, 5, 7, 4, 7, 6};
+    std::vector<int>::const_iterator size_iter = size_group.begin();
+
+    //write data set to pages
+    for(size_t i = 0; i < data_list.size(); i++)
+    {
+        auto data = *data_iter;
+        auto size = *size_iter;
+        BpmLyb.writePage(pageList[i], COM_PG_HEADER_SZ, data, size);
+        PRINT("==== writing", std::string(data), "to", "page", pageList[i]->get_page_id(), " ====");
+        //end
+        size_iter++;
+        data_iter++;
+    }
+    data_iter = data_list.begin();
+    size_iter = size_group.begin();
+    //flush all
+    ASSERT_TRUE(BpmLyb.flushAllPage());
+    PRINT("==========================================================");
+    //make sure there are all of the data we defined before which has been flushed into disk
+    bool ok;
+    char data_test[PAGE_SIZE];
+    for(size_t i = 0; i < data_list.size(); i++)
+    {
+        ASSERT_TRUE(dm->read_page(pageList[i]->get_page_id(), data_test));
+        PRINT("==== reading data->", std::string(*data_iter), "finsihed ====");
+        //check data
+        ok = checkData(*size_iter, data_test, *(data_iter));
+        ASSERT_TRUE(ok);
+        size_iter++;
+        data_iter++;
+        memset(data_test, '\0', sizeof(data_test)); //reset data_buf.
+        PRINT("==== the match is successful ====");
+    }
+    delete dm;
+}
 
 
 /**

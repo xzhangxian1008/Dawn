@@ -7,6 +7,7 @@
 #include "meta/catalog_table.h"
 #include "table/rid.h"
 #include "table/table_schema.h"
+#include "table/table_iterator.h"
 #include "manager/db_manager.h"
 
 namespace dawn {
@@ -63,6 +64,7 @@ public:
  *   2. test the basic functions of the TablePage object
  *          ATTENTION tuples inserted in the TablePage should be fixed and same size in test 2
  *   3. test the basic functions of the Table object
+ *   4. test the basic functions of the TableIterator object
  */
 
 // test 1
@@ -443,7 +445,7 @@ TEST(TbComponentTest, DISABLED_TablePageBasicTest) {
 }
 
 // test 3
-TEST(TbComponentTest, TableBasicTest) {
+TEST(TbComponentTest, DISABLED_TableBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     size_t_ insert_num = 8765;
@@ -626,6 +628,116 @@ TEST(TbComponentTest, TableBasicTest) {
     }
 
     delete table_schema;
+}
+
+// test 4
+TEST(TbComponentTest, TableIteratorBasicTest) {
+    TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
+
+    size_t_ insert_num = 8765;
+    std::vector<Tuple> insert_tuples;
+
+    {
+
+    }
+    /** insert a lot of tuples and iterate them */
+    PRINT("start inserting large number of tuples...");
+    DBManager *db_manager = new DBManager(meta, true);
+    ASSERT_TRUE(db_manager->get_status());
+
+    Catalog *catalog = db_manager->get_catalog();
+    CatalogTable *catalog_table = catalog->get_catalog_table();
+    ASSERT_TRUE(catalog_table->create_table(table_name, *table_schema));
+
+    TableMetaData *table_md = catalog_table->get_table_meta_data(table_name);
+    ASSERT_NE(nullptr, table_md);
+
+    Table *table = table_md->get_table();
+    ASSERT_NE(nullptr, table);
+
+    v0 = 2333;
+    fill_char_array("apple", v1);
+    v2 = true;
+    fill_char_array("monkey_key", v3);
+    v4 = 3.1415926;
+
+    values.clear();
+    values.push_back(v0);
+    values.push_back(v1);
+    values.push_back(v2);
+    values.push_back(v3);
+    values.push_back(v4);
+
+    // insert a lot of tuples
+    bool ok = true;
+    RID rid;
+    for (size_t_ i = 0; i < insert_num; i++) {
+        values[0] = Value(static_cast<integer_t>(i));
+        Tuple tuple(&values, *table_schema);
+        if (!table->insert_tuple(tuple, &rid)) {
+            ok = false;
+        }
+        tuple.set_rid(rid);
+        insert_tuples.push_back(tuple);
+    }
+    ASSERT_TRUE(ok);
+
+    {
+        // iterate the table
+        PRINT("start iterating the table...");
+        TableIterator table_iter(table);
+        for (size_t_ i = 0; i < insert_num; i++) {
+            if (!(insert_tuples[i] == *table_iter)) {
+                ok = false;
+                break;
+            }
+            table_iter++;
+        }
+        ASSERT_TRUE(ok);
+
+        table_iter++;
+        ASSERT_EQ(table_iter->get_rid().get_page_id(), INVALID_PAGE_ID);
+        PRINT("iterate the table successfully!");
+    }
+
+    /** delete a lot of tuples and iterate the table */
+    ok = true;
+
+    // delete tuples
+    PRINT("delete tuples...");
+    for (size_t_ i = 0; i < insert_num; i++) {
+        // delete tuples with odd index
+        if (i % 2 == 0)
+            continue;
+        
+        if (!table->mark_delete(insert_tuples[i].get_rid())) {
+            ok = false;
+            break;
+        }
+        table->apply_delete(insert_tuples[i].get_rid());
+    }
+    ASSERT_TRUE(ok);
+
+    {
+        // iterate the table
+        PRINT("start iterating after the deletion...");
+        TableIterator table_iter(table);
+        ok = true;
+        for (size_t_ i = 0; i < insert_num; i++) {
+            if (i % 2 == 0)
+                continue;
+
+            if (!(insert_tuples[i] == *table_iter)) {
+                ok = false;
+                break;
+            }
+            table_iter++;
+        }
+        ASSERT_TRUE(ok);
+        table_iter++;
+        ASSERT_EQ(table_iter->get_rid().get_page_id(), INVALID_PAGE_ID);
+        PRINT("iterate the table successfully!");
+    }
 }
 
 } // namespace dawn

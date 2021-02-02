@@ -18,6 +18,14 @@ class Tuple {
 friend class TablePage;
 public:
     Tuple() = default;
+
+    Tuple(const RID &rid, size_t_ size) : rid_(rid), size_(size) {
+        if (size_ > 0) {
+            allocated_ = true;
+            data_ = new char[size_];
+        }
+    }
+
     Tuple(std::vector<Value> *values, const TableSchema &schema) {
         init(values, schema);
     }

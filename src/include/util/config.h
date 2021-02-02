@@ -12,6 +12,7 @@ namespace dawn {
 #define PAGE_SIZE 4096
 #define COM_PG_HEADER_SZ 64 // page's comman header size
 #define INVALID_PAGE_ID -1
+#define INVALID_SLOT_NUM -1
 #define STATUS_EXIST 1
 #define STATUS_FREE 2
 #define STATUS_OFFSET 0
@@ -70,5 +71,6 @@ static constexpr size_t_ OFFSET_T_SIZE = sizeof(offset_t);
 static constexpr size_t_ PGID_T_SIZE = sizeof(page_id_t);
 static constexpr size_t_ DECIMAL_T_SIZE = sizeof(decimal_t);
 static constexpr size_t_ INTEGER_T_SIZE = sizeof(int32_t);
+
 
 } // namespace dawn
