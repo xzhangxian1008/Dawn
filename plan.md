@@ -166,14 +166,14 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
   - 对表中元组的增删改查
 
 - 表迭代器(TableIterator)测试
-  - (TODO)遍历整张表
+  - 遍历整张表
 
 - 表页(TablePage)测试
   - 对表页中元组增删改查
 
 - 数据与数据类型(Tuple, Value, Type)
   - Tuple的基本功能
-  - (TODO Decimal和Char)基本运算
-  - (TODO)序列化和反序列化
+  - 基本运算
+  - 序列化和反序列化
 
 - (TODO)并发测试
