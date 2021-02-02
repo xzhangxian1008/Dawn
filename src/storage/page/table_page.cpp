@@ -143,7 +143,7 @@ bool TablePage::get_tuple(Tuple *tuple, const RID &rid) const {
 bool TablePage::get_next_tuple_rid(const RID &cur_rid, RID *next_rid) const {
     offset_t slot_num = cur_rid.get_slot_num();
     size_t_ tuple_count = get_tuple_count();
-    for (size_t_ i = slot_num; i < tuple_count; i++) {
+    for (size_t_ i = slot_num + 1; i < tuple_count; i++) {
         offset_t offset = get_tuple_offset(i);
         if (offset == 0)
             continue;

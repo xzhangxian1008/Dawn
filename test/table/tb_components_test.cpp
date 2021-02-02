@@ -68,7 +68,7 @@ public:
  */
 
 // test 1
-TEST(TbComponentTest, DISABLED_TupleBasicTest) {
+TEST(TbComponentTest, TupleBasicTest) {
     // prepare for Value
     v0 = 2333;
     fill_char_array("apple", v1);
@@ -98,8 +98,9 @@ TEST(TbComponentTest, DISABLED_TupleBasicTest) {
     EXPECT_TRUE(rid == tuple.get_rid());
 
     // ensure the tuple to contain the correct values
-    for (size_t i = 0; i < values.size(); i++)
+    for (size_t i = 0; i < values.size(); i++) {
         EXPECT_TRUE(values[i] == tuple.get_value(*table_schema, i));
+    }
 
     // change tuple's rid and ensure the change works
     page_id = 2333;
@@ -135,7 +136,7 @@ TEST(TbComponentTest, DISABLED_TupleBasicTest) {
 }
 
 // test 2
-TEST(TbComponentTest, DISABLED_TablePageBasicTest) {
+TEST(TbComponentTest, TablePageBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     DBManager *db_manager = new DBManager(meta, true);
@@ -445,7 +446,7 @@ TEST(TbComponentTest, DISABLED_TablePageBasicTest) {
 }
 
 // test 3
-TEST(TbComponentTest, DISABLED_TableBasicTest) {
+TEST(TbComponentTest, TableBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     size_t_ insert_num = 8765;
@@ -474,11 +475,11 @@ TEST(TbComponentTest, DISABLED_TableBasicTest) {
         v4 = 3.1415926;
 
         values.clear();
-        values.push_back(v0);
-        values.push_back(v1);
-        values.push_back(v2);
-        values.push_back(v3);
-        values.push_back(v4);
+        values.push_back(Value(v0));
+        values.push_back(Value(v1, tb_char0_sz));
+        values.push_back(Value(v2));
+        values.push_back(Value(v3, tb_char1_sz));
+        values.push_back(Value(v4));
 
         // insert a lot of tuples
         bool ok = true;
@@ -637,9 +638,6 @@ TEST(TbComponentTest, TableIteratorBasicTest) {
     size_t_ insert_num = 8765;
     std::vector<Tuple> insert_tuples;
 
-    {
-
-    }
     /** insert a lot of tuples and iterate them */
     PRINT("start inserting large number of tuples...");
     DBManager *db_manager = new DBManager(meta, true);
@@ -662,11 +660,11 @@ TEST(TbComponentTest, TableIteratorBasicTest) {
     v4 = 3.1415926;
 
     values.clear();
-    values.push_back(v0);
-    values.push_back(v1);
-    values.push_back(v2);
-    values.push_back(v3);
-    values.push_back(v4);
+    values.push_back(Value(v0));
+    values.push_back(Value(v1, tb_char0_sz));
+    values.push_back(Value(v2));
+    values.push_back(Value(v3, tb_char1_sz));
+    values.push_back(Value(v4));
 
     // insert a lot of tuples
     bool ok = true;
@@ -691,12 +689,10 @@ TEST(TbComponentTest, TableIteratorBasicTest) {
                 ok = false;
                 break;
             }
-            table_iter++;
+            ++table_iter;
         }
         ASSERT_TRUE(ok);
-
-        table_iter++;
-        ASSERT_EQ(table_iter->get_rid().get_page_id(), INVALID_PAGE_ID);
+        EXPECT_EQ(table_iter->get_rid().get_page_id(), INVALID_PAGE_ID);
         PRINT("iterate the table successfully!");
     }
 
@@ -724,20 +720,24 @@ TEST(TbComponentTest, TableIteratorBasicTest) {
         TableIterator table_iter(table);
         ok = true;
         for (size_t_ i = 0; i < insert_num; i++) {
-            if (i % 2 == 0)
+            if (i % 2 != 0) {
                 continue;
+            }
 
             if (!(insert_tuples[i] == *table_iter)) {
                 ok = false;
                 break;
             }
-            table_iter++;
+            ++table_iter;
         }
+
         ASSERT_TRUE(ok);
-        table_iter++;
-        ASSERT_EQ(table_iter->get_rid().get_page_id(), INVALID_PAGE_ID);
+        EXPECT_EQ(table_iter->get_rid().get_page_id(), INVALID_PAGE_ID);
         PRINT("iterate the table successfully!");
     }
+
+    delete table_schema;
+    delete db_manager;
 }
 
 } // namespace dawn
