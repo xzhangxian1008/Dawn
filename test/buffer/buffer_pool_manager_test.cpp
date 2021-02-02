@@ -7,6 +7,7 @@
 #include "buffer/buffer_pool_manager.h"
 #include "storage/disk/disk_manager.h"
 
+class BufferPoolManagerTest;
 
 namespace dawn {
 using page_list = std::vector<Page*>;
@@ -62,20 +63,7 @@ void clearPageList(page_list& pageList)
       
 }
 
-// initialize list of pages created by me.
-page_list& initPageList(page_list& pageList, size_t& LIST_SIZE, BufferPoolManagerTest& BpmLyb)
-{
-    //clear
-    clearPageList(pageList);
-    //initialize pagelist
-    pageList = page_list(LIST_SIZE, nullptr);
-    for(size_t i = 0; i < LIST_SIZE; i++)
-    {
-        pageList[i] = BpmLyb.new_page_test();
 
-    }
-    return pageList;
-}
 
 class BPBasicTest : public testing::Test {
 public:
@@ -103,7 +91,7 @@ public:
     bool delete_page_test(page_id_t page_id) { return delete_page(page_id); }
     void unpin_page_test(page_id_t page_id, bool is_dirty) { unpin_page(page_id, is_dirty); }
     bool flush_page_test(page_id_t page_id) { return flush_page(page_id); }
-    bool flush_all() { return flush_all(); }
+    bool flush_all_test() { return flush_all(); }
 
     /**
      * ATTENTION USE THIS FUNCTION CAREFULLY!
@@ -136,6 +124,21 @@ read_page(Page *page, const offset_t &offset, char *dst, const int &size) {
     page->r_lock();
     memcpy(dst, page->get_data() + offset, size);
     page->r_unlock();
+}
+
+// initialize list of pages created by me.
+page_list& initPageList(page_list& pageList, size_t& LIST_SIZE, BufferPoolManagerTest& BpmLyb)
+{
+    //clear
+    clearPageList(pageList);
+    //initialize pagelist
+    pageList = page_list(LIST_SIZE, nullptr);
+    for(size_t i = 0; i < LIST_SIZE; i++)
+    {
+        pageList[i] = BpmLyb.new_page_test();
+
+    }
+    return pageList;
 }
 
 /**
@@ -222,7 +225,7 @@ TEST_F(BPBasicTest, Test1) {
     EXPECT_FALSE(dm->is_allocated(page_id));
 
 
-    //test for flush
+    //test for flush all
     {
         BufferPoolManagerTest BpmLyb(dm, POOL_SIZE);
 
@@ -269,23 +272,24 @@ TEST_F(BPBasicTest, Test1) {
     data_iter = data_list.begin();
     size_iter = size_group.begin();
     //flush all
-    ASSERT_TRUE(BpmLyb.flush_all());
+    ASSERT_TRUE(BpmLyb.flush_all_test());
+    // ASSERT_TRUE(BpmLyb.flush_page_test(pageList[0]->get_page_id()));
     PRINT("==========================================================");
     //make sure there are all of the data we defined before which has been flushed into disk
-    bool ok;
-    char data_test[PAGE_SIZE];
-    for(size_t i = 0; i < data_list.size(); i++)
-    {
-        ASSERT_TRUE(dm->read_page(pageList[i]->get_page_id(), data_test));
-        PRINT("==== reading data->", std::string(*data_iter), "finsihed ====");
-        //check data
-        ok = checkData(*size_iter, data_test, *(data_iter));
-        ASSERT_TRUE(ok);
-        size_iter++;
-        data_iter++;
-        memset(data_test, '\0', sizeof(data_test)); //reset data_buf.
-        PRINT("==== the match is successful ====");
-    }
+      bool ok;
+     char data_test[PAGE_SIZE];
+     for(size_t i = 0; i < data_list.size(); i++)
+     {
+         ASSERT_TRUE(dm->read_page(pageList[i]->get_page_id(), data_test));
+         PRINT("==== reading data->", std::string(*data_iter), "finsihed ====");
+         //check data
+         ok = checkData(*size_iter, data_test, *(data_iter));
+         ASSERT_TRUE(ok);
+         size_iter++;
+         data_iter++;
+         memset(data_test, '\0', sizeof(data_test)); //reset data_buf.
+         PRINT("==== the match is successful ====");
+     }
     }
     delete dm;
 }
