@@ -89,17 +89,27 @@ TEST(ValueTest, BasicTest) {
         EXPECT_EQ(Value(v2).GETVALUE_D(), val.GETVALUE_D());
         //test serialize and deserialize method
         char storage[DECIMAL_T_SIZE];
-        decimal_1.serialize_to(storage);
-        decimal_1.deserialize_from(storage);
+        decimal_t v3 = 1.5;
+        decimal_t v4 = 3.5;
+        Value decimal_3(v3);
+        Value decimal_4(v4);
+
+        PRINT("======== serializing to storage obj which contains ",  decimal_3.GETVALUE_D(), " ========");
+        decimal_3.serialize_to(storage);
+        PRINT("======== decimal_4's value ->", decimal_4.GETVALUE_D(), " ========");
+        PRINT("======== deserializing from storage obj which contains ", decimal_3.GETVALUE_D(), " ========");
+        decimal_4.deserialize_from(storage);
+        PRINT("======== decimal_4's value ->", decimal_4.GETVALUE_D(), " ========");
+        ASSERT_TRUE(decimal_3 == decimal_4);
+        PRINT("======== checking serialization and deserialization finished ========");
     }
 
     {
         //test CHAR
         char char_test_1[7] = "Kabuto";
         Value value_char_1(char_test_1, 6);
-        Value value_char_2;
-        // swap
-        value_char_2.load(value_char_1);
+        // Value value_char_2;
+        // value_char_2.load(value_char_1);
         // ASSERT_TRUE(value_char_1 == value_char_2);
         //str_size
         int i = value_char_1.get_char_size();
