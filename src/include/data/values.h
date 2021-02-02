@@ -139,7 +139,7 @@ public:
                 return std::to_string(value_.integer);
             case TypeId::DECIMAL:
                 return std::to_string(value_.decimal);
-            case TypeId::CHAR:
+            case TypeId::CHAR: 
                 return value_.char_;
             default:
                 return string_t("INVALID VALUE");

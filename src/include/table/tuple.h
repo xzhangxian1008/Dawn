@@ -64,7 +64,7 @@ public:
     void set_value(const TableSchema &schema, Value *value, int idx);
 
     inline bool is_allocated() const { return allocated_; }
-    string_t to_string(const TableSchema &schema);
+    string_t to_string(const TableSchema &schema) const;
 
     inline void serialize_to(char *dst) const {
         if (allocated_) {

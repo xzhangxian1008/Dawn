@@ -31,7 +31,7 @@ void Tuple::set_value(const TableSchema &schema, Value *value, int idx) {
     value->serialize_to(data_ + col.get_offset());
 }
 
-string_t Tuple::to_string(const TableSchema &schema) {
+string_t Tuple::to_string(const TableSchema &schema) const {
     std::ostringstream os;
     int col_num = schema.get_column_num();
 
