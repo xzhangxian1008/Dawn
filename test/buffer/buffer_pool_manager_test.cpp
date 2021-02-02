@@ -40,63 +40,6 @@ bool checkData(const int& data_size, char* data_buf, const char* data_check)
     return ok;
 }
 
-class BpmTestLyb: public BufferPoolManager
-{
-   public:
-    explicit BpmTestLyb(DiskManager* disk_manager, int pool_size): BufferPoolManager(disk_manager, pool_size){}
-   Page* getPage(page_id_t page_id)
-   { return get_page(page_id);}
-   
-   Page* getNewPage()
-   {
-       return new_page();
-   }
-
-   bool deletePage(page_id_t page_id)
-   {
-       return delete_page(page_id);
-   }
-
-   void unpinPage(page_id_t page_id, bool is_dirty)
-   {
-       unpin_page(page_id, is_dirty);
-   }
-   
-   bool flushPage(page_id_t page_id)
-   {
-       return flush_page(page_id);
-   }
-   bool flushAllPage()
-   {
-       return flush_all();
-   }
-
-   void evictPage(page_id_t page_id)
-   {
-       evict_page(page_id, get_frame_id(page_id));
-   }
-   bool isInBPM(const page_id_t& page_id)
-   {
-       latch_.r_lock();
-       frame_id_t frame_id = get_frame_id(page_id);
-       latch_.r_unlock();
-       return (frame_id != -1) ? true: false;
-   }
-   
-   inline void writePage(Page* page, const offset_t& offset, const char* src, const int size)
-   {
-       page->w_lock();
-       memcpy(page->get_data() + offset, src, size);
-       page->w_unlock();
-   }
-   inline void readPage(Page* page, const offset_t& offset, char* dst, const int& size)
-   {
-       page->r_lock();
-       memcpy(dst, page->get_data() + offset, size);
-       page->r_unlock();
-   }
-};
-
 //clear list page created by me
 void clearPageList(page_list& pageList)
 {
@@ -120,7 +63,7 @@ void clearPageList(page_list& pageList)
 }
 
 // initialize list of pages created by me.
-page_list& initPageList(page_list& pageList, size_t& LIST_SIZE, BpmTestLyb& BpmLyb)
+page_list& initPageList(page_list& pageList, size_t& LIST_SIZE, BufferPoolManagerTest& BpmLyb)
 {
     //clear
     clearPageList(pageList);
@@ -128,7 +71,8 @@ page_list& initPageList(page_list& pageList, size_t& LIST_SIZE, BpmTestLyb& BpmL
     pageList = page_list(LIST_SIZE, nullptr);
     for(size_t i = 0; i < LIST_SIZE; i++)
     {
-        pageList[i] = BpmLyb.getNewPage();
+        pageList[i] = BpmLyb.new_page_test();
+
     }
     return pageList;
 }
@@ -280,7 +224,7 @@ TEST_F(BPBasicTest, Test1) {
 
     //test for flush
     {
-        BpmTestLyb BpmLyb(dm, POOL_SIZE);
+        BufferPoolManagerTest BpmLyb(dm, POOL_SIZE);
 
     page_list pageList;
     size_t size_test = 10;
@@ -291,7 +235,7 @@ TEST_F(BPBasicTest, Test1) {
     PRINT("====pagelist's length -> ", pageList.size(), "====");
     for(size_t i = 0; i < pageList.size(); i++)
     {
-        ASSERT_TRUE(BpmLyb.isInBPM(pageList[i]->get_page_id()));
+        ASSERT_TRUE(BpmLyb.is_in_bpm(pageList[i]->get_page_id()));
         PRINT("==== page", pageList[i]->get_page_id(), "has been created in BPM ====");
     }
 
@@ -316,7 +260,7 @@ TEST_F(BPBasicTest, Test1) {
     {
         auto data = *data_iter;
         auto size = *size_iter;
-        BpmLyb.writePage(pageList[i], COM_PG_HEADER_SZ, data, size);
+        BpmLyb.write_page(pageList[i], COM_PG_HEADER_SZ, data, size);
         PRINT("==== writing", std::string(data), "to", "page", pageList[i]->get_page_id(), " ====");
         //end
         size_iter++;
@@ -325,7 +269,7 @@ TEST_F(BPBasicTest, Test1) {
     data_iter = data_list.begin();
     size_iter = size_group.begin();
     //flush all
-    ASSERT_TRUE(BpmLyb.flushAllPage());
+    ASSERT_TRUE(BpmLyb.flush_all());
     PRINT("==========================================================");
     //make sure there are all of the data we defined before which has been flushed into disk
     bool ok;
