@@ -53,7 +53,7 @@ using lsn_t = int32_t;
 using string_t = std::string;
 using fstream_t = std::fstream;
 using frame_id_t = int32_t;
-using hash_slot_t = uint64_t;
+using hash_t = uint64_t;
 using table_id_t = page_id_t;
 using size_t_ = int32_t; // I think it's a stupid name
 

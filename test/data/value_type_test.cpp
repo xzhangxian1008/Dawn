@@ -12,7 +12,6 @@ namespace dawn {
 #define MIN_D(decimal_1, decimal_2) MIN(DECIMAL_T, decimal_1, decimal_2)
 #define MAX_D(decimal_1, decimal_2) MAX(DECIMAL_T, decimal_1, decimal_2)
 
-// TODO test serialize and deserialize function
 TEST(ValueTest, BasicTest) {
     {
         // test BOOLEAN

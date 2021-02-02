@@ -6,24 +6,25 @@
 #include "util/config.h"
 #include "util/util.h"
 #include "util/hash_function.h"
+#include "table/rid.h"
 
 namespace dawn {
 
-template<typename KeyType, typename ValueType, typename KeyComparator>
-class LinkHashIndex : public IndexAbstract<KeyType, ValueType, KeyComparator> {
+template<typename KeyType, typename KeyComparator>
+class LinkHashIndex : public IndexAbstract<KeyType, KeyComparator> {
 public:
 
     /**
      * insert value, if the key has existed, update it
      */
-    virtual bool insert(const KeyType &key, const ValueType &value);
+    virtual bool insert(const KeyType &key, const RID &value) override;
 
-    virtual bool remove(const KeyType &key, const ValueType &value);
+    virtual bool remove(const KeyType &key, const RID &value) override;
 
     /**
-     * maybe not only one value has been hashed to that bucket
+     * maybe not only one tuple has been hashed to that bucket
      */
-    virtual bool get_value(const KeyType &key, std::vector<ValueType> *result);
+    virtual bool get_tuple(const KeyType &key, std::vector<Tuple> *result) override;
 
 private:
     page_id_t link_hash_page_id_;
