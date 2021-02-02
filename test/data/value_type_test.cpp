@@ -108,10 +108,6 @@ TEST(ValueTest, BasicTest) {
         string_t value_str = value_char_1.get_value_string();
         PRINT("string -> ", value_str);
     }
-
-    {
-        // TODO test CHAR
-    }
 }
 
 } // namespace dawn

@@ -97,7 +97,7 @@ public:
     std::vector<table_id_t> get_all_table_id();
     string_t to_string();
 
-    // not support change table name so far
+    // TODO not support change table name so far
     bool change_table_name(table_id_t table_id, const string_t &new_name) { return true; }
 private:
     // ATTENTION no lock protects it

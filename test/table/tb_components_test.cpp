@@ -68,7 +68,7 @@ public:
  */
 
 // test 1
-TEST(TbComponentTest, TupleBasicTest) {
+TEST_F(TbComponentTest, TupleBasicTest) {
     // prepare for Value
     v0 = 2333;
     fill_char_array("apple", v1);
@@ -136,7 +136,7 @@ TEST(TbComponentTest, TupleBasicTest) {
 }
 
 // test 2
-TEST(TbComponentTest, TablePageBasicTest) {
+TEST_F(TbComponentTest, TablePageBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     DBManager *db_manager = new DBManager(meta, true);
@@ -446,7 +446,7 @@ TEST(TbComponentTest, TablePageBasicTest) {
 }
 
 // test 3
-TEST(TbComponentTest, TableBasicTest) {
+TEST_F(TbComponentTest, TableBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     size_t_ insert_num = 8765;
@@ -632,7 +632,7 @@ TEST(TbComponentTest, TableBasicTest) {
 }
 
 // test 4
-TEST(TbComponentTest, TableIteratorBasicTest) {
+TEST_F(TbComponentTest, TableIteratorBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     size_t_ insert_num = 8765;

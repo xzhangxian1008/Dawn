@@ -36,7 +36,6 @@ public:
     TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema, const table_id_t table_id);
 
     ~TableMetaData() {
-        // TODO other things should be done
         delete table_;
         delete table_schema_;
         bpm_->unpin_page(self_page_id_, true); // always true
