@@ -68,5 +68,7 @@ static constexpr size_t_ ENUM_SIZE = sizeof(enum_size_t);
 static constexpr size_t_ SIZE_T_SIZE = sizeof(size_t_); // may be this is a stupid name
 static constexpr size_t_ OFFSET_T_SIZE = sizeof(offset_t);
 static constexpr size_t_ PGID_T_SIZE = sizeof(page_id_t);
+static constexpr size_t_ DECIMAL_T_SIZE = sizeof(decimal_t);
+static constexpr size_t_ INTEGER_T_SIZE = sizeof(int32_t);
 
 } // namespace dawn

@@ -75,8 +75,8 @@ public:
         return std::max(left_val, right_val);
     }
 
-    void serialize_to(char *dst, char *src) override { memcpy(dst, src, sizeof(decimal_t)); }
-    void deserialize_from(char *dst, char *src) override { memcpy(dst, src, sizeof(decimal_t)); }
+    void serialize_to(char *dst, char *src) override { memcpy(dst, src, DECIMAL_T_SIZE); }
+    void deserialize_from(char *dst, char *src) override { memcpy(dst, src, DECIMAL_T_SIZE); }
 };
 
 } // namespace dawn
