@@ -271,6 +271,7 @@ void MurmurHash3_x64_128 ( const void * key, const int len,
   {
     uint64_t k1 = getblock64(blocks,i*2+0);
     uint64_t k2 = getblock64(blocks,i*2+1);
+    
 
     k1 *= c1; k1  = ROTL64(k1,31); k1 *= c2; h1 ^= k1;
 

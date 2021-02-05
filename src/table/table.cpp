@@ -16,6 +16,20 @@ Table::Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool f
     TablePage *table_page = reinterpret_cast<TablePage*>(page);
     table_page->init(-1, -1);
     bpm_->unpin_page(first_table_page_id_, true);
+
+    // always inialize with link hash so far
+    switch (LINK_HASH) {
+        case LINK_HASH:
+            insert_tuple_func = lk_ha_insert_tuple;
+            mark_delete_func = lk_ha_mark_delete;
+            apply_delete_func = lk_ha_apply_delete;
+            rollback_delete_func = lk_ha_rollback_delete;
+            get_tuple_func = lk_ha_get_tuple;
+            update_tuple_func = lk_ha_update_tuple;
+            break;
+        default:
+            break;
+    }
 }
 
 void Table::delete_all_data() {
@@ -97,59 +111,61 @@ bool Table::get_tuple(Tuple *tuple, const RID &rid) {
     return ok;
 }
 
-bool Table::insert_tuple(const Tuple &tuple, RID *rid) {
-    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(first_table_page_id_));
-    if (table_page == nullptr) {
-        PRINT("page id", first_table_page_id_);
-        return false;
-    }
-
-    // TODO there may be no more space in disk, handle this!
-    table_page->w_lock();
-    while (!table_page->insert_tuple(tuple, rid)) {
-        page_id_t next_page_id = table_page->get_next_page_id();
-        if (next_page_id == INVALID_PAGE_ID) {
-            // get a new page
-            TablePage* new_page = reinterpret_cast<TablePage*>(bpm_->new_page());
-            if (new_page == nullptr) {
-                table_page->w_unlock();
-                bpm_->unpin_page(table_page->get_page_id(), false);
-                return false;
-            }
-
-            // update new page's info
-            new_page->w_lock();
-            new_page->init(table_page->get_page_id(), INVALID_PAGE_ID);
-            new_page->set_is_dirty(true);
-
-            // update table_page's info
-            table_page->set_next_page_id(new_page->get_page_id());
-            table_page->w_unlock();
-            bpm_->unpin_page(table_page->get_page_id(), true);
-
-            // jump to the new page
-            table_page = new_page;
-        } else {
-            if (next_page_id < 0)
-                PRINT("page -> page:", table_page->get_page_id(), next_page_id);
-            table_page->w_unlock();
-            bpm_->unpin_page(table_page->get_page_id(), false);
-
-            // jump to the next page
-            table_page = reinterpret_cast<TablePage*>(bpm_->get_page(next_page_id));
-            if (table_page == nullptr) {
-                // get next page fail
-                std::stringstream os;
-                os << "db meta data inconsistency, get page " << next_page_id << " fail!";
-                LOG(os.str());
-                exit(-1);
-            }
-            table_page->w_lock();
-        }
-    }
-    table_page->w_unlock();
-    bpm_->unpin_page(table_page->get_page_id(), true);
+bool Table::insert_tuple(const Tuple &tuple, RID *rid, char *key, size_t_ key_size) {
     return true;
+
+    // TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(first_table_page_id_));
+    // if (table_page == nullptr) {
+    //     PRINT("page id", first_table_page_id_);
+    //     return false;
+    // }
+
+    // // TODO there may be no more space in disk, handle this!
+    // table_page->w_lock();
+    // while (!table_page->insert_tuple(tuple, rid)) {
+    //     page_id_t next_page_id = table_page->get_next_page_id();
+    //     if (next_page_id == INVALID_PAGE_ID) {
+    //         // get a new page
+    //         TablePage* new_page = reinterpret_cast<TablePage*>(bpm_->new_page());
+    //         if (new_page == nullptr) {
+    //             table_page->w_unlock();
+    //             bpm_->unpin_page(table_page->get_page_id(), false);
+    //             return false;
+    //         }
+
+    //         // update new page's info
+    //         new_page->w_lock();
+    //         new_page->init(table_page->get_page_id(), INVALID_PAGE_ID);
+    //         new_page->set_is_dirty(true);
+
+    //         // update table_page's info
+    //         table_page->set_next_page_id(new_page->get_page_id());
+    //         table_page->w_unlock();
+    //         bpm_->unpin_page(table_page->get_page_id(), true);
+
+    //         // jump to the new page
+    //         table_page = new_page;
+    //     } else {
+    //         if (next_page_id < 0)
+    //             PRINT("page -> page:", table_page->get_page_id(), next_page_id);
+    //         table_page->w_unlock();
+    //         bpm_->unpin_page(table_page->get_page_id(), false);
+
+    //         // jump to the next page
+    //         table_page = reinterpret_cast<TablePage*>(bpm_->get_page(next_page_id));
+    //         if (table_page == nullptr) {
+    //             // get next page fail
+    //             std::stringstream os;
+    //             os << "db meta data inconsistency, get page " << next_page_id << " fail!";
+    //             LOG(os.str());
+    //             exit(-1);
+    //         }
+    //         table_page->w_lock();
+    //     }
+    // }
+    // table_page->w_unlock();
+    // bpm_->unpin_page(table_page->get_page_id(), true);
+    // return true;
 }
 
 bool Table::update_tuple(const Tuple &tuple, const RID &rid) {

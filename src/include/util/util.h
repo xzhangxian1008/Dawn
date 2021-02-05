@@ -4,6 +4,9 @@
 #include <string>
 #include <fstream>
 
+#include "murmur3/MurmurHash3.h"
+#include "util/config.h"
+
 namespace dawn {
 
 #define DISALLOW_COPY(cname)                   \
@@ -40,6 +43,13 @@ void print__(const T& firstArg, const Types&... args) {
 inline void log__(std::string file_name, std::string func_name, int line, std::string info) {
     std::string out = file_name + " " + func_name + ", line " + std::to_string(line) + ": " + info;
     std::cout << out << std::endl;
+}
+
+inline hash_t do_hash(char *key, size_t_ key_size) {
+    hash_t hash[2];
+    murmur3::MurmurHash3_x64_128(reinterpret_cast<const void *>(&key), key_size, 0,
+                                reinterpret_cast<void *>(&hash));
+    return hash[0];
 }
 
 char* string2char(const std::string &str);

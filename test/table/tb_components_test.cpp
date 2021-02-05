@@ -446,7 +446,7 @@ TEST_F(TbComponentTest, TablePageBasicTest) {
 }
 
 // test 3
-TEST_F(TbComponentTest, TableBasicTest) {
+TEST_F(TbComponentTest, DISABLED_TableBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     size_t_ insert_num = 8765;
@@ -632,7 +632,7 @@ TEST_F(TbComponentTest, TableBasicTest) {
 }
 
 // test 4
-TEST_F(TbComponentTest, TableIteratorBasicTest) {
+TEST_F(TbComponentTest, DISABLED_TableIteratorBasicTest) {
     TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     size_t_ insert_num = 8765;

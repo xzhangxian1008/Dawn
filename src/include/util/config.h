@@ -5,28 +5,32 @@
 
 namespace dawn {
 
-#define READ_DB_BUF_SZ 409600 // 100 pages
-#define READ_DB_PG_NUM 100
+#define READ_DB_BUF_SZ  409600 // 100 pages
+#define READ_DB_PG_NUM     100
 
 // page
-#define PAGE_SIZE 4096
-#define COM_PG_HEADER_SZ 64 // page's comman header size
-#define INVALID_PAGE_ID -1
-#define INVALID_SLOT_NUM -1
-#define STATUS_EXIST 1
-#define STATUS_FREE 2
-#define STATUS_OFFSET 0
-#define LSN_OFFSET 1
-#define PAGE_ID_OFFSET 5
-#define TABLE_PAGE_RESERVED 64
+#define PAGE_SIZE            4096
+#define COM_PG_HEADER_SZ       64 // page's comman header size
+#define INVALID_PAGE_ID        -1
+#define INVALID_SLOT_NUM       -1
+#define STATUS_EXIST            1
+#define STATUS_FREE             2
+#define STATUS_OFFSET           0
+#define LSN_OFFSET              1
+#define PAGE_ID_OFFSET          5
+#define TABLE_PAGE_RESERVED    64
 
 // replacer
-#define FRAME_NOT_EXIST 1
-#define FRAME_EXIST_TRUE 2
-#define FRAME_EXIST_FALSE 4
+#define FRAME_NOT_EXIST    1
+#define FRAME_EXIST_TRUE   2
+#define FRAME_EXIST_FALSE  4
+
+// index
+#define LINK_HASH 1
+#define BP_TREE   2
 
 // type
-#define TYPE_NUM 4
+#define TYPE_NUM  4
 
 #define INVALID_T TypeId::INVALID
 #define BOOLEAN_T TypeId::BOOLEAN
@@ -72,5 +76,7 @@ static constexpr size_t_ PGID_T_SIZE = sizeof(page_id_t);
 static constexpr size_t_ DECIMAL_T_SIZE = sizeof(decimal_t);
 static constexpr size_t_ INTEGER_T_SIZE = sizeof(int32_t);
 
+/** number of slots a LinkHashPage could contain */
+static offset_t constexpr LK_HA_TOTAL_SLOT_NUM = (PAGE_SIZE - COM_PG_HEADER_SZ) / PGID_T_SIZE;
 
 } // namespace dawn
