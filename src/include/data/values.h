@@ -128,6 +128,24 @@ public:
         singleton[static_cast<int>(type_id_)]->deserialize_from((char*)(&value_), src);
     }
 
+    hash_t get_hash_value() const {
+        switch (type_id_) {
+            case TypeId::BOOLEAN:
+                boolean_t *val = const_cast<boolean_t*>(&(value_.boolean));
+                return do_hash(static_cast<void*>(val), BOOLEAN_T_SIZE);
+            case TypeId::INTEGER:
+                integer_t *val = const_cast<integer_t*>(&(value_.integer));
+                return do_hash(static_cast<void*>(val), INTEGER_T_SIZE);
+            case TypeId::DECIMAL:
+                decimal_t *val = const_cast<decimal_t*>(&(value_.decimal));
+                return do_hash(static_cast<void*>(val), DECIMAL_T_SIZE);
+            case TypeId::CHAR:
+                char *val = const_cast<char*>(value_.char_);
+                return do_hash(static_cast<void*>(val), str_size_);
+        }
+        return 0;
+    }
+
     string_t get_value_string() {
         switch (type_id_) {
             case TypeId::BOOLEAN:

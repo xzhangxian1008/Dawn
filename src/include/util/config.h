@@ -74,7 +74,8 @@ static constexpr size_t_ SIZE_T_SIZE = sizeof(size_t_); // may be this is a stup
 static constexpr size_t_ OFFSET_T_SIZE = sizeof(offset_t);
 static constexpr size_t_ PGID_T_SIZE = sizeof(page_id_t);
 static constexpr size_t_ DECIMAL_T_SIZE = sizeof(decimal_t);
-static constexpr size_t_ INTEGER_T_SIZE = sizeof(int32_t);
+static constexpr size_t_ INTEGER_T_SIZE = sizeof(integer_t);
+static constexpr size_t_ BOOLEAN_T_SIZE = sizeof(boolean_t);
 
 /** number of slots a LinkHashPage could contain */
 static offset_t constexpr LK_HA_TOTAL_SLOT_NUM = (PAGE_SIZE - COM_PG_HEADER_SZ) / PGID_T_SIZE;

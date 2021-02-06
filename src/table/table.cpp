@@ -111,7 +111,7 @@ bool Table::get_tuple(Tuple *tuple, const RID &rid) {
     return ok;
 }
 
-bool Table::insert_tuple(const Tuple &tuple, RID *rid, char *key, size_t_ key_size) {
+bool Table::insert_tuple(Tuple *tuple, const TableSchema &tb_schema) {
     return true;
 
     // TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(first_table_page_id_));

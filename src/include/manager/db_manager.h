@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "storage/disk/disk_manager.h"
 #include "buffer/buffer_pool_manager.h"
 #include "meta/catalog.h"
@@ -57,5 +59,7 @@ private:
     bool status;
     ReaderWriterLatch latch_;
 };
+
+extern std::unique_ptr<DBManager> db_ptr;
 
 } // namespace dawn

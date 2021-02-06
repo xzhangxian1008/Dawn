@@ -1,6 +1,5 @@
 #pragma once
 
-#include "buffer/buffer_pool_manager.h"
 #include "util/config.h"
 #include "util/util.h"
 #include "table/rid.h"
@@ -16,7 +15,7 @@
 
 namespace dawn {
 
-bool lk_ha_insert_tuple(page_id_t first_page_id, const Tuple &tuple, const TableSchema &tb_schema);
+bool lk_ha_insert_tuple(page_id_t first_page_id, const Tuple *tuple, const TableSchema &tb_schema);
 
 bool lk_ha_mark_delete(page_id_t first_page_id, const RID &rid);
 
