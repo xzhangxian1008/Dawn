@@ -44,12 +44,12 @@ private:
     const page_id_t first_table_page_id_;
     ReaderWriterLatch latch_;
 
-    bool (*insert_tuple_func)(page_id_t first_page_id, const Tuple *tuple, const TableSchema &tb_schema);
-    bool (*mark_delete_func)(page_id_t first_page_id, const RID &rid);
+    op_code_t (*insert_tuple_func)(page_id_t first_page_id, const Tuple *tuple, const TableSchema &tb_schema);
+    op_code_t (*mark_delete_func)(page_id_t first_page_id, const RID &rid);
     void (*apply_delete_func)(page_id_t first_page_id, const RID &rid);
     void (*rollback_delete_func)(page_id_t first_page_id, const RID &rid);
-    bool (*get_tuple_func)(page_id_t first_page_id, Tuple *tuple, const TableSchema &tb_schema);
-    bool (*update_tuple_func)(page_id_t first_page_id, const Tuple &tuple, const RID &rid, const TableSchema &tb_schema);
+    op_code_t (*get_tuple_func)(page_id_t first_page_id, Tuple *tuple, const TableSchema &tb_schema);
+    op_code_t (*update_tuple_func)(page_id_t first_page_id, const Tuple &tuple, const RID &rid, const TableSchema &tb_schema);
 };
 
 } // namespace dawn

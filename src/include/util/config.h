@@ -26,11 +26,17 @@ namespace dawn {
 #define FRAME_EXIST_FALSE  4
 
 // index
-#define LINK_HASH 1
-#define BP_TREE   2
+#define LINK_HASH 1 // link hash
+#define BP_TREE   2 // B+ tree
 
 // type
 #define TYPE_NUM  4
+
+// op_code
+#define OP_SUCCESS            0
+#define DUP_KEY              -1 // key is duplicated
+#define NEW_PG_FAIL          -2 // get new page fail
+#define TUPLE_NOT_FOUND      -3 // can't find tuple
 
 #define INVALID_T TypeId::INVALID
 #define BOOLEAN_T TypeId::BOOLEAN
@@ -67,6 +73,7 @@ using decimal_t = double;
 using varchar_t = char*;
 
 using enum_size_t = int32_t;
+using op_code_t = int32_t; // operation result
 
 static constexpr size_t_ PTR_SIZE = sizeof(char*);
 static constexpr size_t_ ENUM_SIZE = sizeof(enum_size_t);
@@ -78,6 +85,9 @@ static constexpr size_t_ INTEGER_T_SIZE = sizeof(integer_t);
 static constexpr size_t_ BOOLEAN_T_SIZE = sizeof(boolean_t);
 
 /** number of slots a LinkHashPage could contain */
-static offset_t constexpr LK_HA_TOTAL_SLOT_NUM = (PAGE_SIZE - COM_PG_HEADER_SZ) / PGID_T_SIZE;
+static offset_t constexpr LK_HA_PG_SLOT_NUM = (PAGE_SIZE - COM_PG_HEADER_SZ) / PGID_T_SIZE;
+
+/** total slot number the link hash function has */
+static offset_t constexpr Lk_HA_TOTAL_SLOT_NUM = LK_HA_PG_SLOT_NUM * LK_HA_PG_SLOT_NUM;
 
 } // namespace dawn

@@ -85,8 +85,14 @@ public:
 
     bool get_tuple(Tuple *tuple, const RID &rid) const;
     
+    /**
+     * @return true: get successfully, false: get unsuccessfully
+     */
     bool get_next_tuple_rid(const RID &cur_rid, RID *next_rid) const;
 
+    /**
+     * @return true: get successfully, false: get unsuccessfully
+     */
     bool get_the_first_tuple(Tuple *tuple) const;
     
     inline static size_t_ get_tuple_record_sz() { return TUPLE_RECORD_SZ; }

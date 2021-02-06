@@ -128,6 +128,7 @@ public:
         singleton[static_cast<int>(type_id_)]->deserialize_from((char*)(&value_), src);
     }
 
+    // TODO test it!
     hash_t get_hash_value() const {
         switch (type_id_) {
             case TypeId::BOOLEAN:

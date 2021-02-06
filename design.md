@@ -45,9 +45,7 @@
 
 冲突解决：链表法
 
-LinkHashIndex：索引的控制中心，对外提供CRUD接口，内含一张头页面，头页面记录着所有LinkHashSlotPage的页号
-
-LinkHashSlotPage：存放索引槽的页面，每个槽存放一个page_id指向一个TablePage
+LinkHashPage：存放索引槽的页面，每个槽存放一个page_id指向一个LinkHashPage或TablePage
 
 TablePage：这是实际存放数据的地方，可以形成一张单链表
 
@@ -55,9 +53,9 @@ TablePage：这是实际存放数据的地方，可以形成一张单链表
     LinkHashIndex的头页面假设可以存放700个page_id，LinkHashSlotPage每张可以存放700个page_id，所以槽总数就是700*700 = 490000
 
 可以将哈希索需要的页面分为三层：
-- 第一层是LinkHashIndex使用的，它拥有一张记录信息的page，主要记录页面号，记录的页面号指向的就是第二层页面
-- 第二层是存放槽的页面(LinkHashSlotPage)，槽中记录着存储数据的第一张页面号码
-- 第三层是存放数据的页面(TablePage)，一张存放数据的页面肯定不够，所以它会形成一张单链表
+- 第一层是一张LinkHashPage，它的槽存放着指向第二层LinkHashPage的page id
+- 第二层是存放槽的页面(LinkHashPage)，槽中记录着存储数据的第一张页面page id
+- 第三层是存放数据的页面(TablePage)，一张存放数据的页面肯定不够，所以它会形成一张双向链表
 
 # 查询执行
 
