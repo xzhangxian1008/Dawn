@@ -27,6 +27,7 @@ Table::Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool f
             get_tuple_func = lk_ha_get_tuple;
             update_tuple_func = lk_ha_update_tuple;
             break;
+        case BP_TREE:
         default:
             break;
     }
@@ -97,22 +98,27 @@ void Table::rollback_delete(const RID &rid) {
 }
 
 bool Table::get_tuple(Tuple *tuple, const RID &rid) {
-    page_id_t page_id = rid.get_page_id();
-    if (page_id < 0)
-        return false;
-    
-    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
-    if (table_page == nullptr)
-        return false;
-    table_page->w_lock();
-    bool ok = table_page->get_tuple(tuple, rid);
-    table_page->w_unlock();
-    bpm_->unpin_page(page_id, false);
-    return ok;
+    op_code_t op_code = get_tuple_directly(rid, tuple);
+    if (op_code == OP_SUCCESS) {
+        return true;
+    }
+    return false;
+}
+
+bool Table::get_tuple(const Value &key_value, Tuple *tuple, const TableSchema &tb_schema) {
+    op_code_t op_code = get_tuple_func(first_table_page_id_, key_value, tuple, tb_schema);
+    if (op_code == OP_SUCCESS) {
+        return true;
+    }
+    return false;
 }
 
 bool Table::insert_tuple(Tuple *tuple, const TableSchema &tb_schema) {
-    return true;
+    op_code_t op_code = insert_tuple_func(first_table_page_id_, tuple, tb_schema);
+    if (op_code == OP_SUCCESS) {
+        return true;
+    }
+    return false;
 
     // TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(first_table_page_id_));
     // if (table_page == nullptr) {
@@ -168,40 +174,45 @@ bool Table::insert_tuple(Tuple *tuple, const TableSchema &tb_schema) {
     // return true;
 }
 
-bool Table::update_tuple(const Tuple &tuple, const RID &rid) {
-    page_id_t page_id = rid.get_page_id();
-    if (page_id < 0)
-        return false;
-
-    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
-    table_page->w_lock();
-    bool ok = table_page->update_tuple(tuple, rid);
-    table_page->w_unlock();
-    bpm_->unpin_page(page_id, true);
-    return ok;
-}
-
-bool Table::get_the_first_tuple(Tuple *tuple) const {
-    TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(first_table_page_id_));
-
-    table_page->r_lock();
-    while (!table_page->get_the_first_tuple(tuple)) {
-        page_id_t next_page_id = table_page->get_next_page_id();
-        table_page->r_unlock();
-        bpm_->unpin_page(table_page->get_page_id(), false);
-        if (next_page_id == INVALID_PAGE_ID) {
-            tuple->set_rid(RID(INVALID_PAGE_ID, INVALID_SLOT_NUM));
-            return false;
-        }
-
-        // jump to the next page
-        table_page = reinterpret_cast<TablePage*>(bpm_->get_page(next_page_id));
-        table_page->r_lock();
+bool Table::update_tuple(Tuple *new_tuple, const RID &old_rid, const TableSchema &tb_schema) {
+    op_code_t op_code = update_tuple_func(first_table_page_id_, new_tuple, old_rid, tb_schema);
+    if (op_code == OP_SUCCESS) {
+        return true;
     }
+    return false;
+    // page_id_t page_id = rid.get_page_id();
+    // if (page_id < 0)
+    //     return false;
 
-    table_page->r_unlock();
-    bpm_->unpin_page(table_page->get_page_id(), false);
-    return true;
+    // TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
+    // table_page->w_lock();
+    // bool ok = table_page->update_tuple(tuple, rid);
+    // table_page->w_unlock();
+    // bpm_->unpin_page(page_id, true);
+    // return ok;
 }
+
+// bool Table::get_the_first_tuple(Tuple *tuple) const {
+//     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(first_table_page_id_));
+
+//     table_page->r_lock();
+//     while (!table_page->get_the_first_tuple(tuple)) {
+//         page_id_t next_page_id = table_page->get_next_page_id();
+//         table_page->r_unlock();
+//         bpm_->unpin_page(table_page->get_page_id(), false);
+//         if (next_page_id == INVALID_PAGE_ID) {
+//             tuple->set_rid(RID(INVALID_PAGE_ID, INVALID_SLOT_NUM));
+//             return false;
+//         }
+
+//         // jump to the next page
+//         table_page = reinterpret_cast<TablePage*>(bpm_->get_page(next_page_id));
+//         table_page->r_lock();
+//     }
+
+//     table_page->r_unlock();
+//     bpm_->unpin_page(table_page->get_page_id(), false);
+//     return true;
+// }
 
 } // namespace dawn

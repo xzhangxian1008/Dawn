@@ -4,6 +4,7 @@
 #include "util/util.h"
 #include "table/rid.h"
 #include "table/tuple.h"
+#include "table/tb_common_op.h"
 
 /**
  * link hash needs pages divided into three levels.
@@ -15,16 +16,35 @@
 
 namespace dawn {
 
-op_code_t lk_ha_insert_tuple(page_id_t first_page_id, const Tuple *tuple, const TableSchema &tb_schema);
+/**
+ * the link hash insert operation is divided into three level
+ * first level: only one LinkHashPage, his slots store the page ids that refer to the second level's LinkHashPage
+ * second level: many LinkHashPage, their slots store the page ids that refer to the third level's TablePage
+ * third level: the actual level that stores data and has many double linked list.
+ * @param first_page_id refer to the first level's page id
+ * @param tuple insert it's data into db and set it's RID to return the insert position
+ * @param tb_schema describe the tuple to get the key index
+ */
+op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS);
 
-op_code_t lk_ha_mark_delete(page_id_t first_page_id, const RID &rid);
+// may be useless
+op_code_t lk_ha_mark_delete(MARK_DELETE_FUNC_PARAMS);
 
-void lk_ha_apply_delete(page_id_t first_page_id, const RID &rid);
+// may be useless
+void lk_ha_apply_delete(APPLY_DELETE_FUNC_PARAMS);
 
-void lk_ha_rollback_delete(page_id_t first_page_id, const RID &rid);
+// may be useless
+void lk_ha_rollback_delete(ROLLBACK_DELETE_FUNC_PARAMS);
 
-op_code_t lk_ha_get_tuple(page_id_t first_page_id, Tuple *tuple, const TableSchema &tb_schema);
+op_code_t lk_ha_get_tuple(GET_TUPLE_FUNC_PARAMS);
 
-op_code_t lk_ha_update_tuple(page_id_t first_page_id, const Tuple &tuple, const RID &rid, const TableSchema &tb_schema);
+/**
+ * Firstly, check if key will be modified. 
+ * Yes, then reinsert the new_tuple, but may be fail because of the possible duplicate, and delete the old tuple.
+ * No, modify the tuple in place.
+ * @param new_tuple new position will be set in the new tuple
+ * @param old_rid old tuple's position
+ */
+op_code_t lk_ha_update_tuple(UPDATE_TUPLE_FUNC_PARAMS);
 
 } // namespace dawn

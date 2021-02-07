@@ -37,6 +37,7 @@ namespace dawn {
 #define DUP_KEY              -1 // key is duplicated
 #define NEW_PG_FAIL          -2 // get new page fail
 #define TUPLE_NOT_FOUND      -3 // can't find tuple
+#define MARK_DELETE_FAIL     -4
 
 #define INVALID_T TypeId::INVALID
 #define BOOLEAN_T TypeId::BOOLEAN
@@ -56,6 +57,13 @@ namespace dawn {
 #define DIVIDE(type, left, right) Type::get_instance(type)->divide(left, right)
 #define MIN(type, left, right) Type::get_instance(type)->min(left, right)
 #define MAX(type, left, right) Type::get_instance(type)->max(left, right)
+
+#define INSERT_TUPLE_FUNC_PARAMS     page_id_t first_page_id, Tuple *tuple, const TableSchema &tb_schema
+#define MARK_DELETE_FUNC_PARAMS      page_id_t first_page_id, Value key_value, const TableSchema &tb_schema
+#define APPLY_DELETE_FUNC_PARAMS     page_id_t first_page_id, Value key_value, const TableSchema &tb_schema
+#define ROLLBACK_DELETE_FUNC_PARAMS  page_id_t first_page_id, Value key_value, const TableSchema &tb_schema
+#define GET_TUPLE_FUNC_PARAMS        page_id_t first_page_id, Value key_value, Tuple *tuple, const TableSchema &tb_schema
+#define UPDATE_TUPLE_FUNC_PARAMS     page_id_t first_page_id, Tuple *new_tuple, const RID &old_rid, const TableSchema &tb_schema
 
 using page_id_t = int32_t;
 using offset_t = int32_t;

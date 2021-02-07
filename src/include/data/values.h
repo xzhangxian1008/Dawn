@@ -58,7 +58,7 @@ public:
         return *this;
     }
 
-    bool operator==(const Value &value) {
+    bool operator==(const Value &value) const {
         if (this->type_id_ != value.type_id_)
             return false;
             
