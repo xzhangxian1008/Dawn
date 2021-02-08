@@ -1,6 +1,6 @@
 #include "index/link_hash.h"
-#include "manager/db_manager.h"
 #include "storage/page/link_hash_page.h"
+#include "storage/page/table_page.h"
 
 namespace dawn {
 
@@ -21,8 +21,9 @@ inline void get_inserted_slot(hash_t hash_val, offset_t *sec_pg_slot_num, offset
  * @param dup_rid duplicate key's position will be set in the dup_rid if the dup_rid is not equal to nullptr
  * @return true: duplicate, false: not duplicate
  */
-bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, const TableSchema &tb_schema, RID *dup_rid = nullptr) {
+bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, const TableSchema &tb_schema, BufferPoolManager *bpm, RID *dup_rid = nullptr) {
     // hash the value
+    // FIXME every time's hash_val should be same
     hash_t hash_val = key_value.get_hash_value();
     offset_t sec_pg_slot_num;
     offset_t tb_pg_slot_num;
@@ -30,12 +31,12 @@ bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, 
     get_inserted_slot(hash_val, &sec_pg_slot_num, &tb_pg_slot_num);
 
     // the the first level's LinkHashPage
-    BufferPoolManager *bpm = db_ptr->get_buffer_pool_manager();
     LinkHashPage *first_level_page = reinterpret_cast<LinkHashPage*>(bpm->get_page(first_page_id));
     
     // get the second level's LinkHashPage
     LinkHashPage *second_level_page;
     first_level_page->r_lock();
+
     page_id_t second_level_page_id = first_level_page->get_pgid_in_slot(sec_pg_slot_num);
     first_level_page->r_unlock();
     bpm->unpin_page(first_page_id, false);
@@ -88,12 +89,11 @@ bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, 
 }
 
 op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
-    if (lk_ha_check_duplicate_key(first_page_id, (*tuple).get_value(tb_schema, tb_schema.get_key_idx()), tb_schema)) {
+    if (lk_ha_check_duplicate_key(first_page_id, (*tuple).get_value(tb_schema, tb_schema.get_key_idx()), tb_schema, bpm)) {
         return DUP_KEY;
     }
 
     offset_t key_idx = tb_schema.get_key_idx();
-    size_t_ key_size = tb_schema.get_column_size(key_idx);
     Value key_value = tuple->get_value(tb_schema, key_idx);
 
     // hash the value
@@ -104,7 +104,6 @@ op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
     get_inserted_slot(hash_val, &sec_pg_slot_num, &tb_pg_slot_num);
     
     // the the first level's LinkHashPage
-    BufferPoolManager *bpm = db_ptr->get_buffer_pool_manager();
     LinkHashPage *first_level_page = reinterpret_cast<LinkHashPage*>(bpm->get_page(first_page_id));
     
     // get the second level's LinkHashPage
@@ -158,6 +157,7 @@ op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
     // insert the tuple
     RID rid;
     third_level_page->w_lock();
+    PRINT("insert at page id ", third_level_page_id);
     while (!third_level_page->insert_tuple(*tuple, &rid)) {
         // jump to the next TablePage or create a new TablePage
         third_level_page_id = third_level_page->get_next_page_id();
@@ -199,23 +199,28 @@ op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
     return OP_SUCCESS;
 }
 
-op_code_t lk_ha_mark_delete(MARK_DELETE_FUNC_PARAMS);
+op_code_t lk_ha_mark_delete(MARK_DELETE_FUNC_PARAMS) {
+    return OP_SUCCESS;
+}
 
-void lk_ha_apply_delete(APPLY_DELETE_FUNC_PARAMS);
+void lk_ha_apply_delete(APPLY_DELETE_FUNC_PARAMS) {
 
-void lk_ha_rollback_delete(ROLLBACK_DELETE_FUNC_PARAMS);
+}
+
+void lk_ha_rollback_delete(ROLLBACK_DELETE_FUNC_PARAMS) {
+    
+}
 
 /**
  * @param tuple tuple is return by this pointer
  */
 op_code_t lk_ha_get_tuple(GET_TUPLE_FUNC_PARAMS) {
     RID rid;
-    if (!lk_ha_check_duplicate_key(first_page_id, key_value, tb_schema, &rid)) {
+    if (!lk_ha_check_duplicate_key(first_page_id, key_value, tb_schema, bpm, &rid)) {
         // can't find the tuple
         return TUPLE_NOT_FOUND;
     }
 
-    BufferPoolManager *bpm = db_ptr->get_buffer_pool_manager();
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm->get_page(rid.get_page_id()));
 
     table_page->r_lock();
@@ -233,11 +238,10 @@ op_code_t lk_ha_update_tuple(UPDATE_TUPLE_FUNC_PARAMS) {
     // get the old tuple first
     Value key_val = new_tuple->get_value(tb_schema, tb_schema.get_key_idx());
     Tuple old_tuple;
-    if (get_tuple_directly(old_rid, &old_tuple) != OP_SUCCESS) {
+    if (get_tuple_directly(old_rid, &old_tuple, bpm) != OP_SUCCESS) {
         return TUPLE_NOT_FOUND;
     }
 
-    BufferPoolManager *bpm = db_ptr->get_buffer_pool_manager();
     TablePage *tb_page = reinterpret_cast<TablePage*>(bpm->get_page(old_rid.get_page_id()));
 
     // compare the key
@@ -251,7 +255,7 @@ op_code_t lk_ha_update_tuple(UPDATE_TUPLE_FUNC_PARAMS) {
         return OP_SUCCESS;
     }
 
-    op_code_t op_code = lk_ha_insert_tuple(first_page_id, new_tuple, tb_schema);
+    op_code_t op_code = lk_ha_insert_tuple(first_page_id, new_tuple, tb_schema, bpm);
 
     if (op_code == DUP_KEY) {
         return DUP_KEY;
@@ -268,6 +272,7 @@ op_code_t lk_ha_update_tuple(UPDATE_TUPLE_FUNC_PARAMS) {
     tb_page->apply_delete(old_rid);
     tb_page->w_unlock();
     bpm->unpin_page(old_rid.get_page_id(), true);
+    return OP_SUCCESS;
 }
 
 } // namespace dawn

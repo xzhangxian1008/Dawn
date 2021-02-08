@@ -1,4 +1,5 @@
 #include "table/table.h"
+#include "storage/page/link_hash_page.h"
 #include <set>
 
 namespace dawn {
@@ -13,13 +14,12 @@ Table::Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool f
         LOG("ERROR! get *page nullptr");
         exit(-1);
     }
-    TablePage *table_page = reinterpret_cast<TablePage*>(page);
-    table_page->init(-1, -1);
-    bpm_->unpin_page(first_table_page_id_, true);
 
     // always inialize with link hash so far
     switch (LINK_HASH) {
-        case LINK_HASH:
+        case LINK_HASH: {
+            LinkHashPage *lk_ha_page = reinterpret_cast<LinkHashPage*>(page);
+            lk_ha_page->init();
             insert_tuple_func = lk_ha_insert_tuple;
             mark_delete_func = lk_ha_mark_delete;
             apply_delete_func = lk_ha_apply_delete;
@@ -27,10 +27,13 @@ Table::Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool f
             get_tuple_func = lk_ha_get_tuple;
             update_tuple_func = lk_ha_update_tuple;
             break;
+        }
         case BP_TREE:
         default:
             break;
     }
+
+    bpm_->unpin_page(first_table_page_id_, true);
 }
 
 void Table::delete_all_data() {
@@ -98,7 +101,7 @@ void Table::rollback_delete(const RID &rid) {
 }
 
 bool Table::get_tuple(Tuple *tuple, const RID &rid) {
-    op_code_t op_code = get_tuple_directly(rid, tuple);
+    op_code_t op_code = get_tuple_directly(rid, tuple, bpm_);
     if (op_code == OP_SUCCESS) {
         return true;
     }
@@ -106,7 +109,7 @@ bool Table::get_tuple(Tuple *tuple, const RID &rid) {
 }
 
 bool Table::get_tuple(const Value &key_value, Tuple *tuple, const TableSchema &tb_schema) {
-    op_code_t op_code = get_tuple_func(first_table_page_id_, key_value, tuple, tb_schema);
+    op_code_t op_code = get_tuple_func(first_table_page_id_, key_value, tuple, tb_schema, bpm_);
     if (op_code == OP_SUCCESS) {
         return true;
     }
@@ -114,7 +117,7 @@ bool Table::get_tuple(const Value &key_value, Tuple *tuple, const TableSchema &t
 }
 
 bool Table::insert_tuple(Tuple *tuple, const TableSchema &tb_schema) {
-    op_code_t op_code = insert_tuple_func(first_table_page_id_, tuple, tb_schema);
+    op_code_t op_code = insert_tuple_func(first_table_page_id_, tuple, tb_schema, bpm_);
     if (op_code == OP_SUCCESS) {
         return true;
     }
@@ -175,7 +178,7 @@ bool Table::insert_tuple(Tuple *tuple, const TableSchema &tb_schema) {
 }
 
 bool Table::update_tuple(Tuple *new_tuple, const RID &old_rid, const TableSchema &tb_schema) {
-    op_code_t op_code = update_tuple_func(first_table_page_id_, new_tuple, old_rid, tb_schema);
+    op_code_t op_code = update_tuple_func(first_table_page_id_, new_tuple, old_rid, tb_schema, bpm_);
     if (op_code == OP_SUCCESS) {
         return true;
     }

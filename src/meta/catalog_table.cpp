@@ -66,7 +66,7 @@ bool CatalogTable::create_table(const string_t &table_name, const TableSchema &s
 
     // find where to store TableMetaData's meta data and ensure there are enough space to store
     size_t_ tb_num = *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET);
-    offset_t insert_offset = TABLE_NUM_OFFSET + sizeof(size_t_) + tb_num * TABLE_RECORD_SZ;
+    offset_t insert_offset = TABLE_NUM_OFFSET + SIZE_T_SIZE + tb_num * TABLE_RECORD_SZ;
     size_t_ available_space = free_space_pointer_ - insert_offset;
     if (static_cast<size_t_>(table_name.length() + TABLE_RECORD_SZ) > available_space) {
         latch_.w_unlock();

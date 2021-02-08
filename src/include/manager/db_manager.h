@@ -60,6 +60,4 @@ private:
     ReaderWriterLatch latch_;
 };
 
-extern std::unique_ptr<DBManager> db_ptr;
-
 } // namespace dawn

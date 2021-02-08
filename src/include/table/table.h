@@ -8,7 +8,6 @@
 #include "util/rwlatch.h"
 #include "table/rid.h"
 #include "table/tuple.h"
-#include "table/rid.h"
 #include "index/link_hash.h"
 
 namespace dawn {

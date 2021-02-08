@@ -1,4 +1,5 @@
 #include "meta/table_meta_data.h"
+#include "storage/page/link_hash_page.h"
 
 namespace dawn {
 /** 
@@ -121,12 +122,27 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
         LOG("ERROR! can't get new page");
         exit(-1);
     }
+    // ATTENTION the default index is link hash
+    switch (LINK_HASH) {
+        case LINK_HASH: {
+            LinkHashPage *lk_ha_page = reinterpret_cast<LinkHashPage*>(page);
+            lk_ha_page->init();
+            break;
+        }
+        case BP_TREE: {
+            LOG("should not reach here");
+            break;
+        }
+        default:
+            LOG("should not reach here");
+            break;
+    }
     page_id_t *pgid = const_cast<page_id_t*>(&first_table_page_id_);
     *pgid = page->get_page_id();
-    bpm_->unpin_page(*pgid, false);
+    bpm_->unpin_page(*pgid, true);
     *reinterpret_cast<page_id_t*>(data_ + FIRST_TABLE_PGID_OFFSET) = first_table_page_id_;
 
-    // create index_header's page
+    // TODO(This may be useless) create index_header's page
     page = bpm_->new_page();
     if (page == nullptr) {
         LOG("ERROR! can't get new page");

@@ -5,10 +5,9 @@
 #include "util/config.h"
 #include "util/rwlatch.h"
 #include "table/table_schema.h"
-#include "table/table.h"
 #include "buffer/buffer_pool_manager.h"
-#include "table/table.h"
 #include "data/types.h"
+#include "table/table.h"
 
 namespace dawn {
 

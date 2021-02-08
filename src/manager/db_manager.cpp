@@ -2,6 +2,6 @@
 
 namespace dawn {
 
-std::unique_ptr<DBManager> db_ptr;
+DBManager *db_ptr = nullptr;
 
 } // namespace dawn

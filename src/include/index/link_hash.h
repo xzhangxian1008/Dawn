@@ -1,8 +1,6 @@
 #pragma once
 
 #include "util/config.h"
-#include "util/util.h"
-#include "table/rid.h"
 #include "table/tuple.h"
 #include "table/tb_common_op.h"
 

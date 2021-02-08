@@ -131,18 +131,27 @@ public:
     // TODO test it!
     hash_t get_hash_value() const {
         switch (type_id_) {
-            case TypeId::BOOLEAN:
+            case TypeId::BOOLEAN: {
                 boolean_t *val = const_cast<boolean_t*>(&(value_.boolean));
                 return do_hash(static_cast<void*>(val), BOOLEAN_T_SIZE);
-            case TypeId::INTEGER:
+            }
+            case TypeId::INTEGER: {
                 integer_t *val = const_cast<integer_t*>(&(value_.integer));
                 return do_hash(static_cast<void*>(val), INTEGER_T_SIZE);
-            case TypeId::DECIMAL:
+            }
+            case TypeId::DECIMAL: {
                 decimal_t *val = const_cast<decimal_t*>(&(value_.decimal));
                 return do_hash(static_cast<void*>(val), DECIMAL_T_SIZE);
-            case TypeId::CHAR:
+            }
+            case TypeId::CHAR: {
                 char *val = const_cast<char*>(value_.char_);
                 return do_hash(static_cast<void*>(val), str_size_);
+            }
+            case TypeId::INVALID: {
+                return 0;
+            }
+            default:
+                return 0;
         }
         return 0;
     }

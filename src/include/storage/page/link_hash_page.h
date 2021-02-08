@@ -17,8 +17,9 @@ namespace dawn {
 class LinkHashPage : public Page {
 public:
     void init() {
-        for (offset_t i = 0; i < LK_HA_PG_SLOT_NUM; i++)
+        for (offset_t i = 0; i < LK_HA_PG_SLOT_NUM; i++) {
             *reinterpret_cast<page_id_t*>(get_data() + FIRST_SLOT_NUM_OFFSET + i * SLOT_SIZE) = INVALID_PAGE_ID;
+        }
     }
 
     inline page_id_t get_pgid_in_slot(offset_t slot_num) {

@@ -23,7 +23,7 @@ public:
      */
     explicit TableIterator(Table *table) : table_(table) {
         tuple_ = new Tuple();
-        table->get_the_first_tuple(tuple_);
+        // table->get_the_first_tuple(tuple_);
     }
 
     TableIterator(const TableIterator &table_iter) : table_(table_iter.table_), tuple_(new Tuple(*(table_iter.tuple_))) {}
