@@ -6,6 +6,21 @@ namespace dawn {
 
 Table::Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool from_scratch) :
     bpm_(bpm), first_table_page_id_(first_table_page_id) {
+    switch (LINK_HASH) {
+        case LINK_HASH:
+            insert_tuple_func = lk_ha_insert_tuple;
+            mark_delete_func = lk_ha_mark_delete;
+            apply_delete_func = lk_ha_apply_delete;
+            rollback_delete_func = lk_ha_rollback_delete;
+            get_tuple_func = lk_ha_get_tuple;
+            update_tuple_func = lk_ha_update_tuple;
+            break;
+        case BP_TREE:
+            break;
+        default:
+            break;
+    }
+
     if (!from_scratch)
         return;
     
@@ -20,17 +35,16 @@ Table::Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool f
         case LINK_HASH: {
             LinkHashPage *lk_ha_page = reinterpret_cast<LinkHashPage*>(page);
             lk_ha_page->init();
-            insert_tuple_func = lk_ha_insert_tuple;
-            mark_delete_func = lk_ha_mark_delete;
-            apply_delete_func = lk_ha_apply_delete;
-            rollback_delete_func = lk_ha_rollback_delete;
-            get_tuple_func = lk_ha_get_tuple;
-            update_tuple_func = lk_ha_update_tuple;
             break;
         }
-        case BP_TREE:
-        default:
+        case BP_TREE: {
+            LOG("should not reach here");
             break;
+        }
+        default: {
+            LOG("should not reach here");
+            break;
+        }
     }
 
     bpm_->unpin_page(first_table_page_id_, true);

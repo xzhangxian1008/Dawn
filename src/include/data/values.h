@@ -156,7 +156,7 @@ public:
         return 0;
     }
 
-    string_t get_value_string() {
+    string_t get_value_string() const {
         switch (type_id_) {
             case TypeId::BOOLEAN:
                 if (value_.boolean) {

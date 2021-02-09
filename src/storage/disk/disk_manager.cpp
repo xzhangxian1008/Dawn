@@ -165,7 +165,7 @@ void DiskManager::from_mtd(const string_t &meta_name) {
     // When we are at the file's end, put rest of the page id into
     // free_pgid according to the max_ava_pgid_.
 
-    int db_file_sz = get_file_sz(db_io_);
+    long db_file_sz = get_file_sz(db_io_);
 
     if (db_file_sz == -1 || (db_file_sz % PAGE_SIZE != 0)) {
         string_t info("ERROR! ");
@@ -184,11 +184,14 @@ void DiskManager::from_mtd(const string_t &meta_name) {
     }
 
     char *tmp_buf = new char[READ_DB_BUF_SZ];
-    int read_cnt = db_file_sz / READ_DB_BUF_SZ;
+    long read_cnt = db_file_sz / READ_DB_BUF_SZ; // read the whole file need *read_cnt* IO times
     if (db_file_sz % READ_DB_BUF_SZ != 0)
         read_cnt++;
 
-    // read the full .db file to initialize data
+    /** 
+     * read the full .db file to initialize data
+     * for the efficiency of the initialization, we read a batch of pages each time
+     */
     page_id_t page_id;
     int read_size;
     for (int i = 0; i < read_cnt; i++) {
@@ -197,15 +200,14 @@ void DiskManager::from_mtd(const string_t &meta_name) {
         read_size = READ_DB_BUF_SZ <= db_file_sz ? READ_DB_BUF_SZ : db_file_sz;
         db_io_.read(tmp_buf, read_size);
         if (db_io_.fail()) {
-            string_t info("ERROR! ");
-            info += "Read Fail!";
+            string_t info("ERROR! Read Fail!");
             LOG(info);
             shutdown();
             return;
         }
         db_file_sz = db_file_sz - READ_DB_BUF_SZ;
 
-        int read_sz = db_io_.gcount();
+        int read_sz = db_io_.gcount(); // read_sz refer to how large space we read
         char *p_status;
         for (int offset = 0; offset < read_sz; offset += PAGE_SIZE) {
             page_id = i * READ_DB_PG_NUM + (offset / PAGE_SIZE);
@@ -220,8 +222,10 @@ void DiskManager::from_mtd(const string_t &meta_name) {
         }
     }
 
-    while (page_id < max_ava_pgid_)
+    page_id++;
+    while (page_id < max_ava_pgid_) {
         free_pgid_.insert(page_id++);
+    }
 
     delete[] tmp_buf;
     status_ = true;
@@ -296,6 +300,7 @@ page_id_t DiskManager::get_new_page() {
     page_id_t new_page_id;
     auto iter = free_pgid_.begin();
     if (iter == free_pgid_.end()) {
+        // handle it, when there is no free page id
         int tmp = max_ava_pgid_;
         max_ava_pgid_ = max_ava_pgid_ * 2;
         for (int id = tmp; id < max_ava_pgid_; id++)

@@ -7,7 +7,8 @@
 - .mtd文件的logging和recovery，确保元数据能在各种情况下与数据库实际情况保持一致，这有待研究。为了避免不一致导致的后果所以采用了上一个难点的现行方案，但代价是效率奇差。
 
 **待改进**：
-- 启动时高效收集已分配和未分配page id的信息
+- 启动时高效收集已分配和未分配page id的信息，使用bitmap管理页面号信息
+- 使用bitmap做管理后就没有必要使用max_ava_pgid_、max_alloced_pgid_、alloced_pgid_和free_pgid_对page id做管理，这会占用大量空间，拿一个缓冲池(不是bpm)存放bitmap直接做管理更方便高效
 
 存储模型：行存储
 

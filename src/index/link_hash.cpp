@@ -23,7 +23,6 @@ inline void get_inserted_slot(hash_t hash_val, offset_t *sec_pg_slot_num, offset
  */
 bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, const TableSchema &tb_schema, BufferPoolManager *bpm, RID *dup_rid = nullptr) {
     // hash the value
-    // FIXME every time's hash_val should be same
     hash_t hash_val = key_value.get_hash_value();
     offset_t sec_pg_slot_num;
     offset_t tb_pg_slot_num;
@@ -84,7 +83,6 @@ bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, 
         third_level_page->r_unlock();
         bpm->unpin_page(third_level_page->get_page_id(), false);
     }
-
     return false;
 }
 
@@ -142,8 +140,6 @@ op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
         third_level_page = reinterpret_cast<TablePage*>(bpm->new_page());
         third_level_page_id = third_level_page->get_page_id();
         third_level_page->init(INVALID_PAGE_ID, INVALID_PAGE_ID);
-
-        // update the second level page
         second_level_page->w_lock();
         second_level_page->set_pgid_in_slot(tb_pg_slot_num, third_level_page_id);
         second_level_page->w_unlock();
@@ -157,7 +153,6 @@ op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
     // insert the tuple
     RID rid;
     third_level_page->w_lock();
-    PRINT("insert at page id ", third_level_page_id);
     while (!third_level_page->insert_tuple(*tuple, &rid)) {
         // jump to the next TablePage or create a new TablePage
         third_level_page_id = third_level_page->get_next_page_id();
@@ -218,6 +213,7 @@ op_code_t lk_ha_get_tuple(GET_TUPLE_FUNC_PARAMS) {
     RID rid;
     if (!lk_ha_check_duplicate_key(first_page_id, key_value, tb_schema, bpm, &rid)) {
         // can't find the tuple
+        LOG("here");
         return TUPLE_NOT_FOUND;
     }
 
@@ -231,6 +227,7 @@ op_code_t lk_ha_get_tuple(GET_TUPLE_FUNC_PARAMS) {
     }
     table_page->r_unlock();
     bpm->unpin_page(rid.get_page_id(), false);
+    LOG("here");
     return TUPLE_NOT_FOUND;
 }
 

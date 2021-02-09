@@ -2,6 +2,6 @@
 
 namespace dawn {
 
-DBManager *db_ptr = nullptr;
+DBManager *db_manager = nullptr;
 
 } // namespace dawn

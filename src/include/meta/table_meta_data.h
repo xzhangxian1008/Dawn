@@ -28,10 +28,16 @@ namespace dawn {
  */
 class TableMetaData {
 public:
-    // create table with meta table, in other words, this table exists in the disk
+    /**
+     * TODO read the key index
+     * create table with meta table, in other words, this table exists in the disk 
+     */
     explicit TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const table_id_t table_id);
 
-    // create table from scratch and write data to disk for persistence
+    /**
+     * TODO key index
+     * create table from scratch and write data to disk for persistence
+     */
     TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema, const table_id_t table_id);
 
     ~TableMetaData() {

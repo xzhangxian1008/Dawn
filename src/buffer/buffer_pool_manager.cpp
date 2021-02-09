@@ -174,7 +174,7 @@ Page* BufferPoolManager::get_page(const page_id_t &page_id) {
         char *data = pages_[frame_id].get_data();
         if (*reinterpret_cast<char*>(data + STATUS_OFFSET) != STATUS_EXIST) {
             latch_.w_unlock();
-            LOG("get a invalid page, page id " + std::to_string(page_id));
+            LOG("get an invalid page, page id " + std::to_string(page_id));
             return nullptr;
         }
 
