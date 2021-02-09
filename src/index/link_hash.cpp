@@ -213,7 +213,6 @@ op_code_t lk_ha_get_tuple(GET_TUPLE_FUNC_PARAMS) {
     RID rid;
     if (!lk_ha_check_duplicate_key(first_page_id, key_value, tb_schema, bpm, &rid)) {
         // can't find the tuple
-        LOG("here");
         return TUPLE_NOT_FOUND;
     }
 

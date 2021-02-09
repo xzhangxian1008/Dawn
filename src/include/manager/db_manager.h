@@ -40,8 +40,11 @@ public:
     inline bool get_status() const { return status; }
 
     static inline void set_default_pool_size(size_t_ pool_size) {
-        size_t_ *default_pool_size = const_cast<size_t_*>(&DEFAULT_POOL_SIZE);
-        *default_pool_size = pool_size;
+        // size_t_ *default_pool_size = const_cast<size_t_*>(&DEFAULT_POOL_SIZE);
+        // PRINT(&DEFAULT_POOL_SIZE);
+        // PRINT(default_pool_size);
+        // *default_pool_size = pool_size;
+        DEFAULT_POOL_SIZE = pool_size;
     }
 
     static inline size_t_ get_default_pool_size() {
@@ -49,7 +52,8 @@ public:
     }
 
 private:
-    static constexpr size_t_ DEFAULT_POOL_SIZE = 50;
+    // TODO should be a static type
+    static size_t_ DEFAULT_POOL_SIZE;
 
     DiskManager *disk_manager_;
     BufferPoolManager *bpm_;

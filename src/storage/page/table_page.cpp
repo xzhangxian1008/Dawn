@@ -123,6 +123,9 @@ bool TablePage::get_tuple(Tuple *tuple, const RID &rid) const {
     offset_t slot_num = rid.get_slot_num();
     offset_t tuple_offset = get_tuple_offset(slot_num);
     size_t_ tuple_size = get_tuple_size(slot_num);
+    if (is_deleted(tuple_size)) {
+        tuple_size = unset_deleted_flag(tuple_size);
+    }
 
     // check if it's legal
     if (slot_num >= get_tuple_count() || tuple_offset == 0)

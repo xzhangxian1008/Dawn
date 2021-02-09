@@ -29,8 +29,11 @@ public:
     // bool get_the_first_tuple(Tuple *tuple) const;
 
     bool insert_tuple(Tuple *tuple, const TableSchema &tb_schema);
+    bool mark_delete(const Value &key_value, const TableSchema &tb_schema);
     bool mark_delete(const RID &rid);
+    void apply_delete(const Value &key_value, const TableSchema &tb_schema);
     void apply_delete(const RID &rid);
+    void rollback_delete(const Value &key_value, const TableSchema &tb_schema);
     void rollback_delete(const RID &rid);
 
     /**

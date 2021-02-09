@@ -71,6 +71,18 @@ void Table::delete_all_data() {
         bpm_->delete_page(page_id);
 }
 
+bool Table::mark_delete(const Value &key_value, const TableSchema &tb_schema) {
+    Tuple tuple;
+    if (!get_tuple(key_value, &tuple, tb_schema)) {
+        return false;
+    }
+
+    if (!mark_delete(tuple.get_rid())) {
+        return false;
+    }
+    return true;
+}
+
 bool Table::mark_delete(const RID &rid) {
     page_id_t page_id = rid.get_page_id();
     if (page_id < 0)
@@ -86,6 +98,15 @@ bool Table::mark_delete(const RID &rid) {
     return ok;
 }
 
+void Table::apply_delete(const Value &key_value, const TableSchema &tb_schema) {
+    Tuple tuple;
+    if (!get_tuple(key_value, &tuple, tb_schema)) {
+        return;
+    }
+
+    apply_delete(tuple.get_rid());
+}
+
 void Table::apply_delete(const RID &rid) {
     page_id_t page_id = rid.get_page_id();
     if (page_id < 0)
@@ -98,6 +119,15 @@ void Table::apply_delete(const RID &rid) {
     table_page->apply_delete(rid);
     table_page->w_unlock();
     bpm_->unpin_page(page_id, true);
+}
+
+void Table::rollback_delete(const Value &key_value, const TableSchema &tb_schema) {
+    Tuple tuple;
+    if (!get_tuple(key_value, &tuple, tb_schema)) {
+        return;
+    }
+
+    rollback_delete(tuple.get_rid());
 }
 
 void Table::rollback_delete(const RID &rid) {

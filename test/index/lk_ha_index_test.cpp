@@ -40,7 +40,17 @@ std::vector<Value> values;
 
 class LinkHashBasicTest : public testing::Test {
 public:
+    size_t_ default_pool_sz = 50;
+
     void SetUp() {
+        /**
+         * set default pool size is necessary, because we should let the pages that
+         * used by db exceed the buffer pool size to check the correctness. Or the
+         * pages will never run out of the buffer pool size and this will cover some bugs.
+         * In a word, we should ensure to run out of the buffer pool size to reach to
+         * all the components' limiation.
+         */
+        DBManager::set_default_pool_size(default_pool_sz);
         values.clear();
         remove(mtdf);
         remove(dbf);
@@ -112,7 +122,7 @@ TEST_F(LinkHashBasicTest, BasicTest) {
                 }
                 insert_tuples.push_back(tuple);
             }
-            EXPECT_TRUE(ok);
+            ASSERT_TRUE(ok);
 
             // check the tuples
             ok = true;
@@ -215,7 +225,7 @@ TEST_F(LinkHashBasicTest, BasicTest) {
                 }
                 insert_tuples[i] = tuple;
             }
-            EXPECT_TRUE(ok);
+            ASSERT_TRUE(ok);
 
             // check the tuples
             ok = true;
@@ -255,6 +265,77 @@ TEST_F(LinkHashBasicTest, BasicTest) {
 
             // check the 
             PRINT("check");
+            bool ok = true;
+            size_t_ size = insert_tuples.size();
+            Tuple cmp_tuple;
+            for (size_t_ i = 0; i < size; i++) {
+                Value val = insert_tuples[i].get_value(*tb_schema, tb_schema->get_key_idx());
+                if (!table->get_tuple(val, &cmp_tuple, *tb_schema)) {
+                    ok = false;
+                    break;
+                }
+
+                if (!(insert_tuples[i] == cmp_tuple)) {
+                    ok = false;
+                    break;
+                }
+            }
+            ASSERT_TRUE(ok);
+            PRINT("check ok");
+            delete db_manager;
+        }
+    }
+
+    {
+        // test 3
+        {
+            db_manager = new DBManager(meta);
+            ASSERT_TRUE(db_manager->get_status());
+            
+            Catalog *catalog = db_manager->get_catalog();
+            CatalogTable *catalog_table = catalog->get_catalog_table();
+
+            table_id_t table_id = catalog_table->get_table_id(table_name);
+            TableMetaData *table_md = catalog_table->get_table_meta_data(table_id);
+            ASSERT_NE(table_md, nullptr);
+
+            Table *table = table_md->get_table();
+            ASSERT_NE(nullptr, table);
+
+            PRINT("start to delete some tuples...");
+            bool ok = true;
+            for (size_t_ i = 0; i < insert_num; i++) {
+                if (i % 2 == 0)
+                    continue;
+
+                Value key_value = insert_tuples[i].get_value(*tb_schema, tb_schema->get_key_idx());
+                if (!table->mark_delete(key_value, *tb_schema)) {
+                    ok = false;
+                    break;
+                }
+                
+                table->apply_delete(key_value, *tb_schema);
+            }
+            ASSERT_TRUE(ok);
+
+            Tuple container;
+            for (size_t_ i = 0; i < insert_num; i++) {
+                Value key_value = insert_tuples[i].get_value(*tb_schema, tb_schema->get_key_idx());
+                if (i % 2 == 0) {
+                    if (!table->get_tuple(key_value, &container, *tb_schema) ||
+                        !(insert_tuples[i] == container)) {
+                        ok = false;
+                        break;
+                    }
+                } else {
+                    if (table->get_tuple(key_value, &container, *tb_schema)) {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+            ASSERT_TRUE(ok);
+            PRINT("delete some tuples successfully!");
         }
     }
 
