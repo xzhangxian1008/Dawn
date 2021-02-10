@@ -82,6 +82,7 @@ using varchar_t = char*;
 
 using enum_size_t = int32_t;
 using op_code_t = int32_t; // operation result
+using index_code_t = int32_t; // show the type of index
 
 static constexpr size_t_ PTR_SIZE = sizeof(char*);
 static constexpr size_t_ ENUM_SIZE = sizeof(enum_size_t);

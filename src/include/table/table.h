@@ -9,6 +9,7 @@
 #include "table/rid.h"
 #include "table/tuple.h"
 #include "index/link_hash.h"
+#include "mutex"
 
 namespace dawn {
 
@@ -43,15 +44,18 @@ public:
 
     /**
      * search tuple with index, the rid will be set in the parameter *tuple
-     * */
+     */
     bool get_tuple(const Value &key_value, Tuple *tuple, const TableSchema &tb_schema);
 
     /** get tuple directly */
     bool get_tuple(Tuple *tuple, const RID &rid);
+
+    
 private:
     BufferPoolManager *bpm_;
     const page_id_t first_table_page_id_; // TODO initialize it at first
     ReaderWriterLatch latch_;
+    index_code_t index_ = LINK_HASH;
 
     op_code_t (*insert_tuple_func)(INSERT_TUPLE_FUNC_PARAMS);
     op_code_t (*mark_delete_func)(MARK_DELETE_FUNC_PARAMS);

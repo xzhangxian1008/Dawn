@@ -3,8 +3,7 @@
 namespace dawn {
 
 CatalogTable::CatalogTable(page_id_t page_id, BufferPoolManager *bpm, bool from_scratch) {
-    page_id_t *pgid = const_cast<page_id_t*>(&self_page_id_);
-    *pgid = page_id;
+    self_page_id_ = page_id;
     bpm_ = bpm;
     page_ = bpm_->get_page(self_page_id_);
     if (page_ == nullptr) {

@@ -72,10 +72,10 @@ private:
     Table *table_;
 
     // this two ids can't be modified, even the table has no tuple
-    const page_id_t first_table_page_id_;
-    const page_id_t index_header_page_id_;
-    const page_id_t self_page_id_; // where stores the table_meta_data's info
-    const table_id_t table_id_; // it's also the page id
+    page_id_t first_table_page_id_;
+    page_id_t index_header_page_id_;
+    page_id_t self_page_id_; // where stores the table_meta_data's info
+    table_id_t table_id_; // it's also the page id
     Page *page_;
     char *data_;
 };

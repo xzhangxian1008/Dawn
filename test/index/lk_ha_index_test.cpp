@@ -177,11 +177,10 @@ TEST_F(LinkHashBasicTest, BasicTest) {
                 }
             }
             ASSERT_TRUE(ok);
-            PRINT("operation have been persisted on the disk successfully!");
             delete db_manager;
+            PRINT("***test 1 pass***");
         }
     }
-
 
     {
         // test 2
@@ -263,8 +262,8 @@ TEST_F(LinkHashBasicTest, BasicTest) {
             Table *table = table_md->get_table();
             ASSERT_NE(nullptr, table);
 
-            // check the 
-            PRINT("check");
+            // check tuples
+            PRINT("check...");
             bool ok = true;
             size_t_ size = insert_tuples.size();
             Tuple cmp_tuple;
@@ -281,8 +280,8 @@ TEST_F(LinkHashBasicTest, BasicTest) {
                 }
             }
             ASSERT_TRUE(ok);
-            PRINT("check ok");
             delete db_manager;
+            PRINT("***test 2 pass***");
         }
     }
 
@@ -336,6 +335,148 @@ TEST_F(LinkHashBasicTest, BasicTest) {
             }
             ASSERT_TRUE(ok);
             PRINT("delete some tuples successfully!");
+            delete db_manager;
+        }
+
+        {
+            PRINT("restart the db...");
+            db_manager = new DBManager(meta);
+            ASSERT_TRUE(db_manager->get_status());
+            
+            Catalog *catalog = db_manager->get_catalog();
+            CatalogTable *catalog_table = catalog->get_catalog_table();
+
+            table_id_t table_id = catalog_table->get_table_id(table_name);
+            TableMetaData *table_md = catalog_table->get_table_meta_data(table_id);
+            ASSERT_NE(table_md, nullptr);
+
+            Table *table = table_md->get_table();
+            ASSERT_NE(nullptr, table);
+
+            PRINT("check...");
+            Tuple container;
+            bool ok = true;
+            for (size_t_ i = 0; i < insert_num; i++) {
+                Value key_value = insert_tuples[i].get_value(*tb_schema, tb_schema->get_key_idx());
+                if (i % 2 == 0) {
+                    if (!table->get_tuple(key_value, &container, *tb_schema) ||
+                        !(insert_tuples[i] == container)) {
+                        ok = false;
+                        break;
+                    }
+                } else {
+                    if (table->get_tuple(key_value, &container, *tb_schema)) {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+            ASSERT_TRUE(ok);
+            delete db_manager;
+            PRINT("***test 3 pass***");
+        }
+    }
+
+    {
+        // test 4
+        {
+            db_manager = new DBManager(meta);
+            ASSERT_TRUE(db_manager->get_status());
+            
+            Catalog *catalog = db_manager->get_catalog();
+            CatalogTable *catalog_table = catalog->get_catalog_table();
+
+            table_id_t table_id = catalog_table->get_table_id(table_name);
+            TableMetaData *table_md = catalog_table->get_table_meta_data(table_id);
+            ASSERT_NE(table_md, nullptr);
+
+            Table *table = table_md->get_table();
+            ASSERT_NE(nullptr, table);
+
+            v0 = 2333;
+            fill_char_array("apple", v1);
+            v2 = true;
+            fill_char_array("monkey_key", v3);
+            v4 = 3.1415926;
+
+            values.clear();
+            values.push_back(Value(v0));
+            values.push_back(Value(v1, tb_char0_sz));
+            values.push_back(Value(v2));
+            values.push_back(Value(v3, tb_char1_sz));
+            values.push_back(Value(v4));
+
+            PRINT("start to reinsert some tuples...");
+            bool ok = true;
+            for (size_t_ i = 0; i < insert_num; i++) {
+                if (i % 2 == 0)
+                    continue;
+                values[0] = Value(static_cast<integer_t>(i + 3 * insert_num));
+                Tuple tuple(&values, *tb_schema);
+                if (!table->insert_tuple(&tuple, *tb_schema)) {
+                    ok = false;
+                    break;
+                }
+                insert_tuples[i] = tuple;
+            }
+            ASSERT_TRUE(ok);
+
+            // check the tuples
+            ok = true;
+            size_t_ size = insert_tuples.size();
+            Tuple cmp_tuple;
+            for (size_t_ i = 0; i < size; i++) {
+                Value val = insert_tuples[i].get_value(*tb_schema, tb_schema->get_key_idx());
+                if (!table->get_tuple(val, &cmp_tuple, *tb_schema)) {
+                    ok = false;
+                    break;
+                }
+
+                if (!(insert_tuples[i] == cmp_tuple)) {
+                    ok = false;
+                    break;
+                }
+            }
+            ASSERT_TRUE(ok);
+            PRINT("reinsert some tuples successfully!");
+            delete db_manager;
+        }
+
+        {
+            PRINT("restart the db...");
+            db_manager = new DBManager(meta);
+            ASSERT_TRUE(db_manager->get_status());
+            
+            Catalog *catalog = db_manager->get_catalog();
+            CatalogTable *catalog_table = catalog->get_catalog_table();
+
+            table_id_t table_id = catalog_table->get_table_id(table_name);
+            TableMetaData *table_md = catalog_table->get_table_meta_data(table_id);
+            ASSERT_NE(table_md, nullptr);
+
+            Table *table = table_md->get_table();
+            ASSERT_NE(nullptr, table);
+
+            // check tuples
+            PRINT("check...");
+            bool ok = true;
+            size_t_ size = insert_tuples.size();
+            Tuple cmp_tuple;
+            for (size_t_ i = 0; i < size; i++) {
+                Value val = insert_tuples[i].get_value(*tb_schema, tb_schema->get_key_idx());
+                if (!table->get_tuple(val, &cmp_tuple, *tb_schema)) {
+                    ok = false;
+                    break;
+                }
+
+                if (!(insert_tuples[i] == cmp_tuple)) {
+                    ok = false;
+                    break;
+                }
+            }
+            ASSERT_TRUE(ok);
+            delete db_manager;
+            PRINT("***test 4 pass***");
         }
     }
 
