@@ -19,9 +19,9 @@ public:
 
     ~LinkHashTableIter() override { delete tuple_; }
 
-    const Tuple& operator*() override { return *tuple_; }
+    const Tuple& operator*() const override { return *tuple_; }
 
-    Tuple* operator->() override { return tuple_; }
+    Tuple* operator->() const override { return tuple_; }
 
     TableIterAbstract &operator++() override;
 private:

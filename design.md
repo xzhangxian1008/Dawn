@@ -50,6 +50,8 @@ LinkHashPage：存放索引槽的页面，每个槽存放一个page_id指向一�
 
 TablePage：这是实际存放数据的地方，可以形成一张单链表
 
+每次删除都会检查删除后TablePage是否还有数据，没有就删除本TablePage
+
 槽总数计算：
     LinkHashIndex的头页面假设可以存放700个page_id，LinkHashSlotPage每张可以存放700个page_id，所以槽总数就是700*700 = 490000
 

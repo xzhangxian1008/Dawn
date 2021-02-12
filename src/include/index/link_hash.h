@@ -25,13 +25,14 @@ namespace dawn {
  */
 op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS);
 
-// may be useless
 op_code_t lk_ha_mark_delete(MARK_DELETE_FUNC_PARAMS);
 
-// may be useless
+/**
+ * after deleting the last tuple in a TablePage, we should delete the TablePage
+ */
 void lk_ha_apply_delete(APPLY_DELETE_FUNC_PARAMS);
 
-// may be useless
+// TODO need implementation
 void lk_ha_rollback_delete(ROLLBACK_DELETE_FUNC_PARAMS);
 
 op_code_t lk_ha_get_tuple(GET_TUPLE_FUNC_PARAMS);

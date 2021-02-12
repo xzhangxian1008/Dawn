@@ -173,4 +173,15 @@ bool TablePage::get_the_first_tuple(Tuple *tuple) const {
     return false;
 }
 
+size_t_ TablePage::get_stored_tuple_cnt() const {
+    size_t_ tuple_cnt = get_tuple_count();
+    size_t_ cnt = 0;
+    for (size_t_ slot_num = 0; slot_num < tuple_cnt; slot_num++) {
+        offset_t offset = get_tuple_offset(slot_num);
+        if (offset != 0)
+            cnt++;
+    }
+    return cnt;
+}
+
 } // namespace dawn

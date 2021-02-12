@@ -31,6 +31,12 @@ LinkHashTableIter::LinkHashTableIter(page_id_t first_page_id, BufferPoolManager 
         lk_page->r_lock(); // this lk_page has been change in the above for-loop
     }
 
-
+    // TODO
 }
+
+TableIterAbstract& LinkHashTableIter::operator++() {
+    // TODO need imple
+    return *this;
+}
+
 } // namespace dawn

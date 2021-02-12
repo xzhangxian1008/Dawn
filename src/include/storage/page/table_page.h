@@ -55,7 +55,6 @@ public:
         return get_page_id();
     }
 
-
     inline void set_prev_page_id(page_id_t page_id) {
         memcpy(get_data() + PREV_PGID_OFFSET, &page_id, PGID_T_SIZE);
     }
@@ -94,6 +93,11 @@ public:
      * @return true: get successfully, false: get unsuccessfully
      */
     bool get_the_first_tuple(Tuple *tuple) const;
+
+    /**
+     * @return number of the existing tuples
+     */
+    size_t_ get_stored_tuple_cnt() const;
     
     inline static size_t_ get_tuple_record_sz() { return TUPLE_RECORD_SZ; }
 

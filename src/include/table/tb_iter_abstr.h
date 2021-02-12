@@ -6,9 +6,9 @@ namespace dawn {
 
 class TableIterAbstract {
 public:
-    virtual ~TableIterAbstract() = 0;
-    virtual const Tuple& operator*() = 0;
-    virtual Tuple* operator->() = 0;
+    virtual ~TableIterAbstract() {};
+    virtual const Tuple& operator*() const = 0;
+    virtual Tuple* operator->() const = 0;
     virtual TableIterAbstract &operator++() = 0;
 };
 

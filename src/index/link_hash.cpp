@@ -5,12 +5,12 @@
 namespace dawn {
 
 /**
- * the return value will be set in the second and third parameter
+ * the returned value will be set in the second and third parameter
  * @param hash_val the input hash value
  * @param sec_pg_slot_num get the second level's page id with this
  * @param tb_pg_slot_num get the third level's page id with this
  */
-inline void get_inserted_slot(hash_t hash_val, offset_t *sec_pg_slot_num, offset_t *tb_pg_slot_num) {
+inline void hash_to_slot(hash_t hash_val, offset_t *sec_pg_slot_num, offset_t *tb_pg_slot_num) {
     offset_t slot_num = static_cast<offset_t>(hash_val % static_cast<hash_t>(Lk_HA_TOTAL_SLOT_NUM));
     *sec_pg_slot_num = slot_num / LK_HA_PG_SLOT_NUM;
     *tb_pg_slot_num = slot_num % LK_HA_PG_SLOT_NUM;
@@ -27,7 +27,7 @@ bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, 
     offset_t sec_pg_slot_num;
     offset_t tb_pg_slot_num;
 
-    get_inserted_slot(hash_val, &sec_pg_slot_num, &tb_pg_slot_num);
+    hash_to_slot(hash_val, &sec_pg_slot_num, &tb_pg_slot_num);
 
     // the the first level's LinkHashPage
     LinkHashPage *first_level_page = reinterpret_cast<LinkHashPage*>(bpm->get_page(first_page_id));
@@ -86,6 +86,92 @@ bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, 
     return false;
 }
 
+/**
+ * It scans the TablePage list and deletes the empty page.
+ * It's called every time when we delete the last tuple in a TablePage,
+ * but in the concurrent environment the empty page may be filled with
+ * tuples before deleted, so the lk_ha_clear_empty_page() is a function
+ * that checks and deletes the empty pages instead of ensuring to delete a page.
+ * 
+ * So far, we can only delete the empty pages at the beginning. Empty pages in the middle
+ * of the link list is ignored, because we can't test this function and there is no need to implement it.
+ * 
+ * For convenience, the last several unpin function's dirty flag is alway true.
+ * We can control it when coming across any performance problem in this function.
+ * 
+ * @param sec_pg_slot_num slot_num offset in the first level page, used for getting the second level page id
+ * @param tb_pg_slot_num slot_num offset int the second level page, used for getting the first TablePage's page id
+ */
+void lk_ha_clear_empty_page(page_id_t first_page_id, BufferPoolManager *bpm, hash_t hash_val, offset_t sec_pg_slot_num, offset_t tb_pg_slot_num) {
+    // get the first level's page
+    LinkHashPage *first_level_pg = reinterpret_cast<LinkHashPage*>(bpm->get_page(first_page_id));
+
+    // get the second level's page
+    first_level_pg->r_lock();
+    page_id_t sec_level_pgid = first_level_pg->get_pgid_in_slot(sec_pg_slot_num);
+    first_level_pg->r_unlock();
+    bpm->unpin_page(first_page_id, false);
+
+    LinkHashPage *sec_level_pg = reinterpret_cast<LinkHashPage*>(bpm->get_page(sec_level_pgid));
+
+    // get the third level's first TablePage
+    sec_level_pg->w_lock(); // the second level page may be change, so hold the write lock all the time
+    page_id_t checked_pgid = sec_level_pg->get_pgid_in_slot(tb_pg_slot_num);
+    // TODO put the sec_level_pg->w_unlock();
+
+    /**
+     * ATTENTION Do not release the lock when collecting the empty pages
+     * 
+     * there may be several empty TablePage that are linked together at the beginning.
+     * Collect them and find the first non-empty TablePage.
+     * Delete the collected empty TablePages and change the page id in the second level
+     * page's slot to refer to the first non-empty TablePage.
+     */
+    std::vector<TablePage*> empty_pages;
+    TablePage *checked_tb_page = reinterpret_cast<TablePage*>(bpm->get_page(checked_pgid));
+    checked_tb_page->w_lock();
+    while (checked_tb_page->get_stored_tuple_cnt() == 0) {
+        empty_pages.push_back(checked_tb_page);
+
+        // get the next page
+        checked_pgid = checked_tb_page->get_next_page_id();
+
+        // reach to the end, break out
+        if (checked_pgid == INVALID_PAGE_ID)
+            break;
+        
+        // jump to the next page
+        checked_tb_page->w_lock();
+        checked_tb_page = reinterpret_cast<TablePage*>(bpm->get_page(checked_pgid));
+    }
+
+    // delete the empty pages
+    if (empty_pages.size() > 0) {
+        for (size_t i = 0; i < empty_pages.size(); i++) {
+            bpm->delete_page(empty_pages[i]->get_page_id());
+        }
+    }
+
+    // reset the page id in the second level page's slot
+    sec_level_pg->set_pgid_in_slot(tb_pg_slot_num, checked_pgid);
+
+    // there is no non-empty pages in this slot
+    if (checked_pgid == INVALID_PAGE_ID) {
+        sec_level_pg->w_unlock();
+        bpm->unpin_page(sec_level_pgid, true); // for convenience, always true
+        page_id_t pgid = sec_level_pg->get_pgid_in_slot(tb_pg_slot_num);
+        PRINT("slot page id:", pgid);
+        return;
+    }
+
+    // set the first non-empty page's previous page id to the INVALID_PAGE_ID
+    checked_tb_page->set_prev_page_id(INVALID_PAGE_ID);
+    checked_tb_page->w_unlock();
+    sec_level_pg->w_unlock();
+    bpm->unpin_page(checked_pgid, true); // for convenience, always true
+    bpm->unpin_page(sec_level_pgid, true); // for convenience, always true
+}
+
 op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
     if (lk_ha_check_duplicate_key(first_page_id, (*tuple).get_value(tb_schema, tb_schema.get_key_idx()), tb_schema, bpm)) {
         return DUP_KEY;
@@ -99,7 +185,7 @@ op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
     offset_t sec_pg_slot_num;
     offset_t tb_pg_slot_num;
 
-    get_inserted_slot(hash_val, &sec_pg_slot_num, &tb_pg_slot_num);
+    hash_to_slot(hash_val, &sec_pg_slot_num, &tb_pg_slot_num);
     
     // the the first level's LinkHashPage
     LinkHashPage *first_level_page = reinterpret_cast<LinkHashPage*>(bpm->get_page(first_page_id));
@@ -194,18 +280,6 @@ op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
     return OP_SUCCESS;
 }
 
-op_code_t lk_ha_mark_delete(MARK_DELETE_FUNC_PARAMS) {
-    return OP_SUCCESS;
-}
-
-void lk_ha_apply_delete(APPLY_DELETE_FUNC_PARAMS) {
-
-}
-
-void lk_ha_rollback_delete(ROLLBACK_DELETE_FUNC_PARAMS) {
-    
-}
-
 /**
  * @param tuple tuple is return by this pointer
  */
@@ -226,7 +300,7 @@ op_code_t lk_ha_get_tuple(GET_TUPLE_FUNC_PARAMS) {
     }
     table_page->r_unlock();
     bpm->unpin_page(rid.get_page_id(), false);
-    LOG("here");
+
     return TUPLE_NOT_FOUND;
 }
 
@@ -269,6 +343,52 @@ op_code_t lk_ha_update_tuple(UPDATE_TUPLE_FUNC_PARAMS) {
     tb_page->w_unlock();
     bpm->unpin_page(old_rid.get_page_id(), true);
     return OP_SUCCESS;
+}
+
+op_code_t lk_ha_mark_delete(MARK_DELETE_FUNC_PARAMS) {
+    Tuple tuple;
+    if (!lk_ha_get_tuple(first_page_id, key_value, &tuple, tb_schema, bpm)) {
+        return false;
+    }
+
+    page_id_t page_id = tuple.get_rid().get_page_id();
+    TablePage *table_page = reinterpret_cast<TablePage*>(bpm->get_page(page_id));
+
+    table_page->w_lock();
+    bool ok = table_page->mark_delete(tuple.get_rid());
+    table_page->w_unlock();
+    bpm->unpin_page(page_id, true);
+
+    if (ok)
+        return OP_SUCCESS;
+    else
+        return TUPLE_NOT_FOUND;
+}
+
+void lk_ha_apply_delete(APPLY_DELETE_FUNC_PARAMS) {
+    Tuple tuple;
+    if (lk_ha_get_tuple(first_page_id, key_value, &tuple, tb_schema, bpm) != OP_SUCCESS) {
+        return;
+    }
+
+    page_id_t page_id = tuple.get_rid().get_page_id();
+    TablePage *tb_page = reinterpret_cast<TablePage*>(bpm->get_page(page_id));
+    tb_page->w_lock();
+    tb_page->apply_delete(tuple.get_rid());
+    size_t_ tuple_cnt = tb_page->get_stored_tuple_cnt();
+    tb_page->w_unlock();
+    bpm->unpin_page(page_id, true);
+    if (tuple_cnt == 0) {
+        offset_t sec_pg_slot_num;
+        offset_t tb_pg_slot_num;
+        hash_to_slot(key_value.get_hash_value(), &sec_pg_slot_num, &tb_pg_slot_num);
+        lk_ha_clear_empty_page(first_page_id, bpm, key_value.get_hash_value(), sec_pg_slot_num, tb_pg_slot_num);
+    }
+}
+
+// TODO need implementation
+void lk_ha_rollback_delete(ROLLBACK_DELETE_FUNC_PARAMS) {
+
 }
 
 } // namespace dawn

@@ -72,15 +72,9 @@ void Table::delete_all_data() {
 }
 
 bool Table::mark_delete(const Value &key_value, const TableSchema &tb_schema) {
-    Tuple tuple;
-    if (!get_tuple(key_value, &tuple, tb_schema)) {
-        return false;
-    }
-
-    if (!mark_delete(tuple.get_rid())) {
-        return false;
-    }
-    return true;
+    if (mark_delete_func(first_table_page_id_, key_value, tb_schema, bpm_) == OP_SUCCESS)
+        return true;
+    return false;
 }
 
 bool Table::mark_delete(const RID &rid) {
@@ -89,8 +83,7 @@ bool Table::mark_delete(const RID &rid) {
         return false;
     
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
-    if (table_page == nullptr)
-        return false;    
+  
     table_page->w_lock();
     bool ok = table_page->mark_delete(rid);
     table_page->w_unlock();
@@ -104,7 +97,7 @@ void Table::apply_delete(const Value &key_value, const TableSchema &tb_schema) {
         return;
     }
 
-    apply_delete(tuple.get_rid());
+    apply_delete_func(first_table_page_id_, key_value, tb_schema, bpm_);
 }
 
 void Table::apply_delete(const RID &rid) {
@@ -122,12 +115,7 @@ void Table::apply_delete(const RID &rid) {
 }
 
 void Table::rollback_delete(const Value &key_value, const TableSchema &tb_schema) {
-    Tuple tuple;
-    if (!get_tuple(key_value, &tuple, tb_schema)) {
-        return;
-    }
-
-    rollback_delete(tuple.get_rid());
+    rollback_delete_func(first_table_page_id_, key_value, tb_schema, bpm_);
 }
 
 void Table::rollback_delete(const RID &rid) {
@@ -136,8 +124,7 @@ void Table::rollback_delete(const RID &rid) {
         return;
     
     TablePage *table_page = reinterpret_cast<TablePage*>(bpm_->get_page(page_id));
-    if (table_page == nullptr)
-        return;    
+ 
     table_page->w_lock();
     table_page->rollback_delete(rid);
     table_page->w_unlock();
