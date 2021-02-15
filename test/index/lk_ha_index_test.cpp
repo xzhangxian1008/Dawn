@@ -306,13 +306,11 @@ TEST_F(LinkHashBasicTest, BasicTest) {
             for (size_t_ i = 0; i < insert_num; i++) {
                 if (i % 2 == 0)
                     continue;
-
                 Value key_value = insert_tuples[i].get_value(*tb_schema, tb_schema->get_key_idx());
                 if (!table->mark_delete(key_value, *tb_schema)) {
                     ok = false;
                     break;
                 }
-                
                 table->apply_delete(key_value, *tb_schema);
             }
             ASSERT_TRUE(ok);

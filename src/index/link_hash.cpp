@@ -99,6 +99,9 @@ bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, 
  * For convenience, the last several unpin function's dirty flag is alway true.
  * We can control it when coming across any performance problem in this function.
  * 
+ * Hold the locks of second level page and empty pages, because the link list may be changed
+ * and we should resist others to access this list when it's unstable.
+ * 
  * @param sec_pg_slot_num slot_num offset in the first level page, used for getting the second level page id
  * @param tb_pg_slot_num slot_num offset int the second level page, used for getting the first TablePage's page id
  */
@@ -115,9 +118,8 @@ void lk_ha_clear_empty_page(page_id_t first_page_id, BufferPoolManager *bpm, has
     LinkHashPage *sec_level_pg = reinterpret_cast<LinkHashPage*>(bpm->get_page(sec_level_pgid));
 
     // get the third level's first TablePage
-    sec_level_pg->w_lock(); // the second level page may be change, so hold the write lock all the time
+    sec_level_pg->w_lock(); // the second level page may be changed, so hold the write lock all the time
     page_id_t checked_pgid = sec_level_pg->get_pgid_in_slot(tb_pg_slot_num);
-    // TODO put the sec_level_pg->w_unlock();
 
     /**
      * ATTENTION Do not release the lock when collecting the empty pages
@@ -127,7 +129,7 @@ void lk_ha_clear_empty_page(page_id_t first_page_id, BufferPoolManager *bpm, has
      * Delete the collected empty TablePages and change the page id in the second level
      * page's slot to refer to the first non-empty TablePage.
      */
-    std::vector<TablePage*> empty_pages;
+    std::vector<TablePage*> empty_pages; // store the empty pages that should be deleted
     TablePage *checked_tb_page = reinterpret_cast<TablePage*>(bpm->get_page(checked_pgid));
     checked_tb_page->w_lock();
     while (checked_tb_page->get_stored_tuple_cnt() == 0) {
@@ -148,7 +150,16 @@ void lk_ha_clear_empty_page(page_id_t first_page_id, BufferPoolManager *bpm, has
     // delete the empty pages
     if (empty_pages.size() > 0) {
         for (size_t i = 0; i < empty_pages.size(); i++) {
-            bpm->delete_page(empty_pages[i]->get_page_id());
+            empty_pages[i]->w_unlock();
+            bpm->unpin_page(empty_pages[i]->get_page_id(), false);
+            while (true) {
+                if (bpm->delete_page(empty_pages[i]->get_page_id())) {
+                    break;
+                }
+
+                // someone else is accessing the page, wait...
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            }
         }
     }
 
@@ -159,8 +170,6 @@ void lk_ha_clear_empty_page(page_id_t first_page_id, BufferPoolManager *bpm, has
     if (checked_pgid == INVALID_PAGE_ID) {
         sec_level_pg->w_unlock();
         bpm->unpin_page(sec_level_pgid, true); // for convenience, always true
-        page_id_t pgid = sec_level_pg->get_pgid_in_slot(tb_pg_slot_num);
-        PRINT("slot page id:", pgid);
         return;
     }
 
