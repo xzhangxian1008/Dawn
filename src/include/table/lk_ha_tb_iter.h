@@ -27,7 +27,13 @@ private:
      * refer to the first level page's slot,
      * help the iter to know it accesses which second level page
      */
-    offset_t slot_num_; 
+    offset_t slot1_num_; 
+
+    /** 
+     * refer to the second level page's slot,
+     * help the iter to know it accesses which link list
+     */
+    offset_t slot2_num_;
 };
 
 } // namespace dawn

@@ -34,7 +34,8 @@ LinkHashTableIter::LinkHashTableIter(page_id_t first_page_id, BufferPoolManager 
         // traverse the second level page to find an available third level page
         page_id_t level3_page_id = INVALID_PAGE_ID;
         level2_page->r_lock();
-        for (offset_t slot2_num = 0; slot2_num < LK_HA_PG_SLOT_NUM; slot2_num++) {
+        offset_t slot2_num = 0;
+        for (; slot2_num < LK_HA_PG_SLOT_NUM; slot2_num++) {
             level3_page_id = level2_page->get_pgid_in_slot(slot2_num);
             if (level3_page_id != INVALID_PAGE_ID)
                 break;
@@ -51,8 +52,9 @@ LinkHashTableIter::LinkHashTableIter(page_id_t first_page_id, BufferPoolManager 
                 LOG("should not reach here");
                 exit(-1);
             }
-            level2_page->r_unlock();
-            slot_num_ = slot1_num;
+            level3_page->r_unlock();
+            slot1_num_ = slot1_num;
+            slot2_num_ = slot2_num;
             break;
         }
 
@@ -67,7 +69,7 @@ LinkHashTableIter::LinkHashTableIter(page_id_t first_page_id, BufferPoolManager 
     // can't find any tuple
     if (slot1_num >= LK_HA_PG_SLOT_NUM) {
         tuple_->set_rid(RID(INVALID_PAGE_ID, INVALID_SLOT_NUM));
-        slot_num_ = INVALID_SLOT_NUM;
+        slot1_num_ = INVALID_SLOT_NUM;
         return;
     }
 }
@@ -84,37 +86,96 @@ TableIterAbstract& LinkHashTableIter::operator++() {
         tuple_->set_rid(RID(INVALID_PAGE_ID, INVALID_SLOT_NUM));
         return *this;
     }
+    // PRINT("position: ", slot1_num_, " ", slot2_num_);
 
     LinkHashPage *level1_page = reinterpret_cast<LinkHashPage*>(bpm_->get_page(first_page_id_));
     level1_page->r_lock();
-    offset_t cur_slot_num = slot_num_;
-    page_id_t cur_level2_pgid = level1_page->get_pgid_in_slot(cur_slot_num);
+    
+    offset_t cur_slot1_num = slot1_num_;
+    offset_t cur_slot2_num = slot2_num_;
+    page_id_t cur_level2_pgid = level1_page->get_pgid_in_slot(cur_slot1_num);
 
     do {
+        // get the second level page
+        LinkHashPage *level2_page = reinterpret_cast<LinkHashPage*>(bpm_->get_page(cur_level2_pgid));
+        level2_page->r_lock();
+
+        /**
+         * Need this judgement after switching to the next second level page,
+         * because we should find the first available TablePage.
+         */
+        if (cur_tb_pgid == INVALID_PAGE_ID) {
+            while (cur_slot2_num < LK_HA_PG_SLOT_NUM && cur_tb_pgid == INVALID_PAGE_ID)
+                cur_tb_pgid = level2_page->get_pgid_in_slot(cur_slot2_num++);
+        }
+
         do {
-            // get next tuple in the TablePage
-            TablePage *cur_tb_page = reinterpret_cast<TablePage*>(bpm_->get_page(cur_tb_pgid));
-            RID next_rid;
-            if (cur_tb_page->get_next_tuple_rid(cur_rid, &next_rid)) {
-                // there exists an available tuple
-                cur_tb_page->get_tuple(tuple_, next_rid);
-                bpm_->unpin_page(cur_tb_pgid, false);
-                level1_page->r_unlock();
-                bpm_->unpin_page(first_page_id_, false);
-                return *this;
+            // jump out this second level page's loop because it contains nothing
+            if (cur_tb_pgid == INVALID_PAGE_ID) {
+                LOG("HERE");
+                break;
             }
-            bpm_->unpin_page(cur_tb_pgid, false);
 
-            // it's the last tuple in the TablePage, jump to the next TablePage in link list
-            cur_tb_pgid = cur_tb_page->get_next_page_id();
-        } while (cur_tb_pgid != INVALID_PAGE_ID);
+            do {
+                // get next tuple in the TablePage
+                TablePage *cur_tb_page = reinterpret_cast<TablePage*>(bpm_->get_page(cur_tb_pgid));
+                cur_tb_page->r_lock();
+                
+                RID next_rid;
+                bool ok;
+                if (cur_rid.get_page_id() == cur_tb_page->get_page_id()) {
+                    ok = cur_tb_page->get_next_tuple_rid(cur_rid, &next_rid);
+                    cur_tb_page->get_tuple(tuple_, next_rid);
+                } else {
+                    ok = cur_tb_page->get_the_first_tuple(tuple_);
+                }
 
-        // find the next link list containing tuples
+                if (ok) {
+                    // release some resource
+                    cur_tb_page->r_unlock();
+                    bpm_->unpin_page(cur_tb_pgid, false);
+                    level2_page->r_unlock();
+                    bpm_->unpin_page(level2_page->get_page_id(), false);
+                    level1_page->r_unlock();
+                    bpm_->unpin_page(first_page_id_, false);
 
+                    slot2_num_ = cur_slot2_num;
+                    slot1_num_ = cur_slot1_num;
+
+                    return *this;
+                }
+
+                cur_tb_page->r_unlock();
+                bpm_->unpin_page(cur_tb_pgid, false);
+
+                // it's the last tuple in the TablePage, jump to the next TablePage in link list
+                cur_tb_pgid = cur_tb_page->get_next_page_id();
+            } while (cur_tb_pgid != INVALID_PAGE_ID); // loop in the link list
+
+            // find the next link list containing tuples in the same second level page
+            do {
+                cur_tb_pgid = level2_page->get_pgid_in_slot(++cur_slot2_num);
+            } while (cur_slot2_num < LK_HA_PG_SLOT_NUM && cur_tb_pgid == INVALID_PAGE_ID);
+            
+        } while (cur_slot2_num < LK_HA_PG_SLOT_NUM); // loop in an second level page
+
+        // release the second level page's resource
+        level2_page->r_unlock();
+        bpm_->unpin_page(level2_page->get_page_id(), false);
         
-    } while(true);
+        // find the next available second level page
+        do {
+            cur_level2_pgid = level1_page->get_pgid_in_slot(++cur_slot1_num);
+        } while (cur_slot1_num < LK_HA_PG_SLOT_NUM && cur_level2_pgid == INVALID_PAGE_ID);
+        
+        cur_slot2_num = 0; // reset the second level page's slot num
+    } while (cur_slot1_num < LK_HA_PG_SLOT_NUM); // loop in the first level page
+
     level1_page->r_unlock();
     bpm_->unpin_page(first_page_id_, false);
+    tuple_->set_rid(RID(INVALID_PAGE_ID, INVALID_SLOT_NUM));
+    slot1_num_ = INVALID_SLOT_NUM;
+    slot2_num_ = INVALID_SLOT_NUM;
     
     return *this;
 }

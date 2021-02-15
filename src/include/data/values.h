@@ -87,6 +87,36 @@ public:
         return ok;
     }
 
+    bool operator<(const Value &value) const {
+        // Comparison between different type of value is ub(undefined behaviour)
+        if (this->type_id_ != value.type_id_)
+            return false;
+        
+        switch (type_id_) {
+            case TypeId::BOOLEAN: {
+                return false; // illegal
+            }
+            case TypeId::INTEGER: {
+                return this->value_.integer < value.value_.integer;
+            }
+            case TypeId::DECIMAL: {
+                return this->value_.decimal < value.value_.decimal;
+            }
+            case TypeId::CHAR: {
+                string_t s1(value_.char_);
+                string_t s2(value.value_.char_);
+                if (s1.compare(s2) < 0)
+                    return true;
+                return false;
+            }
+            case TypeId::INVALID: {
+                return false;
+            }
+            default:
+                return false;
+        }
+    }
+
     void swap(Value &val) {
         std::swap(val.type_id_, type_id_);
         std::swap(val.value_, value_);

@@ -20,13 +20,35 @@ using std::endl;
 using std::ends;
 
 namespace dawn {
-const size_t_ DEFAULT_POOL = 50;
+
 TEST(CommonTest1, CommonTEST11) {
-    const page_id_t index_header_page_id_ = 10;
-    page_id_t *pgid = const_cast<page_id_t*>(&index_header_page_id_);
-    *pgid = 100; // right
-    size_t_ *default_pool_size = const_cast<size_t_*>(&DEFAULT_POOL);
-    *default_pool_size = 100; // wrong
+    std::set<Value> s;
+    s.insert(Value(123));
+    s.insert(Value(1234));
+    s.insert(Value(1235));
+    s.insert(Value(1236));
+    s.insert(Value(1237));
+    
+    auto iter = s.find(Value(123));
+    if (iter == s.end()) {
+        LOG("here");
+    }
+    iter = s.find(Value(1234));
+    if (iter == s.end()) {
+        LOG("here");
+    }
+    iter = s.find(Value(1235));
+    if (iter == s.end()) {
+        LOG("here");
+    }
+    iter = s.find(Value(1236));
+    if (iter == s.end()) {
+        LOG("here");
+    }
+    iter = s.find(Value(1237));
+    if (iter == s.end()) {
+        LOG("here");
+    }
 }
 
 } // namespace dawn
