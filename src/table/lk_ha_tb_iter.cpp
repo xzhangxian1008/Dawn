@@ -1,5 +1,6 @@
 #include "table/lk_ha_tb_iter.h"
 #include "storage/page/table_page.h"
+#include "table/table_schema.h"
 
 namespace dawn {
 
@@ -106,15 +107,13 @@ TableIterAbstract& LinkHashTableIter::operator++() {
          */
         if (cur_tb_pgid == INVALID_PAGE_ID) {
             while (cur_slot2_num < LK_HA_PG_SLOT_NUM && cur_tb_pgid == INVALID_PAGE_ID)
-                cur_tb_pgid = level2_page->get_pgid_in_slot(cur_slot2_num++);
+                cur_tb_pgid = level2_page->get_pgid_in_slot(++cur_slot2_num);
         }
 
         do {
             // jump out this second level page's loop because it contains nothing
-            if (cur_tb_pgid == INVALID_PAGE_ID) {
-                LOG("HERE");
+            if (cur_tb_pgid == INVALID_PAGE_ID) 
                 break;
-            }
 
             do {
                 // get next tuple in the TablePage
@@ -156,7 +155,7 @@ TableIterAbstract& LinkHashTableIter::operator++() {
             do {
                 cur_tb_pgid = level2_page->get_pgid_in_slot(++cur_slot2_num);
             } while (cur_slot2_num < LK_HA_PG_SLOT_NUM && cur_tb_pgid == INVALID_PAGE_ID);
-            
+
         } while (cur_slot2_num < LK_HA_PG_SLOT_NUM); // loop in an second level page
 
         // release the second level page's resource
@@ -168,7 +167,7 @@ TableIterAbstract& LinkHashTableIter::operator++() {
             cur_level2_pgid = level1_page->get_pgid_in_slot(++cur_slot1_num);
         } while (cur_slot1_num < LK_HA_PG_SLOT_NUM && cur_level2_pgid == INVALID_PAGE_ID);
         
-        cur_slot2_num = 0; // reset the second level page's slot num
+        cur_slot2_num = -1; // reset the second level page's slot num
     } while (cur_slot1_num < LK_HA_PG_SLOT_NUM); // loop in the first level page
 
     level1_page->r_unlock();

@@ -76,7 +76,7 @@ public:
  *   4. reinsert some tuples and check
  *      restart the db to ensure the operation have been persisted on the disk
  */
-TEST_F(LinkHashBasicTest, DISABLED_BasicIndexTest) {
+TEST_F(LinkHashBasicTest, BasicIndexTest) {
     PRINT("start the hash link index tests...");
     TableSchema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     size_t_ insert_num = 12345;
@@ -492,7 +492,7 @@ TEST_F(LinkHashBasicTest, BasicIterTest) {
     PRINT("start the hash link iterator tests...");
     TableSchema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();
-    size_t_ insert_num = 800;
+    size_t_ insert_num = 12345;
     std::set<Value> insert_key_values;
     
     // ********************* test 1 ********************* //
@@ -536,32 +536,114 @@ TEST_F(LinkHashBasicTest, BasicIterTest) {
     }
     ASSERT_TRUE(ok);
 
-    // iterate them
-    PRINT("start to iterate the table...");
-    LinkHashTableIter tb_iter(table->get_first_table_page_id(), db_manager->get_buffer_pool_manager());
-    ASSERT_NE(INVALID_PAGE_ID, tb_iter->get_rid().get_page_id());
-    ASSERT_NE(INVALID_SLOT_NUM, tb_iter->get_rid().get_slot_num());
+    {
+        // iterate them
+        PRINT("start to iterate the table...");
+        LinkHashTableIter tb_iter(table->get_first_table_page_id(), db_manager->get_buffer_pool_manager());
+        ASSERT_NE(INVALID_PAGE_ID, tb_iter->get_rid().get_page_id());
+        ASSERT_NE(INVALID_SLOT_NUM, tb_iter->get_rid().get_slot_num());
 
-    size_t_ cnt = 0; // count how many tuples the iterator gets
-    while (tb_iter->get_rid().get_page_id() != INVALID_PAGE_ID) {
-        Value key_value = tb_iter->get_value(*tb_schema, key_idx);
-        auto iter = insert_key_values.find(key_value);
-        if (iter == insert_key_values.end()) {
-            ok = false;
-            break;
+        size_t_ cnt = 0; // count how many tuples the iterator gets
+        while (tb_iter->get_rid().get_page_id() != INVALID_PAGE_ID) {
+            Value key_value = tb_iter->get_value(*tb_schema, key_idx);
+            auto iter = insert_key_values.find(key_value);
+            if (iter == insert_key_values.end()) {
+                ok = false;
+                break;
+            }
+            ++cnt;
+            ++tb_iter;
         }
-        ++cnt;
-        ++tb_iter;
-        insert_key_values.erase(iter);
+        ASSERT_TRUE(ok);
+        ASSERT_EQ(cnt, insert_key_values.size());
     }
-    // ASSERT_TRUE(ok);
-    // ASSERT_EQ(cnt, insert_key_values.size());
-    for (auto item : insert_key_values)
-        PRINT(item.get_value_string());
+
     PRINT("***test 1 pass***");
 
     // ********************* test 2 ********************* //
 
+    // delete some tuples
+    PRINT("delete some tuples...");
+    for (size_t_ i = 0; i < insert_num; i++) {
+        if (i % 2 == 0)
+            continue;
+        values[key_idx] = Value(static_cast<integer_t>(i));
+        Tuple tuple(&values, *tb_schema);
+        if (!table->mark_delete(values[key_idx], *tb_schema)) {
+            ok = false;
+            break;
+        }
+        
+        table->apply_delete(values[key_idx], *tb_schema);
+        auto iter = insert_key_values.find(values[key_idx]);
+        insert_key_values.erase(iter);
+    }
+    ASSERT_TRUE(ok);
+
+    {
+        // iterate them
+        PRINT("start to iterate the table...");
+        LinkHashTableIter tb_iter(table->get_first_table_page_id(), db_manager->get_buffer_pool_manager());
+        ASSERT_NE(INVALID_PAGE_ID, tb_iter->get_rid().get_page_id());
+        ASSERT_NE(INVALID_SLOT_NUM, tb_iter->get_rid().get_slot_num());
+
+        size_t_ cnt = 0; // count how many tuples the iterator gets
+        while (tb_iter->get_rid().get_page_id() != INVALID_PAGE_ID) {
+            Value key_value = tb_iter->get_value(*tb_schema, key_idx);
+            auto iter = insert_key_values.find(key_value);
+            if (iter == insert_key_values.end()) {
+                ok = false;
+                break;
+            }
+            ++cnt;
+            ++tb_iter;
+        }
+        ASSERT_TRUE(ok);
+        ASSERT_EQ(cnt, insert_key_values.size());
+    }
+
+    PRINT("***test 2 pass***");
+
+    // ********************* test 3 ********************* //
+
+    // reinsert some tuples
+    PRINT("reinsert some tuples...");
+    for (size_t_ i = 0; i < insert_num; i++) {
+        if (i % 2 == 0)
+            continue;
+        values[key_idx] = Value(static_cast<integer_t>(i + insert_num));
+        Tuple tuple(&values, *tb_schema);
+        if (!table->insert_tuple(&tuple, *tb_schema)) {
+            ok = false;
+            break;
+        }
+        insert_key_values.insert(values[key_idx]);
+    }
+    ASSERT_TRUE(ok);
+
+    {
+        // iterate them
+        PRINT("start to iterate the table...");
+        LinkHashTableIter tb_iter(table->get_first_table_page_id(), db_manager->get_buffer_pool_manager());
+        ASSERT_NE(INVALID_PAGE_ID, tb_iter->get_rid().get_page_id());
+        ASSERT_NE(INVALID_SLOT_NUM, tb_iter->get_rid().get_slot_num());
+
+        size_t_ cnt = 0; // count how many tuples the iterator gets
+        while (tb_iter->get_rid().get_page_id() != INVALID_PAGE_ID) {
+            Value key_value = tb_iter->get_value(*tb_schema, key_idx);
+            auto iter = insert_key_values.find(key_value);
+            if (iter == insert_key_values.end()) {
+                ok = false;
+                break;
+            }
+            ++cnt;
+            ++tb_iter;
+        }
+        ASSERT_TRUE(ok);
+        ASSERT_EQ(cnt, insert_key_values.size());
+    }
+
+    PRINT("***test 3 pass***");
 
     delete tb_schema;
     delete db_manager;

@@ -286,6 +286,7 @@ op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
     third_level_page->w_unlock();
     bpm->unpin_page(third_level_page_id, true);
     tuple->set_rid(rid);
+
     return OP_SUCCESS;
 }
 
