@@ -187,27 +187,6 @@ bool read_write_pages_check(DiskManager_T &dmt, int page_num) {
     return ok;
 }
 
-TEST_F(DiskManagerTest, CasualTest)
-{
-    const char* meta = "casualTest";
-    const char *mtdf = "casualTest.mtd";
-    const char *dbf = "casualTest.db";
-    const char *logf = "casualTest.log";
-
-    string_t mtdf_s(mtdf);
-    string_t dbf_s(dbf);
-    string_t logf_s(logf);
-
-    remove(mtdf);
-    remove(dbf);
-    remove(logf);
-
-    {
-        DiskManager_T DmtLyb(meta, true);
-        EXPECT_TRUE(DmtLyb.get_status());
-    }
-}
-
 /**
  * Test List:
  *   1. create mode: check files have been created and values have been written into the .mtd

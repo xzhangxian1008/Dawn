@@ -193,8 +193,8 @@ void DiskManager::from_mtd(const string_t &meta_name) {
      * for the efficiency of the initialization, we read a batch of pages each time
      */
     page_id_t page_id;
-    int read_size;
-    for (int i = 0; i < read_cnt; i++) {
+    long read_size;
+    for (long i = 0; i < read_cnt; i++) {
         db_io_.seekp(i * READ_DB_BUF_SZ);
 
         read_size = READ_DB_BUF_SZ <= db_file_sz ? READ_DB_BUF_SZ : db_file_sz;
@@ -207,9 +207,9 @@ void DiskManager::from_mtd(const string_t &meta_name) {
         }
         db_file_sz = db_file_sz - READ_DB_BUF_SZ;
 
-        int read_sz = db_io_.gcount(); // read_sz refer to how large space we read
+        long read_sz = db_io_.gcount(); // read_sz refer to how large space we read
         char *p_status;
-        for (int offset = 0; offset < read_sz; offset += PAGE_SIZE) {
+        for (long offset = 0; offset < read_sz; offset += PAGE_SIZE) {
             page_id = i * READ_DB_PG_NUM + (offset / PAGE_SIZE);
 
             p_status = reinterpret_cast<char*>(tmp_buf + offset);

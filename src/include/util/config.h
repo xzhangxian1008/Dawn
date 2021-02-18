@@ -5,11 +5,11 @@
 
 namespace dawn {
 
-#define READ_DB_BUF_SZ  409600 // 100 pages
-#define READ_DB_PG_NUM     100
+constexpr int32_t PAGE_SIZE =   4096;
+constexpr long READ_DB_PG_NUM = 1000000;
+constexpr long READ_DB_BUF_SZ = PAGE_SIZE * READ_DB_PG_NUM; // 1000000 pages, approximate 40MB
 
 // page
-#define PAGE_SIZE            4096
 #define COM_PG_HEADER_SZ       64 // page's comman header size
 #define INVALID_PAGE_ID        -1
 #define INVALID_SLOT_NUM       -1
