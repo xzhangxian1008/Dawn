@@ -17,7 +17,6 @@ public:
         disk_manager_ = DiskManagerFactory::create_DiskManager(meta_name, from_scratch);
         if (disk_manager_ == nullptr)
             return;
-        
         bpm_ = new BufferPoolManager(disk_manager_, DEFAULT_POOL_SIZE);
         catalog_page_id_ = disk_manager_->get_catalog_pgid();
         catalog_ = new Catalog(bpm_, catalog_page_id_, from_scratch);

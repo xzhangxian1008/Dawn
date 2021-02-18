@@ -6,8 +6,8 @@
 namespace dawn {
 
 constexpr int32_t PAGE_SIZE =   4096;
-constexpr long READ_DB_PG_NUM = 1000000;
-constexpr long READ_DB_BUF_SZ = PAGE_SIZE * READ_DB_PG_NUM; // 1000000 pages, approximate 40MB
+constexpr long READ_DB_PG_NUM = 10240;
+constexpr long READ_DB_BUF_SZ = PAGE_SIZE * READ_DB_PG_NUM; // 10240 pages, approximate 40MB
 
 // page
 #define COM_PG_HEADER_SZ       64 // page's comman header size
