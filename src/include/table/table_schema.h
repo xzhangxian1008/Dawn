@@ -11,6 +11,7 @@
 namespace dawn {
 
 /**
+ * TODO set the key index
  * ATTENTION no latch to handle the concurrency environment, because we won't modify TableSchema after it is created
  * for specification of the tuple
  */
@@ -42,6 +43,14 @@ public:
         return -1;
     }
 
+    inline offset_t get_key_idx() const {
+        return key_idx_;
+    }
+
+    inline void set_key_idx(offset_t key_idx) {
+        key_idx_ = key_idx;
+    }
+
     // FIXME I think it's a bad method
     string_t to_string() const {
         std::ostringstream os;
@@ -68,6 +77,9 @@ public:
 private:
     std::vector<Column> columns_;
     size_t_ length_; // the tuple's size
+
+    // TODO the default key index is 0, change it!
+    offset_t key_idx_ = 0; // key index, and we do not support the jointly index
 };
 
 TableSchema* create_table_schema(const std::vector<TypeId> &types, 

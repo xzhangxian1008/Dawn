@@ -10,7 +10,7 @@
 namespace dawn {
 
 /**
- * WARNING DO NOT ADD VIRTUAL FUNCTION IN THIS CLASS
+ * WARNING DO NOT ADD ANY VIRTUAL FUNCTIONS IN THIS CLASS
  * 
  * common page header layout(64 bytes):
  * -------------------------------------------------------------

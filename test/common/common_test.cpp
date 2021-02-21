@@ -8,6 +8,8 @@
 #include "util/util.h"
 #include "util/config.h"
 #include "data/types.h"
+#include "data/values.h"
+
 
 using std::fstream;
 using std::string;
@@ -17,17 +19,36 @@ using std::cout;
 using std::endl;
 using std::ends;
 
-const char *s = "asdfe";
-
 namespace dawn {
 
-string_t func() {
-    return s;
-}
-
 TEST(CommonTest1, CommonTEST11) {
-    string_t str = func();
-    PRINT(str);
+    std::set<Value> s;
+    s.insert(Value(123));
+    s.insert(Value(1234));
+    s.insert(Value(1235));
+    s.insert(Value(1236));
+    s.insert(Value(1237));
+    
+    auto iter = s.find(Value(123));
+    if (iter == s.end()) {
+        LOG("here");
+    }
+    iter = s.find(Value(1234));
+    if (iter == s.end()) {
+        LOG("here");
+    }
+    iter = s.find(Value(1235));
+    if (iter == s.end()) {
+        LOG("here");
+    }
+    iter = s.find(Value(1236));
+    if (iter == s.end()) {
+        LOG("here");
+    }
+    iter = s.find(Value(1237));
+    if (iter == s.end()) {
+        LOG("here");
+    }
 }
 
 } // namespace dawn

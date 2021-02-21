@@ -5,10 +5,9 @@
 #include "util/config.h"
 #include "util/rwlatch.h"
 #include "table/table_schema.h"
-#include "table/table.h"
 #include "buffer/buffer_pool_manager.h"
-#include "table/table.h"
 #include "data/types.h"
+#include "table/table.h"
 
 namespace dawn {
 
@@ -29,10 +28,16 @@ namespace dawn {
  */
 class TableMetaData {
 public:
-    // create table with meta table, in other words, this table exists in the disk
+    /**
+     * TODO read the key index
+     * create table with meta table, in other words, this table exists in the disk 
+     */
     explicit TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const table_id_t table_id);
 
-    // create table from scratch and write data to disk for persistence
+    /**
+     * TODO key index
+     * create table from scratch and write data to disk for persistence
+     */
     TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema, const table_id_t table_id);
 
     ~TableMetaData() {
@@ -68,10 +73,10 @@ private:
     Table *table_;
 
     // this two ids can't be modified, even the table has no tuple
-    const page_id_t first_table_page_id_;
-    const page_id_t index_header_page_id_;
-    const page_id_t self_page_id_; // where stores the table_meta_data's info
-    const table_id_t table_id_; // it's also the page id
+    page_id_t first_table_page_id_;
+    page_id_t index_header_page_id_;
+    page_id_t self_page_id_; // where stores the table_meta_data's info
+    table_id_t table_id_; // it's also the page id
     Page *page_;
     char *data_;
 };

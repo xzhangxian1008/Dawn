@@ -58,7 +58,7 @@ public:
         return *this;
     }
 
-    bool operator==(const Value &value) {
+    bool operator==(const Value &value) const {
         if (this->type_id_ != value.type_id_)
             return false;
             
@@ -85,6 +85,36 @@ public:
                 break;
         }
         return ok;
+    }
+
+    bool operator<(const Value &value) const {
+        // Comparison between different type of value is ub(undefined behaviour)
+        if (this->type_id_ != value.type_id_)
+            return false;
+        
+        switch (type_id_) {
+            case TypeId::BOOLEAN: {
+                return false; // illegal
+            }
+            case TypeId::INTEGER: {
+                return this->value_.integer < value.value_.integer;
+            }
+            case TypeId::DECIMAL: {
+                return this->value_.decimal < value.value_.decimal;
+            }
+            case TypeId::CHAR: {
+                string_t s1(value_.char_);
+                string_t s2(value.value_.char_);
+                if (s1.compare(s2) < 0)
+                    return true;
+                return false;
+            }
+            case TypeId::INVALID: {
+                return false;
+            }
+            default:
+                return false;
+        }
     }
 
     void swap(Value &val) {
@@ -128,7 +158,35 @@ public:
         singleton[static_cast<int>(type_id_)]->deserialize_from((char*)(&value_), src);
     }
 
-    string_t get_value_string() {
+    // TODO test it!
+    hash_t get_hash_value() const {
+        switch (type_id_) {
+            case TypeId::BOOLEAN: {
+                boolean_t *val = const_cast<boolean_t*>(&(value_.boolean));
+                return do_hash(static_cast<void*>(val), BOOLEAN_T_SIZE);
+            }
+            case TypeId::INTEGER: {
+                integer_t *val = const_cast<integer_t*>(&(value_.integer));
+                return do_hash(static_cast<void*>(val), INTEGER_T_SIZE);
+            }
+            case TypeId::DECIMAL: {
+                decimal_t *val = const_cast<decimal_t*>(&(value_.decimal));
+                return do_hash(static_cast<void*>(val), DECIMAL_T_SIZE);
+            }
+            case TypeId::CHAR: {
+                char *val = const_cast<char*>(value_.char_);
+                return do_hash(static_cast<void*>(val), str_size_);
+            }
+            case TypeId::INVALID: {
+                return 0;
+            }
+            default:
+                return 0;
+        }
+        return 0;
+    }
+
+    string_t get_value_string() const {
         switch (type_id_) {
             case TypeId::BOOLEAN:
                 if (value_.boolean) {

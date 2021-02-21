@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "storage/disk/disk_manager.h"
 #include "buffer/buffer_pool_manager.h"
 #include "meta/catalog.h"
@@ -15,7 +17,6 @@ public:
         disk_manager_ = DiskManagerFactory::create_DiskManager(meta_name, from_scratch);
         if (disk_manager_ == nullptr)
             return;
-        
         bpm_ = new BufferPoolManager(disk_manager_, DEFAULT_POOL_SIZE);
         catalog_page_id_ = disk_manager_->get_catalog_pgid();
         catalog_ = new Catalog(bpm_, catalog_page_id_, from_scratch);
@@ -38,8 +39,7 @@ public:
     inline bool get_status() const { return status; }
 
     static inline void set_default_pool_size(size_t_ pool_size) {
-        size_t_ *default_pool_size = const_cast<size_t_*>(&DEFAULT_POOL_SIZE);
-        *default_pool_size = pool_size;
+        DEFAULT_POOL_SIZE = pool_size;
     }
 
     static inline size_t_ get_default_pool_size() {
@@ -47,7 +47,7 @@ public:
     }
 
 private:
-    static constexpr size_t_ DEFAULT_POOL_SIZE = 50;
+    static size_t_ DEFAULT_POOL_SIZE;
 
     DiskManager *disk_manager_;
     BufferPoolManager *bpm_;

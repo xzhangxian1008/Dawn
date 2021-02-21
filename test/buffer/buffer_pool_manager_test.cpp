@@ -41,7 +41,7 @@ bool checkData(const int& data_size, char* data_buf, const char* data_check)
     return ok;
 }
 
-//clear list page created by me
+// clear list page created by me
 void clearPageList(page_list& pageList)
 {
     if(pageList.size() != 0)
@@ -62,8 +62,6 @@ void clearPageList(page_list& pageList)
     }
       
 }
-
-
 
 class BPBasicTest : public testing::Test {
 public:
@@ -152,8 +150,9 @@ page_list& initPageList(page_list& pageList, size_t& LIST_SIZE, BufferPoolManage
  *                   their written data have been persisted on the disk.
  *   3. first phase: get large number of pages, write, unpin and flush them
  *      second phase: get them from bpm and check the content has been written
+ *   4. ensure the information of page id can be consistent after the restart
  */
-TEST_F(BPBasicTest, Test1) {
+TEST_F(BPBasicTest, DISABLED_Test1) {
     DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
     ASSERT_NE(dm, nullptr);
 
@@ -229,72 +228,73 @@ TEST_F(BPBasicTest, Test1) {
     {
         BufferPoolManagerTest BpmLyb(dm, POOL_SIZE);
 
-    page_list pageList;
-    size_t size_test = 10;
-    initPageList(pageList, size_test, BpmLyb);
-    
-    size_t size_list = pageList.size();
-    ASSERT_EQ(size_test, size_list);
-    PRINT("====pagelist's length -> ", pageList.size(), "====");
-    for(size_t i = 0; i < pageList.size(); i++)
-    {
-        ASSERT_TRUE(BpmLyb.is_in_bpm(pageList[i]->get_page_id()));
-        PRINT("==== page", pageList[i]->get_page_id(), "has been created in BPM ====");
-    }
+        page_list pageList;
+        size_t size_test = 10;
+        initPageList(pageList, size_test, BpmLyb);
+        
+        size_t size_list = pageList.size();
+        ASSERT_EQ(size_test, size_list);
+        PRINT("====pagelist's length -> ", pageList.size(), "====");
+        for(size_t i = 0; i < pageList.size(); i++)
+        {
+            ASSERT_TRUE(BpmLyb.is_in_bpm(pageList[i]->get_page_id()));
+            PRINT("==== page", pageList[i]->get_page_id(), "has been created in BPM ====");
+        }
 
- //prepare the data set.
-    const char* Kuga = "Kuga";
-    const char* Kabuto = "Kabuto";
-    const char* Blade = "Blade";
-    const char* Black = "Black";
-    const char* BlackRX = "BlackRX";
-    const char* Faiz = "Faiz";
-    const char* Decade = "Decade";
-    const char* OOO = "OOO";
-    const char* Amazon = "Amazon";
-    const char* Agito = "Agito";
-    std::vector<const char*> data_list{Kuga, Kabuto, Blade, Black, BlackRX, Faiz, Decade, OOO, Amazon, Agito,};
-    std::vector<const char*>::const_iterator data_iter = data_list.begin();
+        //prepare the data set.
+        const char* Kuga = "Kuga";
+        const char* Kabuto = "Kabuto";
+        const char* Blade = "Blade";
+        const char* Black = "Black";
+        const char* BlackRX = "BlackRX";
+        const char* Faiz = "Faiz";
+        const char* Decade = "Decade";
+        const char* OOO = "OOO";
+        const char* Amazon = "Amazon";
+        const char* Agito = "Agito";
+        std::vector<const char*> data_list{Kuga, Kabuto, Blade, Black, BlackRX, Faiz, Decade, OOO, Amazon, Agito,};
+        std::vector<const char*>::const_iterator data_iter = data_list.begin();
 
-    const std::vector<int> size_group{5, 7, 6, 6, 8, 5, 7, 4, 7, 6};
-    std::vector<int>::const_iterator size_iter = size_group.begin();
- //write data set to pages
-    for(size_t i = 0; i < data_list.size(); i++)
-    {
-        auto data = *data_iter;
-        auto size = *size_iter;
-        BpmLyb.write_page(pageList[i], COM_PG_HEADER_SZ, data, size);
-        PRINT("==== writing", std::string(data), "to", "page", pageList[i]->get_page_id(), " ====");
-        //end
-        size_iter++;
-        data_iter++;
-    }
-    data_iter = data_list.begin();
-    size_iter = size_group.begin();
-    //flush all
-    ASSERT_TRUE(BpmLyb.flush_all_test());
-    // ASSERT_TRUE(BpmLyb.flush_page_test(pageList[0]->get_page_id()));
-    PRINT("==========================================================");
-    //make sure there are all of the data we defined before which has been flushed into disk
-      bool ok;
-     char data_test[PAGE_SIZE];
-     for(size_t i = 0; i < data_list.size(); i++)
-     {
-         ASSERT_TRUE(dm->read_page(pageList[i]->get_page_id(), data_test));
-         PRINT("==== reading data->", std::string(*data_iter), "finsihed ====");
-         //check data
-         ok = checkData(*size_iter, data_test, *(data_iter));
-         ASSERT_TRUE(ok);
-         size_iter++;
-         data_iter++;
-         memset(data_test, '\0', sizeof(data_test)); //reset data_buf.
-         PRINT("==== the match is successful ====");
-     }
+        const std::vector<int> size_group{5, 7, 6, 6, 8, 5, 7, 4, 7, 6};
+        std::vector<int>::const_iterator size_iter = size_group.begin();
+
+        //write data set to pages
+        for(size_t i = 0; i < data_list.size(); i++)
+        {
+            auto data = *data_iter;
+            auto size = *size_iter;
+            BpmLyb.write_page(pageList[i], COM_PG_HEADER_SZ, data, size);
+            PRINT("==== writing", std::string(data), "to", "page", pageList[i]->get_page_id(), " ====");
+            //end
+            size_iter++;
+            data_iter++;
+        }
+        data_iter = data_list.begin();
+        size_iter = size_group.begin();
+        //flush all
+        ASSERT_TRUE(BpmLyb.flush_all_test());
+        // ASSERT_TRUE(BpmLyb.flush_page_test(pageList[0]->get_page_id()));
+        PRINT("==========================================================");
+        //make sure there are all of the data we defined before which has been flushed into disk
+        bool ok;
+        char data_test[PAGE_SIZE];
+        for(size_t i = 0; i < data_list.size(); i++)
+        {
+            ASSERT_TRUE(dm->read_page(pageList[i]->get_page_id(), data_test));
+            PRINT("==== reading data->", std::string(*data_iter), "finsihed ====");
+            //check data
+            ok = checkData(*size_iter, data_test, *(data_iter));
+            ASSERT_TRUE(ok);
+            size_iter++;
+            data_iter++;
+            memset(data_test, '\0', sizeof(data_test)); //reset data_buf.
+            PRINT("==== the match is successful ====");
+        }
     }
     delete dm;
 }
 
-TEST_F(BPBasicTest, Test2) {
+TEST_F(BPBasicTest, DISABLED_Test2) {
     DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
     ASSERT_NE(dm, nullptr);
 
@@ -371,7 +371,7 @@ TEST_F(BPBasicTest, Test2) {
     delete dm;
 }
 
-TEST_F(BPBasicTest, Test3) {
+TEST_F(BPBasicTest, DISABLED_Test3) {
     DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
     ASSERT_NE(dm, nullptr);
 
@@ -420,6 +420,108 @@ TEST_F(BPBasicTest, Test3) {
     EXPECT_TRUE(ok);
 
     delete dm;
+}
+
+TEST_F(BPBasicTest, Test4) {
+    std::set<page_id_t> exist_pages;
+    std::set<page_id_t> deleted_pages;
+    int new_page_num = 50;
+    DiskManager *dm;
+
+    {
+        /** create many pages */
+        dm = DiskManagerFactory::create_DiskManager(meta, true);
+        ASSERT_NE(dm, nullptr);
+
+        BufferPoolManagerTest bpmt(dm, POOL_SIZE);
+        
+        bool ok = true;
+        for (int i = 0; i < new_page_num; i++) {
+            Page *page = bpmt.new_page_test();
+            auto iter = exist_pages.find(page->get_page_id());
+        if (iter != exist_pages.end()) {
+                ok = false;
+                break;
+            }
+            exist_pages.insert(page->get_page_id());
+            bpmt.unpin_page_test(page->get_page_id(), false);
+        }
+        ASSERT_TRUE(ok);
+        delete dm;
+    }
+
+    {
+        /** restart the db and check if the operation has been persisted */
+        PRINT("restart the db...");
+        dm = DiskManagerFactory::create_DiskManager(meta);
+        ASSERT_NE(dm, nullptr);
+
+        BufferPoolManagerTest bpmt(dm, POOL_SIZE);
+
+        PRINT("check...");
+        bool ok = true;
+        for (int i = 0; i < new_page_num; i++) {
+            Page *page = bpmt.new_page_test();
+            auto iter = exist_pages.find(page->get_page_id());
+            if (iter != exist_pages.end()) {
+                ok = false;
+                break;
+            }
+            exist_pages.insert(page->get_page_id());
+            bpmt.unpin_page_test(page->get_page_id(), false);
+        }
+        ASSERT_TRUE(ok);
+        PRINT("check ok");
+
+        /** delete some pages */
+        PRINT("delete some pages...");
+        for (int i = 0; i < new_page_num; i++) {
+            if (i % 2 == 0)
+                continue;
+            if (!bpmt.delete_page_test(i)) {
+                ok = false;
+                break;
+            }
+
+            auto iter = exist_pages.find(i);
+            exist_pages.erase(iter);
+            deleted_pages.insert(i);
+        }
+        ASSERT_TRUE(ok);
+
+        delete dm;
+    }
+
+    {
+        /** restart the db to check the consistency */
+        PRINT("restart the db...");
+        dm = DiskManagerFactory::create_DiskManager(meta);
+        ASSERT_NE(dm, nullptr);
+
+        BufferPoolManagerTest bpmt(dm, POOL_SIZE);
+
+        PRINT("check...");
+        bool ok = true;
+        for (int i = 0; i < new_page_num; i++) {
+            Page *page = bpmt.get_page_test(i);
+            if (i % 2 == 0) {
+                if (page == nullptr) {
+                    ok = false;
+                    break;
+                }
+            } else {
+                if (page != nullptr) {
+                    ok = false;
+                    break;
+                }
+            }
+            bpmt.unpin_page_test(i, false);
+        }
+        ASSERT_TRUE(ok);
+        PRINT("check ok");
+
+        delete dm;
+    }
 }
 
 } // namespace dawn

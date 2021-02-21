@@ -14,6 +14,7 @@
 namespace dawn {
 
 /**
+ * TODO store the table's key index and the index_header_page_id_ is useless
  * catalog table header layout:
  * ---------------------------------------------------------------------------
  * |                          common header (64)                          |

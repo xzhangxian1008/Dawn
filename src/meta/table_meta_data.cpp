@@ -1,4 +1,5 @@
 #include "meta/table_meta_data.h"
+#include "storage/page/link_hash_page.h"
 
 namespace dawn {
 /** 
@@ -16,10 +17,8 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
     data_ = page_->get_data();
 
     // initialize data
-    page_id_t *pgid = const_cast<page_id_t*>(&first_table_page_id_);
-    *pgid = *reinterpret_cast<page_id_t*>(data_ + FIRST_TABLE_PGID_OFFSET);
-    pgid = const_cast<page_id_t*>(&index_header_page_id_);
-    *pgid = *reinterpret_cast<page_id_t*>(data_ + INDEX_HEADER_PGID_OFFSET);
+    first_table_page_id_ = *reinterpret_cast<page_id_t*>(data_ + FIRST_TABLE_PGID_OFFSET);
+    index_header_page_id_ = *reinterpret_cast<page_id_t*>(data_ + INDEX_HEADER_PGID_OFFSET);
     size_t_ column_num = *reinterpret_cast<page_id_t*>(data_ + COLUMN_NUM_OFFSET);
 
     // construct columns to make TableSchema
@@ -121,20 +120,33 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
         LOG("ERROR! can't get new page");
         exit(-1);
     }
-    page_id_t *pgid = const_cast<page_id_t*>(&first_table_page_id_);
-    *pgid = page->get_page_id();
-    bpm_->unpin_page(*pgid, false);
+    // ATTENTION the default index is link hash
+    switch (LINK_HASH) {
+        case LINK_HASH: {
+            LinkHashPage *lk_ha_page = reinterpret_cast<LinkHashPage*>(page);
+            lk_ha_page->init();
+            break;
+        }
+        case BP_TREE: {
+            LOG("should not reach here");
+            break;
+        }
+        default:
+            LOG("should not reach here");
+            break;
+    }
+    first_table_page_id_ = page->get_page_id();
+    bpm_->unpin_page(first_table_page_id_, true);
     *reinterpret_cast<page_id_t*>(data_ + FIRST_TABLE_PGID_OFFSET) = first_table_page_id_;
 
-    // create index_header's page
+    // TODO(This may be useless) create index_header's page
     page = bpm_->new_page();
     if (page == nullptr) {
         LOG("ERROR! can't get new page");
         exit(-1);
     }
-    pgid = const_cast<page_id_t*>(&index_header_page_id_);
-    *pgid = page->get_page_id();
-    bpm_->unpin_page(*pgid, false);
+    index_header_page_id_ = page->get_page_id();
+    bpm_->unpin_page(index_header_page_id_, false);
     *reinterpret_cast<page_id_t*>(data_ + INDEX_HEADER_PGID_OFFSET) = index_header_page_id_;
 
     table_ = new Table(bpm_, first_table_page_id_, true);

@@ -12,6 +12,7 @@
 
 namespace dawn {
 /**
+ * TODO use bitmap to record the usage of the page id
  * meta data file layout:
  * the reserved filed is placed just for notification not to forget to
  * maintain a reserved field when I plan to add other fields.

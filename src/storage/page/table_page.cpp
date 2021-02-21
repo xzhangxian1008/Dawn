@@ -123,6 +123,9 @@ bool TablePage::get_tuple(Tuple *tuple, const RID &rid) const {
     offset_t slot_num = rid.get_slot_num();
     offset_t tuple_offset = get_tuple_offset(slot_num);
     size_t_ tuple_size = get_tuple_size(slot_num);
+    if (is_deleted(tuple_size)) {
+        tuple_size = unset_deleted_flag(tuple_size);
+    }
 
     // check if it's legal
     if (slot_num >= get_tuple_count() || tuple_offset == 0)
@@ -168,6 +171,17 @@ bool TablePage::get_the_first_tuple(Tuple *tuple) const {
     }
 
     return false;
+}
+
+size_t_ TablePage::get_stored_tuple_cnt() const {
+    size_t_ tuple_cnt = get_tuple_count();
+    size_t_ cnt = 0;
+    for (size_t_ slot_num = 0; slot_num < tuple_cnt; slot_num++) {
+        offset_t offset = get_tuple_offset(slot_num);
+        if (offset != 0)
+            cnt++;
+    }
+    return cnt;
 }
 
 } // namespace dawn

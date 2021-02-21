@@ -78,7 +78,11 @@ public:
         }
     }
 
-    bool operator==(const Tuple &tuple);
+    /** only compare the values of two tuples, not including rid */
+    bool operator==(const Tuple &tuple) const;
+
+    /** compare all of the fields of two tuples, including rid */
+    bool is_equal(const Tuple &tuple) const;
 
     // deep copy
     Tuple& operator=(const Tuple &tuple) {

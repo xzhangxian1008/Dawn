@@ -1,7 +1,7 @@
-#include "index/link_hash_index.h"
+#pragma once
 
 namespace dawn {
 
 
-    
+
 } // namespace dawn

@@ -8,7 +8,8 @@
 #include "util/rwlatch.h"
 #include "table/rid.h"
 #include "table/tuple.h"
-#include "table/rid.h"
+#include "index/link_hash.h"
+#include "mutex"
 
 namespace dawn {
 
@@ -26,18 +27,42 @@ public:
     ~Table() = default;
     void delete_all_data();
     page_id_t get_first_table_page_id() const { return first_table_page_id_; }
-    bool get_the_first_tuple(Tuple *tuple) const;
+    // bool get_the_first_tuple(Tuple *tuple) const;
 
-    bool insert_tuple(const Tuple &tuple, RID *rid);
+    bool insert_tuple(Tuple *tuple, const TableSchema &tb_schema);
+    bool mark_delete(const Value &key_value, const TableSchema &tb_schema);
     bool mark_delete(const RID &rid);
+    void apply_delete(const Value &key_value, const TableSchema &tb_schema);
     void apply_delete(const RID &rid);
+    void rollback_delete(const Value &key_value, const TableSchema &tb_schema);
     void rollback_delete(const RID &rid);
+
+    /**
+     * @param new_tuple new position will be set in the new_tuple
+     */
+    bool update_tuple(Tuple *new_tuple, const RID &old_rid, const TableSchema &tb_schema);
+
+    /**
+     * search tuple with index, the rid will be set in the parameter *tuple
+     */
+    bool get_tuple(const Value &key_value, Tuple *tuple, const TableSchema &tb_schema);
+
+    /** get tuple directly */
     bool get_tuple(Tuple *tuple, const RID &rid);
-    bool update_tuple(const Tuple &tuple, const RID &rid);
+
+    
 private:
     BufferPoolManager *bpm_;
-    const page_id_t first_table_page_id_;
+    const page_id_t first_table_page_id_; // TODO initialize it at first
     ReaderWriterLatch latch_;
+    index_code_t index_ = LINK_HASH;
+
+    op_code_t (*insert_tuple_func)(INSERT_TUPLE_FUNC_PARAMS);
+    op_code_t (*mark_delete_func)(MARK_DELETE_FUNC_PARAMS);
+    void (*apply_delete_func)(APPLY_DELETE_FUNC_PARAMS);
+    void (*rollback_delete_func)(ROLLBACK_DELETE_FUNC_PARAMS);
+    op_code_t (*get_tuple_func)(GET_TUPLE_FUNC_PARAMS);
+    op_code_t (*update_tuple_func)(UPDATE_TUPLE_FUNC_PARAMS);
 };
 
 } // namespace dawn

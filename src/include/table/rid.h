@@ -22,7 +22,9 @@ public:
         slot_num_ = slot_num;
     }
 
-    bool operator==(const RID &rid) { return (this->page_id_ == rid.page_id_ ) && (this->slot_num_ == rid.slot_num_); }
+    bool operator==(const RID &rid) const {
+        return (this->page_id_ == rid.page_id_ ) && (this->slot_num_ == rid.slot_num_);
+    }
 
 private:
     page_id_t page_id_;

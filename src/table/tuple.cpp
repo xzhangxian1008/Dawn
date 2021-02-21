@@ -67,7 +67,7 @@ void Tuple::init(std::vector<Value> *values, const TableSchema &schema) {
     }
 }
 
-bool Tuple::operator==(const Tuple &tuple) {
+bool Tuple::operator==(const Tuple &tuple) const {
     if (allocated_ != tuple.allocated_) {
         return false;
     }
@@ -83,7 +83,26 @@ bool Tuple::operator==(const Tuple &tuple) {
             }
     }
 
-    if (rid_ == tuple.rid_)
+    return true;
+}
+
+bool Tuple::is_equal(const Tuple &tuple) const {
+    if (allocated_ != tuple.allocated_) {
+        return false;
+    }
+
+    if (size_ != tuple.size_) {
+        return false;
+    }
+
+    if (allocated_) {
+        for (size_t_ i = 0; i < size_; i++)
+            if (data_[i] != tuple.data_[i]) {
+                return false;
+            }
+    }
+
+    if (this->rid_ == tuple.rid_)
         return true;
     return false;
 }
