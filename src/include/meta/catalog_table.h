@@ -96,9 +96,14 @@ public:
     std::vector<string_t> get_all_table_name();
     std::vector<table_id_t> get_all_table_id();
     string_t to_string();
+    bool check_space(size_t_ size_needed){
+        offset_t insert_offset = TABLE_NUM_OFFSET + table_num_ * TABLE_RECORD_SZ;
+        size_t_ available_space = free_space_pointer_ - insert_offset;
+        return available_space < size_needed ? false: true;
+    }
 
     // TODO not support change table name so far
-    bool change_table_name(table_id_t table_id, const string_t &new_name) { return true; }
+    bool change_table_name(table_id_t table_id, const string_t &new_name);
 private:
     // ATTENTION no lock protects it
     void delete_table_data(table_id_t table_id, string_t table_name) {

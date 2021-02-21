@@ -104,6 +104,27 @@ std::vector<size_t_> tb4_char_size{tb4_char0_sz, tb4_char1_sz};
 size_t_ tb4_tuple_size = Type::get_integer_size() + tb4_char0_sz + Type::get_bool_size() + tb4_char1_sz + Type::get_decimal_size();
 
 /**
+ * table name: Masked Rider
+ * column names:
+ * --------------------------------------------------------
+ * | id | name | gender | skill | height |
+ * --------------------------------------------------------
+ * column types:
+ * ----------------------------------------------------
+ * | integer | char (10) | bool | char (20) | decimal | 
+ * ----------------------------------------------------
+ */
+
+string_t mr_table("Masked Rider");
+std::vector<TypeId> mr_col_types{TypeId::INTEGER, TypeId::CHAR, TypeId::BOOLEAN, TypeId::CHAR, TypeId::DECIMAL};
+std::vector<string_t> mr_col_names{"id", "name", "gender", "skill", "height"};
+size_t_ ml_name_sz = 10;
+size_t_ ml_skill_sz = 20;
+std::vector<size_t_> ml_char_size{ml_name_sz, ml_skill_sz};
+size_t_ ml_tuple_size = Type::get_integer_size() + ml_name_sz + Type::get_bool_size() + ml_skill_sz + Type::get_decimal_size();
+
+
+/**
  * Test List:
  *   1. ensure some TableMetaData can be created by catalog table
  *   2. construct the pre-created TableMetaData by catalog table and ensure they are not changed
@@ -167,7 +188,7 @@ TEST(CatalogTableTest, BasicTest) {
 
     {
         // test 3
-        std::set<int> deleted_idx{1, 3}; // refer to the index of the deleted table
+        std::set<int> deleted_idx{0, 1, 2, 3, 4}; // refer to the index of the deleted table
         std::set<table_id_t> deleted_tb_id;
         std::set<string_t> deleted_tb_name;
 
@@ -241,6 +262,56 @@ TEST(CatalogTableTest, BasicTest) {
             for (auto id : deleted_tb_id)
                 EXPECT_EQ(nullptr, bpm->get_page((page_id_t)id)); // ensure the disk has deleted their pages
         }
+    }
+
+    {
+        //test 4
+        PRINT("====== test 4 ======");
+        DBManager db_mgr(meta);
+        ASSERT_TRUE(db_mgr.get_status());
+        Catalog* catalog = db_mgr.get_catalog();
+        ASSERT_NE(nullptr, catalog);
+
+
+        CatalogTable *catalog_table = catalog->get_catalog_table();
+        ASSERT_NE(nullptr, catalog_table);
+
+        //create 5 tables.
+        for (int i = 0; i < tb_num; i++) {
+            EXPECT_NE(table_schema[i], nullptr);
+            EXPECT_EQ(table_schema[i]->get_tuple_size(), tb_tuple_size[i]);
+            EXPECT_TRUE(catalog_table->create_table(tables[i], *(table_schema[i])));
+            table_id[i] = catalog_table->get_table_id(tables[i]);
+        }
+        //Modify the table2‘s name from "table2" to "Kuga" whose size is SHORTER than that of former.
+         PRINT("================= ", tables[2], "'s name would be modified soon. =================");
+         table_id_t table_id_test_1 =  catalog_table->get_table_id(tables[2]);
+         catalog_table->change_table_name(table_id_test_1, string_t("Kuga"));
+
+        //Modify the table1's name from "table1" to "BlackRX" whose size is LONGER than that of former.
+         PRINT("================= ", tables[1], "'s name would be modified soon. =================");
+        table_id_t table_id_test_2 = catalog_table->get_table_id(tables[1]);
+        catalog_table->change_table_name(table_id_test_2, string_t("BlackRX"));
+
+        //Modify the table3's name from "table1" to "Amazon" whose size is SAME as that of former.
+         PRINT("================= ", tables[3], "'s name would be modified soon. =================");
+        table_id_t table_id_test_3 = catalog_table->get_table_id(tables[3]);
+        catalog_table->change_table_name(table_id_test_3, string_t("Amazon"));
+    }
+    // restart to ensure the operation works in disk.
+    {
+        DBManager db_mgr(meta);
+        ASSERT_TRUE(db_mgr.get_status());
+
+        Catalog *catalog = db_mgr.get_catalog();
+        ASSERT_NE(nullptr, catalog);
+        
+        CatalogTable *catalog_table = catalog->get_catalog_table();
+        ASSERT_NE(nullptr, catalog_table);
+        //check the  name  of table we changed before.
+        EXPECT_EQ(catalog_table->get_table_name(table_id[1]), string_t("BlackRX"));
+        EXPECT_EQ(catalog_table->get_table_name(table_id[2]), string_t("Kuga"));
+        EXPECT_EQ(catalog_table->get_table_name(table_id[3]), string_t("Amazon"));
     }
 
     for (int i = 0; i < tb_num; i++)

@@ -66,7 +66,7 @@ bool CatalogTable::create_table(const string_t &table_name, const TableSchema &s
 
     // find where to store TableMetaData's meta data and ensure there are enough space to store
     size_t_ tb_num = *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET);
-    offset_t insert_offset = TABLE_NUM_OFFSET + sizeof(size_t_) + tb_num * TABLE_RECORD_SZ;
+    offset_t insert_offset = TABLE_NUM_OFFSET + SIZE_T_SIZE + tb_num * TABLE_RECORD_SZ;
     size_t_ available_space = free_space_pointer_ - insert_offset;
     if (static_cast<size_t_>(table_name.length() + TABLE_RECORD_SZ) > available_space) {
         latch_.w_unlock();
@@ -178,6 +178,116 @@ bool CatalogTable::delete_table(table_id_t table_id) {
     bpm_->flush_page(self_page_id_); // ATTENTION transaction conflict
     return true;
 }
+
+bool CatalogTable::change_table_name(table_id_t table_id, const string_t &new_name)
+{
+        latch_.w_lock();
+        auto iter = tb_id_to_name_.find(table_id);
+        if(iter == tb_id_to_name_.end())
+        {
+            latch_.w_unlock();
+            PRINT("========", "there is no table named ", table_id, "========");
+            return false;
+        }
+        string_t old_name = iter->second;
+        //find this table's offset in the page
+        offset_t tb_offset = -1;
+        int i = 0;
+        // int table_count = table_num_;
+        for(; i < table_num_; i++)
+        {
+            tb_offset = TABLE_NUM_OFFSET + SIZE_T_SIZE + i * TABLE_RECORD_SZ;
+            table_id_t tb_id = *reinterpret_cast<table_id_t*>(data_  +tb_offset + OFFSET_T_SIZE + SIZE_T_SIZE);
+            if(table_id == tb_id)
+            {
+                break;
+            }
+        }
+        if(tb_offset == -1)
+        {
+            latch_.w_unlock();
+            LOG("ERROR: Data inconsistency");
+            return false;
+        }
+        //update the name.
+        int32_t difference = new_name.length() - old_name.length();
+        size_t_ difference_abs = abs(int(new_name.length() - old_name.length()));
+        if(difference < 0) //the new_name's length reduced.
+        {
+            offset_t next_name_offset;
+            offset_t next_table_offset;
+            size_t_ next_name_size;
+
+            for(int j = i + 1; j < table_num_; j++)
+            {
+                next_table_offset = TABLE_NUM_OFFSET + SIZE_T_SIZE + j * TABLE_RECORD_SZ;
+                next_name_offset = *reinterpret_cast<offset_t*>(data_ + next_table_offset);
+                next_name_size = *reinterpret_cast<size_t_*>(data_ + next_table_offset + OFFSET_T_SIZE);
+                memmove(data_ + next_name_offset + difference_abs, data_ + next_name_offset, next_name_size + 1);
+                //update the previous table name's position.
+                *reinterpret_cast<offset_t*>(data_ + next_table_offset - TABLE_RECORD_SZ) += difference_abs;
+                //update the current table name's position.
+                if(j == table_num_ -1)
+                    *reinterpret_cast<offset_t*>(data_ + next_table_offset) += difference_abs;
+            }
+            //update the free_space_pointer_.
+            free_space_pointer_ += difference_abs;
+        }
+        else if(difference > 0)
+        {
+            offset_t previous_name_offset;
+            offset_t previous_table_offset;
+            size_t_ previous_name_size;
+            //make sure there is enough space to update table's name.
+            if(!check_space(difference_abs))
+            {
+                latch_.w_unlock();
+                return false;
+            }
+            for(int k = table_num_ -1; k >= i; k--)
+            {
+                previous_table_offset = TABLE_NUM_OFFSET + SIZE_T_SIZE + k * TABLE_RECORD_SZ;
+                previous_name_offset = *reinterpret_cast<offset_t*>(data_ + previous_table_offset);
+                previous_name_size = *reinterpret_cast<size_t_*>(data_ + previous_table_offset + OFFSET_T_SIZE);
+                memmove(data_ + previous_name_offset - difference_abs, data_ + previous_name_offset, previous_name_size + 1);
+                //update the current table name's position.
+                *reinterpret_cast<offset_t*>(data_ + previous_table_offset) -= difference_abs;
+            }
+            //update the free_space_pointer_.
+            free_space_pointer_ -= difference_abs;
+        }
+        //update new name.
+        size_t_ len = new_name.length();
+        offset_t new_name_offset = *reinterpret_cast<offset_t*>(data_ + tb_offset);
+        for(int index = 0; index < len; index++)
+        {
+            *reinterpret_cast<char*>(data_ + new_name_offset + index) = new_name[index];
+        }
+        *reinterpret_cast<char*>(data_ + new_name_offset + len) = '\0';
+        //update the new name's size;
+        *reinterpret_cast<size_t_*>(data_ + tb_offset + OFFSET_T_SIZE) = new_name.length();
+        
+        //update the tb_id_to_meta
+        auto iter_id_to_meta = tb_id_to_meta_.find(table_id);
+        if (iter_id_to_meta == tb_id_to_meta_.end()) 
+        {
+            iter_id_to_meta->second->set_table_name(new_name);
+        }
+        //update the tb_id_to_name_
+        auto iter_id_to_name = tb_id_to_name_.find(table_id);
+        tb_id_to_name_.erase(iter_id_to_name);
+        tb_id_to_name_.insert(std::make_pair(table_id, new_name));
+        //update the tb_name_to_id_
+        auto iter_name_to_id = tb_name_to_id_.find(old_name);
+        tb_name_to_id_.erase(iter_name_to_id);
+        tb_name_to_id_.insert(std::make_pair(new_name, table_id));
+
+        //flush page to disk.
+        latch_.w_unlock();
+        bpm_->flush_page(self_page_id_);
+        return true; 
+}
+
 
 TableMetaData* CatalogTable::get_table_meta_data(table_id_t table_id) {
     latch_.w_lock();

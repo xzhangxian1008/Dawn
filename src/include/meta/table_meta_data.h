@@ -46,6 +46,7 @@ public:
     inline Table* get_table() const { return table_; }
     inline table_id_t get_self_table_id() const { return self_page_id_; }
     inline table_id_t get_table_id() const { return table_id_; }
+    inline void set_table_name(const std::string& new_name){ table_name_ = new_name;};
     
     void delete_table_data();
 private:

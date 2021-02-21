@@ -2,6 +2,8 @@
 #include "data/values.h"
 #include "util/config.h"
 #include "gtest/gtest.h"
+#include "storage/disk/disk_manager.h"
+#include "buffer/buffer_pool_manager.h"
 #include <iostream>
 namespace dawn {
 
@@ -11,6 +13,12 @@ namespace dawn {
 #define DIVIDE_D(decimal_1, decimal_2) DIVIDE(DECIMAL_T, decimal_1, decimal_2)
 #define MIN_D(decimal_1, decimal_2) MIN(DECIMAL_T, decimal_1, decimal_2)
 #define MAX_D(decimal_1, decimal_2) MAX(DECIMAL_T, decimal_1, decimal_2)
+
+const int POOL_SIZE = 20;
+const char *meta = "bpm_test";
+const char *mtdf = "bpm_test.mtd";
+const char *dbf = "bpm_test.db";
+const char *logf = "bpm_test.log";
 
 // TODO test serialize and deserialize function
 TEST(ValueTest, BasicTest) {
@@ -94,6 +102,8 @@ TEST(ValueTest, BasicTest) {
         Value decimal_3(v3);
         Value decimal_4(v4);
 
+
+        
         PRINT("======== serializing to storage obj which contains ",  decimal_3.GETVALUE_D(), " ========");
         decimal_3.serialize_to(storage);
         PRINT("======== decimal_4's value ->", decimal_4.GETVALUE_D(), " ========");
@@ -102,6 +112,8 @@ TEST(ValueTest, BasicTest) {
         PRINT("======== decimal_4's value ->", decimal_4.GETVALUE_D(), " ========");
         ASSERT_TRUE(decimal_3 == decimal_4);
         PRINT("======== checking serialization and deserialization finished ========");
+
+    
     }
 
     {
