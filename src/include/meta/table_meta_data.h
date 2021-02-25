@@ -4,7 +4,7 @@
 #include "util/util.h"
 #include "util/config.h"
 #include "util/rwlatch.h"
-#include "table/table_schema.h"
+#include "table/schema.h"
 #include "buffer/buffer_pool_manager.h"
 #include "data/types.h"
 #include "table/table.h"
@@ -38,7 +38,7 @@ public:
      * TODO key index
      * create table from scratch and write data to disk for persistence
      */
-    TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema, const table_id_t table_id);
+    TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const Schema &schema, const table_id_t table_id);
 
     ~TableMetaData() {
         delete table_;
@@ -46,7 +46,7 @@ public:
         bpm_->unpin_page(self_page_id_, true); // always true
     }
 
-    inline const TableSchema* get_table_schema() const { return table_schema_; }
+    inline const Schema* get_table_schema() const { return table_schema_; }
     inline string_t get_table_name() const { return table_name_; }
     inline Table* get_table() const { return table_; }
     inline table_id_t get_self_table_id() const { return self_page_id_; }
@@ -66,7 +66,7 @@ private:
      */
     static const size_t_ FIXED_COLUMN_SIZE = SIZE_T_SIZE + OFFSET_T_SIZE + ENUM_SIZE + SIZE_T_SIZE;
     
-    TableSchema *table_schema_;
+    Schema *table_schema_;
     ReaderWriterLatch latch_;
     BufferPoolManager *bpm_;
     string_t table_name_;

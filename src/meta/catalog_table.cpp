@@ -54,7 +54,7 @@ string_t CatalogTable::get_table_name(offset_t tb_name_offset, int size) {
     return string_t(tb_name);
 }
 
-bool CatalogTable::create_table(const string_t &table_name, const TableSchema &schema) {
+bool CatalogTable::create_table(const string_t &table_name, const Schema &schema) {
     latch_.w_lock();
     // check if table_name is duplicate
     auto iter = tb_name_to_id_.find(table_name);

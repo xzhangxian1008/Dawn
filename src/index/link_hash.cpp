@@ -21,7 +21,7 @@ inline void hash_to_slot(hash_t hash_val, offset_t *sec_pg_slot_num, offset_t *t
  * @param dup_rid duplicate key's position will be set in the dup_rid if the dup_rid is not equal to nullptr
  * @return true: duplicate, false: not duplicate
  */
-bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, const TableSchema &tb_schema, BufferPoolManager *bpm, RID *dup_rid = nullptr) {
+bool lk_ha_check_duplicate_key(page_id_t first_page_id, const Value &key_value, const Schema &tb_schema, BufferPoolManager *bpm, RID *dup_rid = nullptr) {
     // hash the value
     hash_t hash_val = key_value.get_hash_value();
     offset_t sec_pg_slot_num;

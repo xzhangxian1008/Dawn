@@ -2,7 +2,7 @@
 
 namespace dawn {
 
-Value Tuple::get_value(const TableSchema &schema, int idx) const {
+Value Tuple::get_value(const Schema &schema, int idx) const {
     Column col = schema.get_column(idx);
     TypeId type_id = col.get_type_id();
     if (type_id == TypeId::CHAR) {
@@ -18,7 +18,7 @@ Value Tuple::get_value(const TableSchema &schema, int idx) const {
 }
 
 // ATTENTION length of string is not checked here
-void Tuple::set_value(const TableSchema &schema, Value *value, int idx) {
+void Tuple::set_value(const Schema &schema, Value *value, int idx) {
     Column col = schema.get_column(idx);
     if (col.get_type_id() == TypeId::CHAR) {
         size_t_ str_size = col.get_data_size();
@@ -31,7 +31,7 @@ void Tuple::set_value(const TableSchema &schema, Value *value, int idx) {
     value->serialize_to(data_ + col.get_offset());
 }
 
-string_t Tuple::to_string(const TableSchema &schema) const {
+string_t Tuple::to_string(const Schema &schema) const {
     std::ostringstream os;
     int col_num = schema.get_column_num();
 
@@ -56,7 +56,7 @@ string_t Tuple::to_string(const TableSchema &schema) const {
     return os.str();
 }
 
-void Tuple::init(std::vector<Value> *values, const TableSchema &schema) {
+void Tuple::init(std::vector<Value> *values, const Schema &schema) {
     size_ = schema.get_tuple_size();
     allocated_ = true;
     data_ = new char[size_];

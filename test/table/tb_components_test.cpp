@@ -6,7 +6,7 @@
 #include "meta/catalog.h"
 #include "meta/catalog_table.h"
 #include "table/rid.h"
-#include "table/table_schema.h"
+#include "table/schema.h"
 #include "table/table_iterator.h"
 #include "manager/db_manager.h"
 
@@ -85,7 +85,7 @@ TEST_F(TbComponentTest, TupleBasicTest) {
     offset_t slot_num = 111;
     RID rid(page_id, slot_num);
 
-    TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
+    Schema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     // create Tuple
     Tuple tuple(&values, *table_schema, rid);
@@ -136,7 +136,7 @@ TEST_F(TbComponentTest, TupleBasicTest) {
 
 // test 2
 TEST_F(TbComponentTest, TablePageBasicTest) {
-    TableSchema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
+    Schema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
     DBManager *db_manager = new DBManager(meta, true);
     ASSERT_TRUE(db_manager->get_status());

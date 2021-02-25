@@ -29,23 +29,23 @@ public:
     page_id_t get_first_table_page_id() const { return first_table_page_id_; }
     // bool get_the_first_tuple(Tuple *tuple) const;
 
-    bool insert_tuple(Tuple *tuple, const TableSchema &tb_schema);
-    bool mark_delete(const Value &key_value, const TableSchema &tb_schema);
+    bool insert_tuple(Tuple *tuple, const Schema &tb_schema);
+    bool mark_delete(const Value &key_value, const Schema &tb_schema);
     bool mark_delete(const RID &rid);
-    void apply_delete(const Value &key_value, const TableSchema &tb_schema);
+    void apply_delete(const Value &key_value, const Schema &tb_schema);
     void apply_delete(const RID &rid);
-    void rollback_delete(const Value &key_value, const TableSchema &tb_schema);
+    void rollback_delete(const Value &key_value, const Schema &tb_schema);
     void rollback_delete(const RID &rid);
 
     /**
      * @param new_tuple new position will be set in the new_tuple
      */
-    bool update_tuple(Tuple *new_tuple, const RID &old_rid, const TableSchema &tb_schema);
+    bool update_tuple(Tuple *new_tuple, const RID &old_rid, const Schema &tb_schema);
 
     /**
      * search tuple with index, the rid will be set in the parameter *tuple
      */
-    bool get_tuple(const Value &key_value, Tuple *tuple, const TableSchema &tb_schema);
+    bool get_tuple(const Value &key_value, Tuple *tuple, const Schema &tb_schema);
 
     /** get tuple directly */
     bool get_tuple(Tuple *tuple, const RID &rid);

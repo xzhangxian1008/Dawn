@@ -9,7 +9,7 @@
 #include "storage/disk/disk_manager.h"
 #include "buffer/buffer_pool_manager.h"
 #include "meta/table_meta_data.h"
-#include "table/table_schema.h"
+#include "table/schema.h"
 
 namespace dawn {
 
@@ -91,9 +91,9 @@ public:
 
     TableMetaData* get_table_meta_data(table_id_t table_id);
 
-    bool create_table(const string_t &table_name, const TableSchema &schema);
+    bool create_table(const string_t &table_name, const Schema &schema);
     bool delete_table(const string_t &table_name);
-    bool delete_table(table_id_t table_id);
+    bool delete_table(table_id_t table_id); // TODO also delete the table's data
     std::vector<string_t> get_all_table_name();
     std::vector<table_id_t> get_all_table_id();
     string_t to_string();

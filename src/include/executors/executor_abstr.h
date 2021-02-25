@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 namespace dawn {
 
 class Tuple;
@@ -15,6 +17,7 @@ public:
     const ExecutorContext* get_executor_context() const { return exec_ctx_; }
 protected:
     ExecutorContext *exec_ctx_;
+    std::vector<ExecutorAbstract*> children_;
 };
 
 } // namespace dawn

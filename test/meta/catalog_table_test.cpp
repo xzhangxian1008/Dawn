@@ -3,7 +3,7 @@
 #include "meta/catalog.h"
 #include "meta/catalog_table.h"
 #include "manager/db_manager.h"
-#include "table/table_schema.h"
+#include "table/schema.h"
 #include "meta/table_meta_data.h"
 #include "table/column.h"
 #include "data/types.h"
@@ -129,6 +129,7 @@ size_t_ ml_tuple_size = Type::get_integer_size() + ml_name_sz + Type::get_bool_s
  *   1. ensure some TableMetaData can be created by catalog table
  *   2. construct the pre-created TableMetaData by catalog table and ensure they are not changed
  *   3. delete some TableMetaData and ensure this operation can affect the disk
+ *   4. rename the table and ensure they can affect the disk
  */
 TEST(CatalogTableTest, BasicTest) {
     std::vector<string_t> tables{table0, table1, table2, table3, table4};
@@ -139,7 +140,7 @@ TEST(CatalogTableTest, BasicTest) {
 
     size_t_ tb_num = tables.size();
     std::vector<table_id_t> table_id(tb_num);
-    std::vector<TableSchema*> table_schema(tb_num);
+    std::vector<Schema*> table_schema(tb_num);
 
     {
         // test 1
@@ -175,7 +176,7 @@ TEST(CatalogTableTest, BasicTest) {
         EXPECT_EQ(tb_num, catalog_table->get_table_num());
 
         std::vector<TableMetaData*> tmd(tb_num);
-        std::vector<const TableSchema*> ts(tb_num);
+        std::vector<const Schema*> ts(tb_num);
         for (int i = 0; i < tb_num; i++) {
             EXPECT_EQ(catalog_table->get_table_name(table_id[i]), tables[i]);
             EXPECT_EQ(catalog_table->get_table_id(tables[i]), table_id[i]);

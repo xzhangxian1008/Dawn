@@ -7,7 +7,7 @@
 #include "util/rwlatch.h"
 #include "table/rid.h"
 #include "data/values.h"
-#include "table/table_schema.h"
+#include "table/schema.h"
 
 namespace dawn {
 
@@ -26,11 +26,11 @@ public:
         }
     }
 
-    Tuple(std::vector<Value> *values, const TableSchema &schema) {
+    Tuple(std::vector<Value> *values, const Schema &schema) {
         init(values, schema);
     }
 
-    Tuple(std::vector<Value> *values, const TableSchema &schema, const RID &rid) : rid_(rid) {
+    Tuple(std::vector<Value> *values, const Schema &schema, const RID &rid) : rid_(rid) {
         init(values, schema);
     }
 
@@ -60,11 +60,11 @@ public:
     inline RID get_rid() const { return rid_; }
     inline void set_rid(const RID &rid) { rid_ = rid; }
 
-    Value get_value(const TableSchema &schema, int idx) const;
-    void set_value(const TableSchema &schema, Value *value, int idx);
+    Value get_value(const Schema &schema, int idx) const;
+    void set_value(const Schema &schema, Value *value, int idx);
 
     inline bool is_allocated() const { return allocated_; }
-    string_t to_string(const TableSchema &schema) const;
+    string_t to_string(const Schema &schema) const;
 
     inline void serialize_to(char *dst) const {
         if (allocated_) {
@@ -100,7 +100,7 @@ public:
     }
 
 private:
-    void init(std::vector<Value> *values, const TableSchema &schema);
+    void init(std::vector<Value> *values, const Schema &schema);
 
     bool allocated_ = false;
     RID rid_;

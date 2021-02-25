@@ -12,17 +12,17 @@ namespace dawn {
 
 /**
  * TODO set the key index
- * ATTENTION no latch to handle the concurrency environment, because we won't modify TableSchema after it is created
+ * ATTENTION no latch to handle the concurrency environment, because we won't modify Schema after it is created
  * for specification of the tuple
  */
-class TableSchema {
+class Schema {
 public:
-    explicit TableSchema(const std::vector<Column> &columns) : columns_(columns), length_(0) {
+    explicit Schema(const std::vector<Column> &columns) : columns_(columns), length_(0) {
         for (auto &col : columns_)
             length_ += col.get_data_size();
     }
 
-    ~TableSchema() = default;
+    ~Schema() = default;
 
     inline size_t_ get_tuple_size() const { return length_; }
     inline int get_column_num() const { return columns_.size(); }
@@ -82,9 +82,9 @@ private:
     offset_t key_idx_ = 0; // key index, and we do not support the jointly index
 };
 
-TableSchema* create_table_schema(const std::vector<TypeId> &types, 
+Schema* create_table_schema(const std::vector<TypeId> &types, 
     const std::vector<string_t> &names, const std::vector<size_t_> &char_len = std::vector<size_t_>{});
 
-bool is_table_schemas_equal(const TableSchema &ts1, const TableSchema &ts2);
+bool is_table_schemas_equal(const Schema &ts1, const Schema &ts2);
 
 } // namespace dawn

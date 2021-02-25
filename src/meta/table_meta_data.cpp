@@ -21,7 +21,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
     index_header_page_id_ = *reinterpret_cast<page_id_t*>(data_ + INDEX_HEADER_PGID_OFFSET);
     size_t_ column_num = *reinterpret_cast<page_id_t*>(data_ + COLUMN_NUM_OFFSET);
 
-    // construct columns to make TableSchema
+    // construct columns to make Schema
     std::vector<Column> cols;
     size_t_ col_name_len;
     offset_t offset_in_tp; // the column data's offset in tuple
@@ -57,8 +57,8 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
         }
     }
 
-    // create TableSchema
-    table_schema_ = new TableSchema(cols);
+    // create Schema
+    table_schema_ = new Schema(cols);
 
     // create Table
     table_ = new Table(bpm_, first_table_page_id_, false);
@@ -67,9 +67,9 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
 /** 
  * create TableMetaData from scratch
  */
-TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const TableSchema &schema, const table_id_t table_id)
+TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name, const Schema &schema, const table_id_t table_id)
     : bpm_(bpm), table_name_(table_name), table_id_(table_id), self_page_id_(table_id), first_table_page_id_(-1), index_header_page_id_(-1) {
-    table_schema_ = new TableSchema(schema);
+    table_schema_ = new Schema(schema);
 
     // firstly, get page from disk
     page_ = bpm->get_page(self_page_id_);

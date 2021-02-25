@@ -1,8 +1,8 @@
-#include "table/table_schema.h"
+#include "table/schema.h"
 
 namespace dawn {
 
-TableSchema* create_table_schema(const std::vector<TypeId> &types, const std::vector<string_t> &names, const std::vector<size_t_> &char_len) {
+Schema* create_table_schema(const std::vector<TypeId> &types, const std::vector<string_t> &names, const std::vector<size_t_> &char_len) {
     if (types.size() != names.size())
         return nullptr;
     
@@ -19,10 +19,10 @@ TableSchema* create_table_schema(const std::vector<TypeId> &types, const std::ve
         offset += Type::get_type_size(types[i]);
     }
 
-    return new TableSchema(cols);
+    return new Schema(cols);
 }
 
-bool is_table_schemas_equal(const TableSchema &ts1, const TableSchema &ts2) {
+bool is_table_schemas_equal(const Schema &ts1, const Schema &ts2) {
     std::vector<Column> cols1 = ts1.get_columns();
     std::vector<Column> cols2 = ts2.get_columns();
     size_t col_num = cols1.size();

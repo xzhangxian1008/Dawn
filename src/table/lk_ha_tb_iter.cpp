@@ -1,6 +1,6 @@
 #include "table/lk_ha_tb_iter.h"
 #include "storage/page/table_page.h"
-#include "table/table_schema.h"
+#include "table/schema.h"
 
 namespace dawn {
 

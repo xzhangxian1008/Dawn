@@ -1,6 +1,6 @@
 #pragma once
 
-#include "execution/executors/executor_abstr.h"
+#include "executors/executor_abstr.h"
 #include "util/config.h"
 
 namespace dawn {

@@ -71,7 +71,7 @@ void Table::delete_all_data() {
         bpm_->delete_page(page_id);
 }
 
-bool Table::mark_delete(const Value &key_value, const TableSchema &tb_schema) {
+bool Table::mark_delete(const Value &key_value, const Schema &tb_schema) {
     if (mark_delete_func(first_table_page_id_, key_value, tb_schema, bpm_) == OP_SUCCESS)
         return true;
     return false;
@@ -91,7 +91,7 @@ bool Table::mark_delete(const RID &rid) {
     return ok;
 }
 
-void Table::apply_delete(const Value &key_value, const TableSchema &tb_schema) {
+void Table::apply_delete(const Value &key_value, const Schema &tb_schema) {
     Tuple tuple;
     if (!get_tuple(key_value, &tuple, tb_schema)) {
         return;
@@ -114,7 +114,7 @@ void Table::apply_delete(const RID &rid) {
     bpm_->unpin_page(page_id, true);
 }
 
-void Table::rollback_delete(const Value &key_value, const TableSchema &tb_schema) {
+void Table::rollback_delete(const Value &key_value, const Schema &tb_schema) {
     rollback_delete_func(first_table_page_id_, key_value, tb_schema, bpm_);
 }
 
@@ -139,7 +139,7 @@ bool Table::get_tuple(Tuple *tuple, const RID &rid) {
     return false;
 }
 
-bool Table::get_tuple(const Value &key_value, Tuple *tuple, const TableSchema &tb_schema) {
+bool Table::get_tuple(const Value &key_value, Tuple *tuple, const Schema &tb_schema) {
     op_code_t op_code = get_tuple_func(first_table_page_id_, key_value, tuple, tb_schema, bpm_);
     if (op_code == OP_SUCCESS) {
         return true;
@@ -147,7 +147,7 @@ bool Table::get_tuple(const Value &key_value, Tuple *tuple, const TableSchema &t
     return false;
 }
 
-bool Table::insert_tuple(Tuple *tuple, const TableSchema &tb_schema) {
+bool Table::insert_tuple(Tuple *tuple, const Schema &tb_schema) {
     op_code_t op_code = insert_tuple_func(first_table_page_id_, tuple, tb_schema, bpm_);
     if (op_code == OP_SUCCESS) {
         return true;
@@ -155,7 +155,7 @@ bool Table::insert_tuple(Tuple *tuple, const TableSchema &tb_schema) {
     return false;
 }
 
-bool Table::update_tuple(Tuple *new_tuple, const RID &old_rid, const TableSchema &tb_schema) {
+bool Table::update_tuple(Tuple *new_tuple, const RID &old_rid, const Schema &tb_schema) {
     op_code_t op_code = update_tuple_func(first_table_page_id_, new_tuple, old_rid, tb_schema, bpm_);
     if (op_code == OP_SUCCESS) {
         return true;

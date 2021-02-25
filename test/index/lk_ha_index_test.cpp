@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "table/table_schema.h"
+#include "table/schema.h"
 #include "manager/db_manager.h"
 #include "table/table.h"
 #include "table/lk_ha_tb_iter.h"
@@ -78,7 +78,7 @@ public:
  */
 TEST_F(LinkHashBasicTest, BasicIndexTest) {
     PRINT("start the hash link index tests...");
-    TableSchema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
+    Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     size_t_ insert_num = 12345;
     std::vector<Tuple> insert_tuples;
     
@@ -490,7 +490,7 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
  */
 TEST_F(LinkHashBasicTest, BasicIterTest) {
     PRINT("start the hash link iterator tests...");
-    TableSchema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
+    Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();
     size_t_ insert_num = 12345;
     std::set<Value> insert_key_values;

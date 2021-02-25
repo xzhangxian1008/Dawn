@@ -46,4 +46,6 @@ op_code_t lk_ha_get_tuple(GET_TUPLE_FUNC_PARAMS);
  */
 op_code_t lk_ha_update_tuple(UPDATE_TUPLE_FUNC_PARAMS);
 
+// TODO implementant a function to delete all table's data
+
 } // namespace dawn

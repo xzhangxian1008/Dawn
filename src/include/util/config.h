@@ -58,12 +58,12 @@ constexpr long READ_DB_BUF_SZ = PAGE_SIZE * READ_DB_PG_NUM; // 10240 pages, appr
 #define MIN(type, left, right) Type::get_instance(type)->min(left, right)
 #define MAX(type, left, right) Type::get_instance(type)->max(left, right)
 
-#define INSERT_TUPLE_FUNC_PARAMS     page_id_t first_page_id, Tuple *tuple, const TableSchema &tb_schema, BufferPoolManager *bpm
-#define MARK_DELETE_FUNC_PARAMS      page_id_t first_page_id, Value key_value, const TableSchema &tb_schema, BufferPoolManager *bpm
-#define APPLY_DELETE_FUNC_PARAMS     page_id_t first_page_id, Value key_value, const TableSchema &tb_schema, BufferPoolManager *bpm
-#define ROLLBACK_DELETE_FUNC_PARAMS  page_id_t first_page_id, Value key_value, const TableSchema &tb_schema, BufferPoolManager *bpm
-#define GET_TUPLE_FUNC_PARAMS        page_id_t first_page_id, Value key_value, Tuple *tuple, const TableSchema &tb_schema, BufferPoolManager *bpm
-#define UPDATE_TUPLE_FUNC_PARAMS     page_id_t first_page_id, Tuple *new_tuple, const RID &old_rid, const TableSchema &tb_schema, BufferPoolManager *bpm
+#define INSERT_TUPLE_FUNC_PARAMS     page_id_t first_page_id, Tuple *tuple, const Schema &tb_schema, BufferPoolManager *bpm
+#define MARK_DELETE_FUNC_PARAMS      page_id_t first_page_id, Value key_value, const Schema &tb_schema, BufferPoolManager *bpm
+#define APPLY_DELETE_FUNC_PARAMS     page_id_t first_page_id, Value key_value, const Schema &tb_schema, BufferPoolManager *bpm
+#define ROLLBACK_DELETE_FUNC_PARAMS  page_id_t first_page_id, Value key_value, const Schema &tb_schema, BufferPoolManager *bpm
+#define GET_TUPLE_FUNC_PARAMS        page_id_t first_page_id, Value key_value, Tuple *tuple, const Schema &tb_schema, BufferPoolManager *bpm
+#define UPDATE_TUPLE_FUNC_PARAMS     page_id_t first_page_id, Tuple *new_tuple, const RID &old_rid, const Schema &tb_schema, BufferPoolManager *bpm
 
 using page_id_t = int32_t;
 using offset_t = int32_t;
