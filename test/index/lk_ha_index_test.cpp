@@ -9,7 +9,7 @@ namespace dawn {
 extern DBManager *db_manager;
 
 /**
- * table name: table4
+ * table name: table
  * column names:
  * --------------------------------------------------------
  * | tb4_col1 | tb4_col2 | tb4_col3 | tb4_col4 | tb4_col5 |

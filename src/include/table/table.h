@@ -50,12 +50,12 @@ public:
     /** get tuple directly */
     bool get_tuple(Tuple *tuple, const RID &rid);
 
-    
+    index_code_t get_index_type() const { return index_type_; }
 private:
     BufferPoolManager *bpm_;
     const page_id_t first_table_page_id_; // TODO initialize it at first
     ReaderWriterLatch latch_;
-    index_code_t index_ = LINK_HASH;
+    index_code_t index_type_ = LINK_HASH;
 
     op_code_t (*insert_tuple_func)(INSERT_TUPLE_FUNC_PARAMS);
     op_code_t (*mark_delete_func)(MARK_DELETE_FUNC_PARAMS);

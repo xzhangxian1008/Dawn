@@ -99,6 +99,8 @@ public:
         return *this;
     }
 
+    
+
 private:
     void init(std::vector<Value> *values, const Schema &schema);
 

@@ -1,11 +1,10 @@
 #pragma once
 
 #include <vector>
+#include "executors/executor_context.h"
+#include "table/tuple.h"
 
 namespace dawn {
-
-class Tuple;
-class ExecutorContext;
 
 class ExecutorAbstract {
 public:
@@ -14,10 +13,9 @@ public:
     virtual void open() = 0;
     virtual bool get_next(Tuple *tuple) = 0;
     virtual void close() = 0;
-    const ExecutorContext* get_executor_context() const { return exec_ctx_; }
+    const ExecutorContext* get_context() const { return exec_ctx_; }
 protected:
     ExecutorContext *exec_ctx_;
-    std::vector<ExecutorAbstract*> children_;
 };
 
 } // namespace dawn

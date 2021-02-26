@@ -87,7 +87,6 @@ TableIterAbstract& LinkHashTableIter::operator++() {
         tuple_->set_rid(RID(INVALID_PAGE_ID, INVALID_SLOT_NUM));
         return *this;
     }
-    // PRINT("position: ", slot1_num_, " ", slot2_num_);
 
     LinkHashPage *level1_page = reinterpret_cast<LinkHashPage*>(bpm_->get_page(first_page_id_));
     level1_page->r_lock();
