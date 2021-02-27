@@ -13,6 +13,7 @@ public:
     virtual void open() = 0;
     virtual bool get_next(Tuple *tuple) = 0;
     virtual void close() = 0;
+protected:
     const ExecutorContext* get_context() const { return exec_ctx_; }
 protected:
     ExecutorContext *exec_ctx_;

@@ -7,8 +7,6 @@
 
 namespace dawn {
 
-class Schema;
-
 class SeqScanExecutor : public ExecutorAbstract {
 public:
     SeqScanExecutor(ExecutorContext *exec_ctx, Table *table) 

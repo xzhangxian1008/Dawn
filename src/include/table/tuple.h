@@ -53,6 +53,13 @@ public:
             delete[] data_;
         }
     }
+
+    void reconstruct(std::vector<Value> *values, const Schema &schema) {
+        if (allocated_) {
+            delete[] data_;
+        }
+        init(values, schema);
+    }
     
     inline size_t_ get_size() const { return size_; }
     inline char* get_data() const { return data_; }

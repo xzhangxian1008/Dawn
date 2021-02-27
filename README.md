@@ -83,3 +83,19 @@ DQL
 - where
   - do not support the subquery
   - support "<" "<=" ">" ">=" "=" "AND" "OR" "!="
+
+# How to Test
+
+```
+cd Dawn
+mkdir build
+cd build
+cmake ..
+```
+
+All the test files are in the test folder and each of them is named with _test as the end and produces the corresponding test execution file. Such as executor_test.cpp -> executor_test
+
+```
+make xxxxx_test
+./test/xxxx_test
+```
