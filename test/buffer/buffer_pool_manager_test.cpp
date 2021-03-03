@@ -152,7 +152,7 @@ page_list& initPageList(page_list& pageList, size_t& LIST_SIZE, BufferPoolManage
  *      second phase: get them from bpm and check the content has been written
  *   4. ensure the information of page id can be consistent after the restart
  */
-TEST_F(BPBasicTest, DISABLED_Test1) {
+TEST_F(BPBasicTest, Test1) {
     DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
     ASSERT_NE(dm, nullptr);
 
@@ -294,7 +294,7 @@ TEST_F(BPBasicTest, DISABLED_Test1) {
     delete dm;
 }
 
-TEST_F(BPBasicTest, DISABLED_Test2) {
+TEST_F(BPBasicTest, Test2) {
     DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
     ASSERT_NE(dm, nullptr);
 
@@ -371,7 +371,7 @@ TEST_F(BPBasicTest, DISABLED_Test2) {
     delete dm;
 }
 
-TEST_F(BPBasicTest, DISABLED_Test3) {
+TEST_F(BPBasicTest, Test3) {
     DiskManager *dm = DiskManagerFactory::create_DiskManager(meta, true);
     ASSERT_NE(dm, nullptr);
 

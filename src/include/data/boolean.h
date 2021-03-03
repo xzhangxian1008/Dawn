@@ -19,6 +19,12 @@ public:
         return (left_val == right_val) ? CmpResult::TRUE : CmpResult::FALSE;
     }
 
+    CmpResult cmp_not_eq(const Value &left, const Value &right) override {
+        boolean_t left_val = left.get_value<boolean_t>();
+        boolean_t right_val = right.get_value<boolean_t>();
+        return (left_val == right_val) ? CmpResult::FALSE : CmpResult::TRUE;
+    }
+
     CmpResult cmp_greater_and_eq(const Value &left, const Value &right) override { return CmpResult::FALSE; }
     CmpResult cmp_greater(const Value &left, const Value &right) override { return CmpResult::FALSE; }
 

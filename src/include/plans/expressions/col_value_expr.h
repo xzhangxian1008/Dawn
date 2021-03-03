@@ -5,7 +5,7 @@
 
 namespace dawn {
 
-class ColumnValueExpression : ExpressionAbstract {
+class ColumnValueExpression : public ExpressionAbstract {
 public:
     ColumnValueExpression(offset_t col_idx) : col_idx_(col_idx) {}
     ~ColumnValueExpression() override {}

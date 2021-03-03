@@ -23,6 +23,7 @@ public:
     virtual CmpResult cmp_less(const Value &left, const Value &right) = 0;
     virtual CmpResult cmp_less_and_eq(const Value &left, const Value &right) = 0;
     virtual CmpResult cmp_eq(const Value &left, const Value &right) = 0;
+    virtual CmpResult cmp_not_eq(const Value &left, const Value &right) = 0;
     virtual CmpResult cmp_greater_and_eq(const Value &left, const Value &right) = 0;
     virtual CmpResult cmp_greater(const Value &left, const Value &right) = 0;
 

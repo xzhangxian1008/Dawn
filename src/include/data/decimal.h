@@ -27,6 +27,12 @@ public:
         return (left_val == right_val) ? CmpResult::TRUE : CmpResult::FALSE;
     }
 
+    CmpResult cmp_not_eq(const Value &left, const Value &right) override {
+        decimal_t left_val = left.get_value<decimal_t>();
+        decimal_t right_val = right.get_value<decimal_t>();
+        return (left_val == right_val) ? CmpResult::FALSE : CmpResult::TRUE;
+    }
+
     CmpResult cmp_greater_and_eq(const Value &left, const Value &right) override {
         decimal_t left_val = left.get_value<decimal_t>();
         decimal_t right_val = right.get_value<decimal_t>();

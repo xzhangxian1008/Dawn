@@ -46,6 +46,7 @@ constexpr long READ_DB_BUF_SZ = PAGE_SIZE * READ_DB_PG_NUM; // 10240 pages, appr
 #define VARCHAR_T TypeId::VARCHAR
 
 #define CMP_EQ(type, left, right) Type::get_instance(type)->cmp_eq(left, right)
+#define CMP_NOT_EQ(type, left, right) Type::get_instance(type)->cmp_not_eq(left, right)
 #define CMP_LESS(type, left, right) Type::get_instance(type)->cmp_less(left, right)
 #define CMP_LESS_EQ(type, left, right) Type::get_instance(type)->cmp_less_and_eq(left, right)
 #define CMP_GREATER(type, left, right) Type::get_instance(type)->cmp_greater(left, right)
