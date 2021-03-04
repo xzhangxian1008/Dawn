@@ -21,34 +21,31 @@ using std::ends;
 
 namespace dawn {
 
+class Val {
+public:
+    int x;
+    Val(int x_) : x(x_) {}
+    Val(Val &val) {
+        PRINT("cp cons");
+        x = val.x;
+    }
+    Val& operator=(const Val &val) {
+        PRINT("op=");
+        x = val.x;
+        return *this;
+    }
+    Val& operator+(const Val &val) {
+        this->x += val.x;
+        return *this;
+    }
+};
+
 TEST(CommonTest1, CommonTEST11) {
-    std::set<Value> s;
-    s.insert(Value(123));
-    s.insert(Value(1234));
-    s.insert(Value(1235));
-    s.insert(Value(1236));
-    s.insert(Value(1237));
-    
-    auto iter = s.find(Value(123));
-    if (iter == s.end()) {
-        LOG("here");
-    }
-    iter = s.find(Value(1234));
-    if (iter == s.end()) {
-        LOG("here");
-    }
-    iter = s.find(Value(1235));
-    if (iter == s.end()) {
-        LOG("here");
-    }
-    iter = s.find(Value(1236));
-    if (iter == s.end()) {
-        LOG("here");
-    }
-    iter = s.find(Value(1237));
-    if (iter == s.end()) {
-        LOG("here");
-    }
+    Val v1(1);
+    Val v2(2);
+    Val v3(0);
+    v3 = v1+v2;
+    v3 + v2;
 }
 
 } // namespace dawn

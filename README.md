@@ -76,7 +76,7 @@ DCL
 DQL
 - select
   - support aggregation functions
-    - MAX() MIN() COUNT() SUM() AVG()
+    - MAX() MIN() COUNT() SUM()
   - projection
 - from
   - only support Cartesian product(×) with at most two tables

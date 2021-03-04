@@ -118,6 +118,15 @@ public:
         }
     }
 
+    Value& operator++() {
+        if (type_id_ == TypeId::INTEGER) {
+            value_.integer++;
+        } else if (type_id_ == TypeId::DECIMAL) {
+            value_.decimal++;
+        }
+        return *this;
+    }
+
     void swap(Value &val) {
         std::swap(val.type_id_, type_id_);
         std::swap(val.value_, value_);

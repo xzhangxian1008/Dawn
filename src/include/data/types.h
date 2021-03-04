@@ -16,7 +16,7 @@ enum class CmpResult : enum_size_t { TRUE = 0, FALSE };
 enum class ComparisonType { Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual };
 
 /** AggregationType enumerates all the possible aggregation functions in our system. */
-enum class AggregationType : enum_size_t { CountAggregate, SumAggregate, MinAggregate, MaxAggregate, AverageAggregate };
+enum class AggregationType : enum_size_t { CountAggregate, SumAggregate, MinAggregate, MaxAggregate };
 
 class Value;
 
