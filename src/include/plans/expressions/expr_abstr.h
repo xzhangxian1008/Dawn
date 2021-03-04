@@ -10,7 +10,7 @@ class ExpressionAbstract {
 public:
     ExpressionAbstract() = default;
     virtual ~ExpressionAbstract() = default;
-    virtual Value Evaluate(const Tuple *tuple, const Schema *schema) = 0;
+    virtual Value evaluate(const Tuple *tuple, const Schema *schema) = 0;
 private:
 
 };

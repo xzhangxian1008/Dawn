@@ -82,7 +82,7 @@ DQL
   - only support Cartesian product(×) with at most two tables
 - where
   - do not support the subquery
-  - support "<" "<=" ">" ">=" "=" "AND" "OR" "!="
+  - support "<" "<=" ">" ">=" "=" "!="
 
 # How to Test
 

@@ -8,25 +8,20 @@
 
 namespace dawn {
 
-// class SelectionExecutor : public ExecutorAbstract {
-// public:
-//     SelectionExecutor(ExecutorContext *exec_ctx, )
-//         : ExecutorAbstract(exec_ctx),  {}
-//     ~SelectionExecutor() = default;
-//     void open() {
+class SelectionExecutor : public ExecutorAbstract {
+public:
+    SelectionExecutor(ExecutorContext *exec_ctx, ExpressionAbstract *predicate, ExecutorAbstract *child, Schema *schema)
+        : ExecutorAbstract(exec_ctx), predicate_(predicate), child_(child), schema_(schema), cmp_(true) {}
+    ~SelectionExecutor() = default;
 
-//     }
-
-//     bool get_next(Tuple *tuple) {
-
-//     }
-
-//     void close() {
-
-//     }
-
-// private:
-
-// };
+    void open() override;
+    bool get_next(Tuple *tuple) override;
+    void close() override;
+private:
+    ExpressionAbstract *predicate_;
+    ExecutorAbstract *child_;
+    Schema *schema_;
+    Value cmp_; // in avoid of the repeated constructor and deconstructor
+};
     
 } // namespace dawn

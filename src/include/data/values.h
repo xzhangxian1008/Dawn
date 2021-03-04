@@ -17,6 +17,7 @@ class Value {
 public:
     Value();
     Value(boolean_t val);
+    Value(CmpResult val);
     Value(integer_t val);
     Value(decimal_t val);
     Value(char *val, int size);

@@ -8,7 +8,7 @@ namespace dawn {
 class ConstantExpression : public ExpressionAbstract {
 public:
     ConstantExpression(const Value &val) : val_(val){}
-    Value Evaluate(const Tuple *tuple, const Schema *schema) override { return val_; }
+    Value evaluate(const Tuple *tuple, const Schema *schema) override { return val_; }
 private:
     Value val_;
 };

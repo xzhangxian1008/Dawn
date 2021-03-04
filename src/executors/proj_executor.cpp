@@ -12,7 +12,7 @@ bool ProjectionExecutor::get_next(Tuple *tuple) {
 
     std::vector<Value> vals;
     for (auto expr : exprs_)
-        vals.push_back(expr->Evaluate(&next_tuple_, input_schema_));
+        vals.push_back(expr->evaluate(&next_tuple_, input_schema_));
 
     tuple->reconstruct(&vals, *output_schema_);
     return true;

@@ -12,6 +12,12 @@ enum class TypeId : enum_size_t { INVALID = -1, BOOLEAN, INTEGER, DECIMAL, CHAR 
 
 enum class CmpResult : enum_size_t { TRUE = 0, FALSE };
 
+/** ComparisonType represents the type of comparison that we want to perform. */
+enum class ComparisonType { Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual };
+
+/** AggregationType enumerates all the possible aggregation functions in our system. */
+enum class AggregationType : enum_size_t { CountAggregate, SumAggregate, MinAggregate, MaxAggregate, AverageAggregate };
+
 class Value;
 
 class Type {
@@ -54,8 +60,6 @@ public:
                 return -1;
         }
     }
-
-
 };
 
 string_t type_to_string(TypeId type_id);

@@ -9,7 +9,7 @@ class ColumnValueExpression : public ExpressionAbstract {
 public:
     ColumnValueExpression(offset_t col_idx) : col_idx_(col_idx) {}
     ~ColumnValueExpression() override {}
-    Value Evaluate(const Tuple *tuple, const Schema *schema) override {
+    Value evaluate(const Tuple *tuple, const Schema *schema) override {
         return tuple->get_value(*schema, col_idx_);
     }
 private:

@@ -1,8 +1,11 @@
 #include "gtest/gtest.h"
 #include "manager/db_manager.h"
+#include "plans/expressions/col_value_expr.h"
+#include "plans/expressions/constant_expr.h"
+#include "plans/expressions/comparison_expr.h"
 #include "executors/seq_scan_executor.h"
 #include "executors/proj_executor.h"
-#include "plans/expressions/col_value_expr.h"
+#include "executors/selection_executor.h"
 
 namespace dawn {
 
@@ -76,7 +79,7 @@ public:
     }
 };
 
-// ensure we can get all the data through the SeqScanExecutor
+/** ensure we can get all the data through the SeqScanExecutor */
 TEST_F(ExecutorsBasicTest, SeqScanExecutorBasicTest) {
     PRINT("start the basic SeqScanExecutor test...");
     Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
@@ -150,7 +153,11 @@ TEST_F(ExecutorsBasicTest, SeqScanExecutorBasicTest) {
     PRINT("***basic SeqScanExecutor test pass***");
 }
 
-// ProjectionExecutor may need more tests
+/**
+ * ProjectionExecutor may need more tests.
+ * In the current test, we push only one tuple, one input and output schema through it.
+ * Multiple tuples or other possible input and output schemas may need be tested.
+ */
 TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
     PRINT("start the basic ProjectionExecutor test...");
 
@@ -221,5 +228,238 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
     delete db_manager;
     PRINT("***basic ProjectionExecutor test pass***");
 }
-    
+
+/**
+ * Test List:
+ *   1. tuple     vs   constant
+ *   2. tuple     vs   tuple (This needs subquery, ignore it so far)
+ * 
+ * In the current test, we only test the Integer type, other types may need tests,
+ * but we suppose that they are ok when Integer type tests are passed.
+ */
+TEST_F(ExecutorsBasicTest, SelectionExecutorBasicTest) {
+    PRINT("start the basic SelectionExecutorBasicTest test...");
+    Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
+    offset_t key_idx = tb_schema->get_key_idx();
+    size_t_ insert_num = 12345;
+    std::set<Value> insert_key_values;
+
+    db_manager = new DBManager(meta, true);
+    ASSERT_TRUE(db_manager->get_status());
+
+    Catalog *catalog = db_manager->get_catalog();
+    CatalogTable *catalog_table = catalog->get_catalog_table();
+    ASSERT_TRUE(catalog_table->create_table(table_name, *tb_schema));
+
+    TableMetaData *table_md = catalog_table->get_table_meta_data(table_name);
+    ASSERT_NE(nullptr, table_md);
+
+    Table *table = table_md->get_table();
+    ASSERT_NE(nullptr, table);
+
+    v0 = 2333;
+    fill_char_array("apple", v1);
+    v2 = true;
+    fill_char_array("monkey_key", v3);
+    v4 = 3.1415926;
+
+    values.clear();
+    values.push_back(Value(v0));
+    values.push_back(Value(v1, tb_char0_sz));
+    values.push_back(Value(v2));
+    values.push_back(Value(v3, tb_char1_sz));
+    values.push_back(Value(v4));
+
+    // insert a lot of tuples
+    PRINT("insert a lot of tuples...");
+    bool ok = true;
+    for (size_t_ i = 0; i < insert_num; i++) {
+        values[key_idx] = Value(static_cast<integer_t>(i));
+        Tuple tuple(&values, *tb_schema);
+        if (!table->insert_tuple(&tuple, *tb_schema)) {
+            ok = false;
+            break;
+        }
+        insert_key_values.insert(values[key_idx]);
+    }
+    ASSERT_TRUE(ok);
+
+    {
+        // where tb_col1 == 123
+
+        offset_t cmp_idx = 0;
+        integer_t target_num = 123;
+
+        // prepare the SeqScanExecutor
+        ExecutorContext *seq_scan_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SeqScanExecutor seq_scan_exec(seq_scan_exec_ctx, table);
+
+        // prepare the Expression
+        ColumnValueExpression col_expr(cmp_idx);
+        ConstantExpression const_expr(target_num);
+        std::vector<ExpressionAbstract*> cmp_children{&col_expr, &const_expr};
+        ComparisonExpression cmp_expr(cmp_children, ComparisonType::Equal);
+
+        // create the SelectionExecutor
+        ExecutorContext *sel_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SelectionExecutor sel_exec(sel_exec_ctx, &cmp_expr, &seq_scan_exec, tb_schema);
+        
+        sel_exec.open();
+
+        // start the operation...
+        Tuple tuple;
+        ASSERT_TRUE(sel_exec.get_next(&tuple));
+
+        Value cmp_val(target_num);
+        EXPECT_EQ(cmp_val, tuple.get_value(*tb_schema, cmp_idx));
+
+        ASSERT_FALSE(sel_exec.get_next(&tuple));
+
+        sel_exec.close();
+
+        delete seq_scan_exec_ctx;
+        delete sel_exec_ctx;
+        PRINT("<where tb_col1 == 123> test ok...");
+    }
+
+    {
+        // where tb_col1 != 2333
+
+        offset_t cmp_idx = 0;
+        integer_t target_num = 2333;
+
+        // prepare the SeqScanExecutor
+        ExecutorContext *seq_scan_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SeqScanExecutor seq_scan_exec(seq_scan_exec_ctx, table);
+
+        // prepare the Expression
+        ColumnValueExpression col_expr(cmp_idx);
+        ConstantExpression const_expr(target_num);
+        std::vector<ExpressionAbstract*> cmp_children{&col_expr, &const_expr};
+        ComparisonExpression cmp_expr(cmp_children, ComparisonType::NotEqual);
+
+        // create the SelectionExecutor
+        ExecutorContext *sel_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SelectionExecutor sel_exec(sel_exec_ctx, &cmp_expr, &seq_scan_exec, tb_schema);
+        
+        sel_exec.open();
+
+        // start the operation...
+        int cnt = 0;
+        int ok = true;
+        Tuple tuple;
+        Value tmp_val(target_num);
+        while (sel_exec.get_next(&tuple)) {
+            cnt++;
+            if (tmp_val == tuple.get_value(*tb_schema, cmp_idx)) {
+                ok = false;
+                break;
+            }
+        }
+        EXPECT_TRUE(ok);
+        EXPECT_EQ(cnt, insert_num - 1);
+        sel_exec.close();
+
+        delete seq_scan_exec_ctx;
+        delete sel_exec_ctx;
+        PRINT("<where tb_col1 != 2333> test ok...");
+    }
+
+    {
+        // where tb_col1 <= 2000
+
+        offset_t cmp_idx = 0;
+        integer_t target_num = 2000;
+
+        // prepare the SeqScanExecutor
+        ExecutorContext *seq_scan_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SeqScanExecutor seq_scan_exec(seq_scan_exec_ctx, table);
+
+        // prepare the Expression
+        ColumnValueExpression col_expr(cmp_idx);
+        ConstantExpression const_expr(target_num);
+        std::vector<ExpressionAbstract*> cmp_children{&col_expr, &const_expr};
+        ComparisonExpression cmp_expr(cmp_children, ComparisonType::LessThanOrEqual);
+
+        // create the SelectionExecutor
+        ExecutorContext *sel_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SelectionExecutor sel_exec(sel_exec_ctx, &cmp_expr, &seq_scan_exec, tb_schema);
+        
+        sel_exec.open();
+
+        // start the operation...
+        int cnt = 0;
+        int ok = true;
+        Tuple tuple;
+        Value cmp_val(target_num);
+        Value get_val;
+
+        while (sel_exec.get_next(&tuple)) {
+            cnt++;
+            get_val = tuple.get_value(*tb_schema, cmp_idx);
+            if (get_val < cmp_val || get_val == cmp_val)
+                continue;
+            ok = false;
+            break;
+        }
+        EXPECT_TRUE(ok);
+        EXPECT_EQ(cnt, target_num + 1);
+        sel_exec.close();
+
+        delete seq_scan_exec_ctx;
+        delete sel_exec_ctx;
+        PRINT("<where tb_col1 <= 2000> test ok...");
+    }
+
+    {
+        // where tb_col1 >= 10000
+
+        offset_t cmp_idx = 0;
+        integer_t target_num = 10000;
+
+        // prepare the SeqScanExecutor
+        ExecutorContext *seq_scan_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SeqScanExecutor seq_scan_exec(seq_scan_exec_ctx, table);
+
+        // prepare the Expression
+        ColumnValueExpression col_expr(cmp_idx);
+        ConstantExpression const_expr(target_num);
+        std::vector<ExpressionAbstract*> cmp_children{&col_expr, &const_expr};
+        ComparisonExpression cmp_expr(cmp_children, ComparisonType::GreaterThanOrEqual);
+
+        // create the SelectionExecutor
+        ExecutorContext *sel_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SelectionExecutor sel_exec(sel_exec_ctx, &cmp_expr, &seq_scan_exec, tb_schema);
+
+        sel_exec.open();
+
+        // start the operation...
+        int cnt = 0;
+        int ok = true;
+        Tuple tuple;
+        Value cmp_val(target_num);
+        Value get_val;
+
+        while (sel_exec.get_next(&tuple)) {
+            cnt++;
+            get_val = tuple.get_value(*tb_schema, cmp_idx);
+            if (get_val < cmp_val) {
+                ok = false;
+                break;
+            }
+        }
+        EXPECT_TRUE(ok);
+        EXPECT_EQ(cnt, insert_num - target_num);
+        sel_exec.close();
+
+        delete seq_scan_exec_ctx;
+        delete sel_exec_ctx;
+        PRINT("<where tb_col1 > 10000> test ok...");
+    }
+
+    delete tb_schema;
+    delete db_manager;
+    PRINT("***basic SelectionExecutorBasicTest test pass***");
+}
+
 } // namespace dawn

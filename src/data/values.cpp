@@ -18,6 +18,14 @@ Value::Value(boolean_t val) {
     value_.boolean = val;
 }
 
+Value::Value(CmpResult val) {
+    type_id_ = TypeId::BOOLEAN;
+    if (val == CmpResult::TRUE)
+        value_.boolean = true;
+    else
+        value_.boolean = false;
+}
+
 Value::Value(integer_t val) {
     type_id_ = TypeId::INTEGER;
     value_.integer = val;
