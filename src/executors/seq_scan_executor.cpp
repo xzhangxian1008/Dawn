@@ -15,7 +15,10 @@ bool SeqScanExecutor::get_next(Tuple *tuple) {
     return true;
 }
 
-void SeqScanExecutor::close() {}
+void SeqScanExecutor::close() {
+    delete tb_iter_;
+    tb_iter_ = nullptr;
+}
 
 
 } // namespace dawn

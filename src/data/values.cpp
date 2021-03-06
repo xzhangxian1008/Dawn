@@ -53,9 +53,8 @@ Value::Value(const string_t &val) : str_size_(val.length()) {
     value_.char_[str_size_] = '\0'; // remind us that there needs a string end
 }
 
-Value::Value(char *value, TypeId type_id, size_t_ str_size) : type_id_(type_id) {
+Value::Value(char *value, TypeId type_id, size_t_ str_size = 0) : type_id_(type_id), str_size_(str_size) {
     if (type_id_ == TypeId::CHAR) {
-        str_size_ = str_size;
         value_.char_ = new char[str_size_+1];
         memset(value_.char_, 0, str_size_ + 1);
     }

@@ -3,6 +3,7 @@
 #include "plans/expressions/col_value_expr.h"
 #include "plans/expressions/constant_expr.h"
 #include "plans/expressions/comparison_expr.h"
+#include "plans/expressions/aggregate_expr.h"
 #include "executors/seq_scan_executor.h"
 #include "executors/proj_executor.h"
 #include "executors/selection_executor.h"
@@ -49,6 +50,29 @@ size_t_ tb2_char0_sz = 5;
 std::vector<size_t_> tb2_char_size{tb2_char0_sz};
 size_t_ tb2_tuple_size = tb2_char0_sz + Type::get_decimal_size();
 
+/**
+ * This is the projection executor's output table for aggregation function test
+ * table name: table3
+ * column names:
+ * -----------------------------------------------------------------------------------
+ * | tb_col2 | tb_col5 | min(tb_col5) | max(tb_col5) | sum(tb_col5) | count(tb_col5) |
+ * -----------------------------------------------------------------------------------
+ * column types:
+ * --------------------------------------------------------------
+ * | char (5) | integer | integer | integer | integer | integer |
+ * --------------------------------------------------------------
+ */
+string_t table_name3("table3"); // output table by the projection executor
+std::vector<TypeId> tb3_col_types{TypeId::CHAR, TypeId::INTEGER, TypeId::INTEGER, TypeId::INTEGER, TypeId::INTEGER, TypeId::INTEGER};
+std::vector<string_t> tb3_col_names{"tb_col2", "tb_col5", "min(tb_col5)", "max(tb_col5)", "sum(tb_col5)", "count(tb_col5)"};
+size_t_ tb3_char0_sz = 5;
+std::vector<size_t_> tb3_char_size{tb3_char0_sz};
+size_t_ tb3_tuple_size = tb3_char0_sz + Type::get_decimal_size() * 4 + Type::get_integer_size();
+offset_t tb3_min_idx = 2;
+offset_t tb3_max_idx = 3;
+offset_t tb3_sum_idx = 4;
+offset_t tb3_cnt_idx = 5;
+
 const char *meta = "test";
 const char *mtdf = "test.mtd";
 const char *dbf = "test.db";
@@ -80,7 +104,7 @@ public:
 };
 
 /** ensure we can get all the data through the SeqScanExecutor */
-TEST_F(ExecutorsBasicTest, SeqScanExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, DISABLED_SeqScanExecutorBasicTest) {
     PRINT("start the basic SeqScanExecutor test...");
     Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();
@@ -150,10 +174,13 @@ TEST_F(ExecutorsBasicTest, SeqScanExecutorBasicTest) {
     delete tb_schema;
     delete exec_ctx;
     delete db_manager;
-    PRINT("***basic SeqScanExecutor test pass***");
 }
 
 /**
+ * Test List:
+ *   1. test the basic function of the ProjectionExecutor
+ *   2. test the aggregation function of the ProjectionExecutor
+ * 
  * ProjectionExecutor may need more tests.
  * In the current test, we push only one tuple, one input and output schema through it.
  * Multiple tuples or other possible input and output schemas may need be tested.
@@ -163,9 +190,6 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
 
     // projection executor's input schema and it's seqscan executor's schema
     Schema *input_tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
-
-    // projection executor's output schema
-    Schema *output_tb_schema = create_table_schema(tb2_col_types, tb2_col_names, tb2_char_size);
 
     db_manager = new DBManager(meta, true);
     ASSERT_TRUE(db_manager->get_status());
@@ -193,40 +217,160 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
     values.push_back(Value(v3, tb_char1_sz));
     values.push_back(Value(v4));
 
-    Tuple tuple(&values, *input_tb_schema);
-    ASSERT_TRUE(table->insert_tuple(&tuple, *input_tb_schema));
+    {
+        // test 1
 
-    // construct the SeqScanExecutor which is used for providing tuple for the ProjectionExecutor
-    ExecutorContext *seq_scan_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
-    SeqScanExecutor seq_scan_exec(seq_scan_exec_ctx, table);
+        // projection executor's output schema
+        Schema *output_tb_schema = create_table_schema(tb2_col_types, tb2_col_names, tb2_char_size);
 
-    // construct the ProjectionExecutor
-    std::vector<ExpressionAbstract*> exprs;
-    exprs.push_back(new ColumnValueExpression(1));
-    exprs.push_back(new ColumnValueExpression(4));
+        Tuple tuple(&values, *input_tb_schema);
+        ASSERT_TRUE(table->insert_tuple(&tuple, *input_tb_schema));
 
-    ExecutorContext *proj_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
-    ProjectionExecutor proj_exec(proj_exec_ctx, &seq_scan_exec, exprs, input_tb_schema, output_tb_schema);
+        // construct the SeqScanExecutor which is used for providing tuple for the ProjectionExecutor
+        ExecutorContext *seq_scan_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SeqScanExecutor seq_scan_exec(seq_scan_exec_ctx, table);
 
-    // check the ProjectionExecutor could work correctly
-    proj_exec.open();
-    ASSERT_TRUE(proj_exec.get_next(&tuple));
-    ASSERT_FALSE(proj_exec.get_next(&tuple));
+        // // construct the ProjectionExecutor
+        std::vector<ExpressionAbstract*> exprs;
+        exprs.push_back(new ColumnValueExpression(1));
+        exprs.push_back(new ColumnValueExpression(4));
 
-    EXPECT_EQ(tuple.get_size(), tb2_tuple_size);
-    EXPECT_EQ(tuple.get_value(*output_tb_schema, 0), values[1]);
-    EXPECT_EQ(tuple.get_value(*output_tb_schema, 1), values[4]);
+        ExecutorContext *proj_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        ProjectionExecutor proj_exec(proj_exec_ctx, &seq_scan_exec, exprs, input_tb_schema, output_tb_schema);
 
-    proj_exec.close();
+        // check the ProjectionExecutor could work correctly
+        proj_exec.open();
+        ASSERT_TRUE(proj_exec.get_next(&tuple));
+        ASSERT_FALSE(proj_exec.get_next(&tuple));
+
+        EXPECT_EQ(tuple.get_size(), tb2_tuple_size);
+        EXPECT_EQ(tuple.get_value(*output_tb_schema, 0), values[1]);
+        EXPECT_EQ(tuple.get_value(*output_tb_schema, 1), values[4]);
+
+        proj_exec.close();
+
+        ASSERT_TRUE(table->mark_delete(Value(v0), *input_tb_schema));
+        table->apply_delete(Value(v0), *input_tb_schema);
+
+        delete output_tb_schema;
+        delete seq_scan_exec_ctx;
+        delete proj_exec_ctx;
+        for (auto p : exprs)
+            delete p;
+        PRINT("basic function of the ProjectionExecutor is ok...");
+    }
+
+    {
+        // test 2
+
+        // projection executor's output schema
+        Schema *output_tb_schema = create_table_schema(tb3_col_types, tb3_col_names, tb3_char_size);
+
+        offset_t key_idx = input_tb_schema->get_key_idx();
+        size_t_ insert_num = 10000;
+        std::set<Value> insert_key_values;
+
+        PRINT("insert a lot of tuples...");
+        bool ok = true;
+        for (size_t_ i = 0; i < insert_num; i++) {
+            values[key_idx] = Value(static_cast<integer_t>(i));
+            Tuple tuple(&values, *input_tb_schema);
+            if (!table->insert_tuple(&tuple, *input_tb_schema)) {
+                ok = false;
+                break;
+            }
+            insert_key_values.insert(values[key_idx]);
+        }
+        ASSERT_TRUE(ok);
+
+        // construct the SeqScanExecutor which is used for providing tuple for the ProjectionExecutor
+        ExecutorContext *seq_scan_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        SeqScanExecutor seq_scan_exec(seq_scan_exec_ctx, table);
+
+        // construct the ProjectionExecutor
+        std::vector<ExpressionAbstract*> exprs;
+        exprs.push_back(new ColumnValueExpression(0));
+        exprs.push_back(new ColumnValueExpression(1));
+        exprs.push_back(new ColumnValueExpression(2));
+        exprs.push_back(new ColumnValueExpression(3));
+        exprs.push_back(new ColumnValueExpression(4));
+
+        std::vector<ExpressionAbstract*> agg_expr;
+        exprs.push_back(new AggregateExpression(AggregationType::MinAggregate, key_idx));
+        exprs.push_back(new AggregateExpression(AggregationType::MaxAggregate, key_idx));
+        exprs.push_back(new AggregateExpression(AggregationType::SumAggregate, key_idx));
+        exprs.push_back(new AggregateExpression(AggregationType::CountAggregate, key_idx));
+
+        ExecutorContext *proj_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
+        ProjectionExecutor proj_exec(proj_exec_ctx, &seq_scan_exec, exprs, input_tb_schema, output_tb_schema, agg_expr);
+
+        // values for validation
+        Value min_num(static_cast<integer_t>(0));
+        Value max_num(static_cast<integer_t>(insert_num - 1));
+        Value sum_num(static_cast<integer_t>(((insert_num-1) * (insert_num-1)) / 2));
+        Value cnt_num(static_cast<integer_t>(insert_num));
+
+        Tuple tuple;
+        int cnt = 0;
+        key_idx = output_tb_schema->get_key_idx();
+        proj_exec.open();
+        while (proj_exec.get_next(&tuple)) {
+            Value key_value = tuple.get_value(*output_tb_schema, key_idx);
+            auto iter = insert_key_values.find(key_value);
+            if (iter == insert_key_values.end()) {
+                ok = false;
+                break;
+            }
+
+            if (tuple.get_value(*output_tb_schema, tb3_min_idx) != min_num) {
+                PRINT(tuple.get_value(*output_tb_schema, tb3_min_idx).get_value_string());
+                LOG("HERE");
+            }
+
+            if (tuple.get_value(*output_tb_schema, tb3_max_idx) != max_num) {
+                PRINT(tuple.get_value(*output_tb_schema, tb3_max_idx).get_value_string());
+                LOG("HERE");
+            }
+
+            if (tuple.get_value(*output_tb_schema, tb3_sum_idx) != sum_num) {
+                PRINT(tuple.get_value(*output_tb_schema, tb3_sum_idx).get_value_string());
+                LOG("HERE");
+            }
+
+            if (tuple.get_value(*output_tb_schema, tb3_cnt_idx) != cnt_num) {
+                PRINT(tuple.get_value(*output_tb_schema, tb3_cnt_idx).get_value_string());
+                LOG("HERE");
+            }
+
+            // check the aggregation values
+            if (tuple.get_value(*output_tb_schema, tb3_min_idx) != min_num ||
+                tuple.get_value(*output_tb_schema, tb3_max_idx) != max_num ||
+                tuple.get_value(*output_tb_schema, tb3_sum_idx) != sum_num ||
+                tuple.get_value(*output_tb_schema, tb3_cnt_idx) != cnt_num) 
+            {
+                LOG("HERE");
+                ok = false;
+                break;
+            }
+
+            ++cnt;
+        }
+        EXPECT_TRUE(ok);
+        EXPECT_EQ(cnt, insert_num);
+        proj_exec.close();
+
+        delete output_tb_schema;
+        delete seq_scan_exec_ctx;
+        delete proj_exec_ctx;
+        for (auto p :exprs)
+            delete p;
+        for (auto p : agg_expr)
+            delete p;
+        PRINT("aggregation function of the ProjectionExecutor is ok...");
+    }
 
     delete input_tb_schema;
-    delete output_tb_schema;
-    delete seq_scan_exec_ctx;
-    delete proj_exec_ctx;
-    for (auto p : exprs)
-        delete p;
     delete db_manager;
-    PRINT("***basic ProjectionExecutor test pass***");
 }
 
 /**
@@ -237,7 +381,7 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
  * In the current test, we only test the Integer type, other types may need tests,
  * but we suppose that they are ok when Integer type tests are passed.
  */
-TEST_F(ExecutorsBasicTest, SelectionExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
     PRINT("start the basic SelectionExecutorBasicTest test...");
     Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();
@@ -459,7 +603,6 @@ TEST_F(ExecutorsBasicTest, SelectionExecutorBasicTest) {
 
     delete tb_schema;
     delete db_manager;
-    PRINT("***basic SelectionExecutorBasicTest test pass***");
 }
 
 } // namespace dawn

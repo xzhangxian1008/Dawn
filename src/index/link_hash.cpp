@@ -122,7 +122,7 @@ void lk_ha_clear_empty_page(page_id_t first_page_id, BufferPoolManager *bpm, has
     page_id_t checked_pgid = sec_level_pg->get_pgid_in_slot(tb_pg_slot_num);
 
     /**
-     * ATTENTION Do not release the lock when collecting the empty pages
+     * ATTENTION Do not release the lock when collecting empty pages
      * 
      * there may be several empty TablePage that are linked together at the beginning.
      * Collect them and find the first non-empty TablePage.
@@ -143,8 +143,8 @@ void lk_ha_clear_empty_page(page_id_t first_page_id, BufferPoolManager *bpm, has
             break;
         
         // jump to the next page
-        checked_tb_page->w_lock();
         checked_tb_page = reinterpret_cast<TablePage*>(bpm->get_page(checked_pgid));
+        checked_tb_page->w_lock();
     }
 
     // delete the empty pages
@@ -156,7 +156,7 @@ void lk_ha_clear_empty_page(page_id_t first_page_id, BufferPoolManager *bpm, has
                 if (bpm->delete_page(empty_pages[i]->get_page_id())) {
                     break;
                 }
-
+                // FIXME BUG HERE
                 // someone else is accessing the page, wait...
                 std::this_thread::sleep_for(std::chrono::milliseconds(20));
             }
@@ -392,6 +392,11 @@ void lk_ha_apply_delete(APPLY_DELETE_FUNC_PARAMS) {
         offset_t sec_pg_slot_num;
         offset_t tb_pg_slot_num;
         hash_to_slot(key_value.get_hash_value(), &sec_pg_slot_num, &tb_pg_slot_num);
+
+        /**
+         * TODO: run a background thread to clear empty pages from time to time
+         * It's very inefficient to scan all the table every time we want to delete a single page.
+         */
         lk_ha_clear_empty_page(first_page_id, bpm, key_value.get_hash_value(), sec_pg_slot_num, tb_pg_slot_num);
     }
 }

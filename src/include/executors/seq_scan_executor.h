@@ -10,10 +10,11 @@ namespace dawn {
 class SeqScanExecutor : public ExecutorAbstract {
 public:
     SeqScanExecutor(ExecutorContext *exec_ctx, Table *table) 
-        : ExecutorAbstract(exec_ctx), table_(table) {}
+        : ExecutorAbstract(exec_ctx), table_(table), tb_iter_(nullptr) {}
 
     virtual ~SeqScanExecutor() {
-        delete tb_iter_;
+        if (tb_iter_ != nullptr)
+            delete tb_iter_;
     }
 
     void open() override;

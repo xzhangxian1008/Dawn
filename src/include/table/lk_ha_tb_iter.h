@@ -3,6 +3,7 @@
 #include "table/tb_iter_abstr.h"
 #include "buffer/buffer_pool_manager.h"
 #include "storage/page/link_hash_page.h"
+#include "storage/page/table_page.h"
 
 namespace dawn {
 
@@ -34,6 +35,13 @@ private:
      * help the iter to know it accesses which link list
      */
     offset_t slot2_num_;
+
+    /**
+     * Refer to the TablePage which the tuple stays on.
+     * Always holds the write lock and pins the page.
+     * nullptr, if the iter reaches to the end
+     */
+    TablePage *cur_tb_page_;
 };
 
 } // namespace dawn

@@ -150,3 +150,4 @@ Tuple：元组，负责装载数据的。(暂时不能让元组中的某列置�
 - Integer
 - Decimal
 - Char
+- BigInt(TODO) 在计算sum的时候可能会需要用到

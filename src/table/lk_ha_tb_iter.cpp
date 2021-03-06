@@ -1,5 +1,4 @@
 #include "table/lk_ha_tb_iter.h"
-#include "storage/page/table_page.h"
 #include "table/schema.h"
 
 namespace dawn {
@@ -46,14 +45,15 @@ LinkHashTableIter::LinkHashTableIter(page_id_t first_page_id, BufferPoolManager 
         // find an available third level page
         if (level3_page_id != INVALID_PAGE_ID) {
             TablePage *level3_page = reinterpret_cast<TablePage*>(bpm_->get_page(level3_page_id));
-            level3_page->r_lock();
+            level3_page->w_lock();
             if (!level3_page->get_the_first_tuple(tuple_)) {
                 // the first page of the third level should always be non-empty
                 // It's a bug if we get an empty TablePage
                 LOG("should not reach here");
                 exit(-1);
             }
-            level3_page->r_unlock();
+            level3_page->w_unlock();
+            bpm_->unpin_page(level3_page_id, false);
             slot1_num_ = slot1_num;
             slot2_num_ = slot2_num;
             break;
@@ -117,7 +117,7 @@ TableIterAbstract& LinkHashTableIter::operator++() {
             do {
                 // get next tuple in the TablePage
                 TablePage *cur_tb_page = reinterpret_cast<TablePage*>(bpm_->get_page(cur_tb_pgid));
-                cur_tb_page->r_lock();
+                cur_tb_page->w_lock();
                 
                 RID next_rid;
                 bool ok;
@@ -130,7 +130,7 @@ TableIterAbstract& LinkHashTableIter::operator++() {
 
                 if (ok) {
                     // release some resource
-                    cur_tb_page->r_unlock();
+                    cur_tb_page->w_unlock();
                     bpm_->unpin_page(cur_tb_pgid, false);
                     level2_page->r_unlock();
                     bpm_->unpin_page(level2_page->get_page_id(), false);
@@ -143,7 +143,7 @@ TableIterAbstract& LinkHashTableIter::operator++() {
                     return *this;
                 }
 
-                cur_tb_page->r_unlock();
+                cur_tb_page->w_unlock();
                 bpm_->unpin_page(cur_tb_pgid, false);
 
                 // it's the last tuple in the TablePage, jump to the next TablePage in link list

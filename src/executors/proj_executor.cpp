@@ -13,8 +13,6 @@ void ProjectionExecutor::open() {
      * will union the whole two table for twice, it's very inefficient!
      */
     if (is_aggregate_) {
-        for (int i = 0; i < agg_num_; i++) 
-            agg_vals_.push_back(Value(static_cast<integer_t>(0)));
 
         while (child_->get_next(&next_tuple_)) {
             for (int i = 0; i < agg_num_; i++)

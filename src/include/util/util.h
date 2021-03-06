@@ -26,6 +26,8 @@ namespace dawn {
 // TODO let log receives random number of parameters
 #define LOG(info) log__(__FILE__, __func__, __LINE__, info)
 
+#define FATAL(info)
+
 inline void print__() { std::cout << std::endl; };
 
 /**
@@ -43,6 +45,12 @@ void print__(const T& firstArg, const Types&... args) {
 inline void log__(std::string file_name, std::string func_name, int line, std::string info) {
     std::string out = file_name + " " + func_name + ", line " + std::to_string(line) + ": " + info;
     std::cout << out << std::endl;
+}
+
+inline void fatal__(std::string file_name, std::string func_name, int line, std::string info) {
+    std::string out = file_name + " " + func_name + ", line " + std::to_string(line) + ": " + info;
+    std::cout << out << std::endl;
+    exit(-1);
 }
 
 inline hash_t do_hash(void *key, size_t_ key_size) {

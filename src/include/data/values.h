@@ -88,6 +88,35 @@ public:
         return ok;
     }
 
+    bool operator!=(const Value &value) const {
+        if (this->type_id_ != value.type_id_)
+            return false;
+            
+        bool ok = true;
+        switch (value.type_id_) {
+            case TypeId::INTEGER:
+                if (this->value_.integer == value.value_.integer)
+                    ok = false;
+                break;
+            case TypeId::BOOLEAN:
+                if (this->value_.boolean == value.value_.boolean)
+                    ok = false;
+                break;
+            case TypeId::DECIMAL:
+                if (this->value_.decimal == value.value_.decimal)
+                    ok = false;
+                break;
+            case TypeId::CHAR:
+                if (string_t(this->value_.char_) == string_t(value.value_.char_)) 
+                    ok = false;
+                break;
+            default:
+                ok = false;
+                break;
+        }
+        return ok;
+    }
+
     bool operator<(const Value &value) const {
         // Comparison between different type of value is ub(undefined behaviour)
         if (this->type_id_ != value.type_id_)
