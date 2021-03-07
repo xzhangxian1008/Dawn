@@ -10,7 +10,7 @@
 
 namespace dawn {
 
-extern DBManager *db_manager;
+extern std::unique_ptr<DBManager> db_manager;
 
 /**
  * table name: table
@@ -111,7 +111,7 @@ TEST_F(ExecutorsBasicTest, DISABLED_SeqScanExecutorBasicTest) {
     size_t_ insert_num = 12345;
     std::set<Value> insert_key_values;
 
-    db_manager = new DBManager(meta, true);
+    db_manager.reset(new DBManager(meta, true));
     ASSERT_TRUE(db_manager->get_status());
 
     Catalog *catalog = db_manager->get_catalog();
@@ -173,7 +173,6 @@ TEST_F(ExecutorsBasicTest, DISABLED_SeqScanExecutorBasicTest) {
 
     delete tb_schema;
     delete exec_ctx;
-    delete db_manager;
 }
 
 /**
@@ -191,7 +190,7 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
     // projection executor's input schema and it's seqscan executor's schema
     Schema *input_tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
-    db_manager = new DBManager(meta, true);
+    db_manager.reset(new DBManager(meta, true));
     ASSERT_TRUE(db_manager->get_status());
 
     Catalog *catalog = db_manager->get_catalog();
@@ -370,7 +369,6 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
     }
 
     delete input_tb_schema;
-    delete db_manager;
 }
 
 /**
@@ -388,7 +386,7 @@ TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
     size_t_ insert_num = 12345;
     std::set<Value> insert_key_values;
 
-    db_manager = new DBManager(meta, true);
+    db_manager.reset(new DBManager(meta, true));
     ASSERT_TRUE(db_manager->get_status());
 
     Catalog *catalog = db_manager->get_catalog();
@@ -602,7 +600,6 @@ TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
     }
 
     delete tb_schema;
-    delete db_manager;
 }
 
 } // namespace dawn

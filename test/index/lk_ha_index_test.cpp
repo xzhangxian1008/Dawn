@@ -6,7 +6,7 @@
 
 namespace dawn {
 
-extern DBManager *db_manager;
+extern std::unique_ptr<DBManager> db_manager;
 
 /**
  * table name: table
@@ -85,7 +85,7 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
     {
         // test 1
         {
-            db_manager = new DBManager(meta, true);
+            db_manager.reset(new DBManager(meta, true));
             ASSERT_TRUE(db_manager->get_status());
             
             Catalog *catalog = db_manager->get_catalog();
@@ -143,12 +143,11 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
             }
             ASSERT_TRUE(ok);
             PRINT("insert a lot of tuples successfully!");
-            delete db_manager;
         }
 
         {
             PRINT("restart the db...");
-            db_manager = new DBManager(meta);
+            db_manager.reset(new DBManager(meta, false));
             ASSERT_TRUE(db_manager->get_status());
             
             Catalog *catalog = db_manager->get_catalog();
@@ -178,7 +177,6 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
                 }
             }
             ASSERT_TRUE(ok);
-            delete db_manager;
             PRINT("***test 1 pass***");
         }
     }
@@ -186,7 +184,7 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
     {
         // test 2
         {
-            db_manager = new DBManager(meta);
+            db_manager.reset(new DBManager(meta, false));
             ASSERT_TRUE(db_manager->get_status());
             
             Catalog *catalog = db_manager->get_catalog();
@@ -245,12 +243,11 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
             }
             ASSERT_TRUE(ok);
             PRINT("update some tuples successfully!");
-            delete db_manager;
         }
 
         {
             PRINT("restart the db...");
-            db_manager = new DBManager(meta);
+            db_manager.reset(new DBManager(meta, false));
             ASSERT_TRUE(db_manager->get_status());
             
             Catalog *catalog = db_manager->get_catalog();
@@ -281,7 +278,6 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
                 }
             }
             ASSERT_TRUE(ok);
-            delete db_manager;
             PRINT("***test 2 pass***");
         }
     }
@@ -289,7 +285,7 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
     {
         // test 3
         {
-            db_manager = new DBManager(meta);
+            db_manager.reset(new DBManager(meta, false));
             ASSERT_TRUE(db_manager->get_status());
             
             Catalog *catalog = db_manager->get_catalog();
@@ -334,12 +330,11 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
             }
             ASSERT_TRUE(ok);
             PRINT("delete some tuples successfully!");
-            delete db_manager;
         }
 
         {
             PRINT("restart the db...");
-            db_manager = new DBManager(meta);
+            db_manager.reset(new DBManager(meta, false));
             ASSERT_TRUE(db_manager->get_status());
             
             Catalog *catalog = db_manager->get_catalog();
@@ -371,7 +366,6 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
                 }
             }
             ASSERT_TRUE(ok);
-            delete db_manager;
             PRINT("***test 3 pass***");
         }
     }
@@ -379,7 +373,7 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
     {
         // test 4
         {
-            db_manager = new DBManager(meta);
+            db_manager.reset(new DBManager(meta, false));
             ASSERT_TRUE(db_manager->get_status());
             
             Catalog *catalog = db_manager->get_catalog();
@@ -438,12 +432,11 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
             }
             ASSERT_TRUE(ok);
             PRINT("reinsert some tuples successfully!");
-            delete db_manager;
         }
 
         {
             PRINT("restart the db...");
-            db_manager = new DBManager(meta);
+            db_manager.reset(new DBManager(meta, false));
             ASSERT_TRUE(db_manager->get_status());
             
             Catalog *catalog = db_manager->get_catalog();
@@ -474,7 +467,6 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
                 }
             }
             ASSERT_TRUE(ok);
-            delete db_manager;
             PRINT("***test 4 pass***");
         }
     }
@@ -496,7 +488,7 @@ TEST_F(LinkHashBasicTest, BasicIterTest) {
     std::set<Value> insert_key_values;
     
     // ********************* test 1 ********************* //
-    db_manager = new DBManager(meta, true);
+    db_manager.reset(new DBManager(meta, true));
     ASSERT_TRUE(db_manager->get_status());
     
     Catalog *catalog = db_manager->get_catalog();
@@ -646,7 +638,6 @@ TEST_F(LinkHashBasicTest, BasicIterTest) {
     PRINT("***test 3 pass***");
 
     delete tb_schema;
-    delete db_manager;
 }
 
 } // namespace dawn

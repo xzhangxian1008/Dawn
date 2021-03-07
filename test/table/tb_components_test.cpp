@@ -11,6 +11,9 @@
 #include "manager/db_manager.h"
 
 namespace dawn {
+
+extern std::unique_ptr<DBManager> db_manager;
+
 /**
  * table name: table4
  * column names:
@@ -138,7 +141,7 @@ TEST_F(TbComponentTest, TupleBasicTest) {
 TEST_F(TbComponentTest, TablePageBasicTest) {
     Schema *table_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
 
-    DBManager *db_manager = new DBManager(meta, true);
+    db_manager.reset(new DBManager(meta, true));
     ASSERT_TRUE(db_manager->get_status());
     
     BufferPoolManager *bpm = db_manager->get_buffer_pool_manager();
@@ -441,7 +444,6 @@ TEST_F(TbComponentTest, TablePageBasicTest) {
     }
 
     delete table_schema;
-    delete db_manager;
     PRINT("***test 2 pass***");
 }
 

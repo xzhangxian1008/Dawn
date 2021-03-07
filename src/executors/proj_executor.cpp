@@ -15,8 +15,8 @@ void ProjectionExecutor::open() {
     if (is_aggregate_) {
 
         while (child_->get_next(&next_tuple_)) {
-            for (int i = 0; i < agg_num_; i++)
-                agg_vals_[i] = agg_exprs_[i]->evaluate(&next_tuple_, input_schema_);
+            // for (int i = 0; i < agg_num_; i++)
+                // agg_vals_[i] = agg_exprs_[i]->evaluate(&next_tuple_, input_schema_);
         }
         child_->close();
         child_->open();
