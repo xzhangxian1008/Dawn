@@ -26,7 +26,7 @@ namespace dawn {
 // TODO let log receives random number of parameters
 #define LOG(info) log__(__FILE__, __func__, __LINE__, info)
 
-#define FATAL(info)
+#define FATAL(info) fatal__(__FILE__, __func__, __LINE__, info)
 
 inline void print__() { std::cout << std::endl; };
 

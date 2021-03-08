@@ -1,3 +1,5 @@
+# reference to the CMU Database Group
+
 file(GLOB DAWN_TEST_SOURCES "${PROJECT_SOURCE_DIR}/test/*/*test.cpp")
 
 # valgrind

@@ -87,6 +87,12 @@ DQL
 # How to Test
 
 ```
+// prepare for the environment
+cd build_support
+sudo sh ./packages.sh
+```
+
+```
 cd Dawn
 mkdir build
 cd build

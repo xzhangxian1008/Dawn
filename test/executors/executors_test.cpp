@@ -104,7 +104,7 @@ public:
 };
 
 /** ensure we can get all the data through the SeqScanExecutor */
-TEST_F(ExecutorsBasicTest, DISABLED_SeqScanExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, SeqScanExecutorBasicTest) {
     PRINT("start the basic SeqScanExecutor test...");
     Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();
@@ -288,25 +288,28 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
 
         // construct the ProjectionExecutor
         std::vector<ExpressionAbstract*> exprs;
-        exprs.push_back(new ColumnValueExpression(0));
         exprs.push_back(new ColumnValueExpression(1));
-        exprs.push_back(new ColumnValueExpression(2));
-        exprs.push_back(new ColumnValueExpression(3));
         exprs.push_back(new ColumnValueExpression(4));
 
         std::vector<ExpressionAbstract*> agg_expr;
-        exprs.push_back(new AggregateExpression(AggregationType::MinAggregate, key_idx));
-        exprs.push_back(new AggregateExpression(AggregationType::MaxAggregate, key_idx));
-        exprs.push_back(new AggregateExpression(AggregationType::SumAggregate, key_idx));
-        exprs.push_back(new AggregateExpression(AggregationType::CountAggregate, key_idx));
+        agg_expr.push_back(new AggregateExpression(AggregationType::MinAggregate, key_idx));
+        agg_expr.push_back(new AggregateExpression(AggregationType::MaxAggregate, key_idx));
+        agg_expr.push_back(new AggregateExpression(AggregationType::SumAggregate, key_idx));
+        agg_expr.push_back(new AggregateExpression(AggregationType::CountAggregate, key_idx));
 
+        std::vector<AggregationType> agg_type;
+        agg_type.push_back(AggregationType::MinAggregate);
+        agg_type.push_back(AggregationType::MaxAggregate);
+        agg_type.push_back(AggregationType::SumAggregate);
+        agg_type.push_back(AggregationType::CountAggregate);
+        
         ExecutorContext *proj_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
-        ProjectionExecutor proj_exec(proj_exec_ctx, &seq_scan_exec, exprs, input_tb_schema, output_tb_schema, agg_expr);
+        ProjectionExecutor proj_exec(proj_exec_ctx, &seq_scan_exec, exprs, agg_type, agg_expr, input_tb_schema, output_tb_schema);
 
         // values for validation
         Value min_num(static_cast<integer_t>(0));
         Value max_num(static_cast<integer_t>(insert_num - 1));
-        Value sum_num(static_cast<integer_t>(((insert_num-1) * (insert_num-1)) / 2));
+        Value sum_num(static_cast<integer_t>(((insert_num-1) * insert_num) / 2));
         Value cnt_num(static_cast<integer_t>(insert_num));
 
         Tuple tuple;
@@ -321,25 +324,27 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
                 break;
             }
 
-            if (tuple.get_value(*output_tb_schema, tb3_min_idx) != min_num) {
-                PRINT(tuple.get_value(*output_tb_schema, tb3_min_idx).get_value_string());
-                LOG("HERE");
-            }
+            /** these commented codes are used for debugging */
+            // if (tuple.get_value(*output_tb_schema, tb3_min_idx) != min_num) {
+            //     PRINT(tuple.get_value(*output_tb_schema, tb3_min_idx).get_value_string());
+            //     LOG("HERE");
+            // }
 
-            if (tuple.get_value(*output_tb_schema, tb3_max_idx) != max_num) {
-                PRINT(tuple.get_value(*output_tb_schema, tb3_max_idx).get_value_string());
-                LOG("HERE");
-            }
+            // if (tuple.get_value(*output_tb_schema, tb3_max_idx) != max_num) {
+            //     PRINT(tuple.get_value(*output_tb_schema, tb3_max_idx).get_value_string());
+            //     LOG("HERE");
+            // }
 
-            if (tuple.get_value(*output_tb_schema, tb3_sum_idx) != sum_num) {
-                PRINT(tuple.get_value(*output_tb_schema, tb3_sum_idx).get_value_string());
-                LOG("HERE");
-            }
+            // if (tuple.get_value(*output_tb_schema, tb3_sum_idx) != sum_num) {
+            //     PRINT(tuple.get_value(*output_tb_schema, tb3_sum_idx).get_value_string());
+            //     PRINT(sum_num.get_value_string());
+            //     LOG("HERE");
+            // }
 
-            if (tuple.get_value(*output_tb_schema, tb3_cnt_idx) != cnt_num) {
-                PRINT(tuple.get_value(*output_tb_schema, tb3_cnt_idx).get_value_string());
-                LOG("HERE");
-            }
+            // if (tuple.get_value(*output_tb_schema, tb3_cnt_idx) != cnt_num) {
+            //     PRINT(tuple.get_value(*output_tb_schema, tb3_cnt_idx).get_value_string());
+            //     LOG("HERE");
+            // }
 
             // check the aggregation values
             if (tuple.get_value(*output_tb_schema, tb3_min_idx) != min_num ||
@@ -347,7 +352,6 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
                 tuple.get_value(*output_tb_schema, tb3_sum_idx) != sum_num ||
                 tuple.get_value(*output_tb_schema, tb3_cnt_idx) != cnt_num) 
             {
-                LOG("HERE");
                 ok = false;
                 break;
             }
@@ -379,7 +383,7 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
  * In the current test, we only test the Integer type, other types may need tests,
  * but we suppose that they are ok when Integer type tests are passed.
  */
-TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, SelectionExecutorBasicTest) {
     PRINT("start the basic SelectionExecutorBasicTest test...");
     Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();

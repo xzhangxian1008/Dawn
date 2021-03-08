@@ -36,41 +36,73 @@ inline Value init_agg_cnt_val() {
  */
 class ProjectionExecutor : public ExecutorAbstract {
 public:
+    /**
+     * This is a constructor for a pure projection executor without any aggregation operation
+     * @param exprs used for projection operation
+     */
     ProjectionExecutor(ExecutorContext *exec_ctx, ExecutorAbstract *child, std::vector<ExpressionAbstract*> exprs,
         Schema *input_schema, Schema *output_schema)
         : ExecutorAbstract(exec_ctx), child_(child), exprs_(exprs), input_schema_(input_schema),
          output_schema_(output_schema), is_aggregate_(false) {}
 
-    // ProjectionExecutor(ExecutorContext *exec_ctx, ExecutorAbstract *child, std::vector<ExpressionAbstract*> exprs,
-    //     Schema *input_schema, Schema *output_schema, std::vector<AggregationType> agg_type)
-    //     : ExecutorAbstract(exec_ctx), child_(child), exprs_(exprs), input_schema_(input_schema),
-    //      output_schema_(output_schema), is_aggregate_(true), agg_num_(agg_type.size()) {
+    /**
+     * Call this constructor when we need aggregation operation
+     * @param exprs used for projection operation
+     * @param output_schema consists of two fields: <projection field | aggregation field>, so we always append the
+     *                      aggregation result to the end of the projection field.
+     * @param agg_type store the type of the aggregation
+     * @param agg_exprs store the aggregation expression
+     */
+    ProjectionExecutor(ExecutorContext *exec_ctx, ExecutorAbstract *child, std::vector<ExpressionAbstract*> exprs,
+        std::vector<AggregationType> agg_type, std::vector<ExpressionAbstract*> agg_exprs, Schema *input_schema, Schema *output_schema)
+        : ExecutorAbstract(exec_ctx), child_(child), exprs_(exprs), agg_exprs_(agg_exprs), input_schema_(input_schema),
+         output_schema_(output_schema), is_aggregate_(true), agg_num_(agg_type.size()) {
         
-    //     size_t_ input_sch_col_num = input_schema_->get_column_num();
+        /**
+         * aggregation field follows up the projection field, so we need to get the length of the
+         * projection before we want to locate the aggregation operation's position
+         */
+        size_t_ proj_col_num = exprs.size();
 
-    //     // initialize the Value of the aggregation
-    //     for (int i = 0; i < agg_num_; i++) {
-    //         TypeId type_id = output_schema_->get_column_type(input_sch_col_num + i);
-    //         switch (agg_type[i]) {
-    //             case AggregationType::CountAggregate:
-    //                 if (type_id == TypeId::INTEGER) {
-
-    //                 } else if ()
-    //                 break;
-    //             case AggregationType::SumAggregate:
-    //                 break;
-    //             case AggregationType::MinAggregate:
-    //                 break;
-    //             case AggregationType::MaxAggregate:
-    //                 agg_vals_.emplace_back(init_agg_cnt_val());
-    //                 agg_exprs_.emplace_back(AggregateExpression(agg_type[i], input_sch_col_num + i));
-    //                 break;
-    //             default:
-    //                 LOG("Invalid AggregationType");
-    //                 exit(-1);
-    //         }
-    //     }
-    // }
+        // initialize the Value of the aggregation
+        for (int i = 0; i < agg_num_; i++) {
+            TypeId type_id = output_schema_->get_column_type(proj_col_num + i);
+            switch (agg_type[i]) {
+                case AggregationType::CountAggregate:
+                    agg_vals_.push_back(init_agg_cnt_val());
+                    break;
+                case AggregationType::SumAggregate:
+                    if (type_id == TypeId::INTEGER) {
+                        agg_vals_.push_back(init_agg_sum_val<integer_t>());
+                    } else if (type_id == TypeId::DECIMAL) {
+                        agg_vals_.push_back(init_agg_sum_val<decimal_t>());
+                    } else {
+                        FATAL("Invalid Aggregation Type");
+                    }
+                    break;
+                case AggregationType::MinAggregate:
+                    if (type_id == TypeId::INTEGER) {
+                        agg_vals_.push_back(init_agg_min_val<integer_t>());
+                    } else if (type_id == TypeId::DECIMAL) {
+                        agg_vals_.push_back(init_agg_min_val<decimal_t>());
+                    } else {
+                        FATAL("Invalid Aggregation Type");
+                    }
+                    break;
+                case AggregationType::MaxAggregate:
+                    if (type_id == TypeId::INTEGER) {
+                        agg_vals_.push_back(init_agg_max_val<integer_t>());
+                    } else if (type_id == TypeId::DECIMAL) {
+                        agg_vals_.push_back(init_agg_max_val<decimal_t>());
+                    } else {
+                        FATAL("Invalid Aggregation Type");
+                    }
+                    break;
+                default:
+                    FATAL("Invalid AggregationType");
+            }
+        }
+    }
 
     ~ProjectionExecutor() = default;
 
@@ -84,7 +116,7 @@ private:
     Schema *input_schema_;
     Schema *output_schema_;
 
-    // std::vector<AggregateExpression> agg_exprs_; // aggregate operation
+    std::vector<ExpressionAbstract*> agg_exprs_; // aggregate operation
     bool is_aggregate_;
     std::vector<Value> agg_vals_; // store the aggregation result
     int agg_num_;

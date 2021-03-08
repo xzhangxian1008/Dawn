@@ -11,6 +11,8 @@
 ## Supported environments:
 ##  * Ubuntu 18.04
 ##  * macOS
+##
+## created by the CMU Database Group
 ## =================================================================
 
 main() {
