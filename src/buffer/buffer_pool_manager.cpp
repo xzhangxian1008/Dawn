@@ -3,7 +3,8 @@
 namespace dawn {
 
 BufferPoolManager::BufferPoolManager(DiskManager *disk_manager, int pool_size)
-    : disk_manager_(disk_manager), pool_size_(pool_size) {
+    : disk_manager_(disk_manager), pool_size_(pool_size),
+    available_threshold_page_((pool_size_/5)*4), allocated_threshold_pages_(0) {
     pages_ = new Page[pool_size_];
     replacer_ = new ClockReplacer(pool_size_);
     for (int i = 0; i < pool_size_; i++)

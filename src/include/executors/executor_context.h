@@ -1,8 +1,8 @@
 #pragma once
 
-namespace dawn {
+#include "buffer/buffer_pool_manager.h"
 
-class BufferPoolManager;
+namespace dawn {
 
 class ExecutorContext {
 public:

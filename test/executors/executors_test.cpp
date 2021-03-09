@@ -378,7 +378,8 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
 /**
  * Test List:
  *   1. tuple     vs   constant
- *   2. tuple     vs   tuple (This needs subquery, ignore it so far)
+ *   2. value     vs   value (In the same tuple)
+ *   3. tuple     vs   tuple (This needs subquery, ignore it so far)
  * 
  * In the current test, we only test the Integer type, other types may need tests,
  * but we suppose that they are ok when Integer type tests are passed.

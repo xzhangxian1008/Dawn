@@ -15,6 +15,7 @@ constexpr long READ_DB_BUF_SZ = PAGE_SIZE * READ_DB_PG_NUM; // 10240 pages, appr
 #define INVALID_SLOT_NUM       -1
 #define STATUS_EXIST            1
 #define STATUS_FREE             2
+#define STATUS_TMP              4 // flag for the tmporary page
 #define STATUS_OFFSET           0
 #define LSN_OFFSET              1
 #define PAGE_ID_OFFSET          5
