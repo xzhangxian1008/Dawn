@@ -286,7 +286,7 @@ bool DiskManager::read_page(page_id_t page_id, char *dst) {
     return true;
 }
 
-page_id_t DiskManager::get_new_page() {
+page_id_t DiskManager::alloc_page(char flag) {
     if (!db_io_.is_open()) {
         string_t info("ALLOC ERROR: can't open the ");
         info += db_name_;
@@ -312,7 +312,7 @@ page_id_t DiskManager::get_new_page() {
     alloced_pgid_.insert(new_page_id);
     latch_.w_unlock();
 
-    page_buf[0] = STATUS_EXIST;
+    page_buf[0] = flag;
     db_io_latch_.w_lock();
     db_io_.seekg(new_page_id * PAGE_SIZE);
     db_io_.write(page_buf, PAGE_SIZE);

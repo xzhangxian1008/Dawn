@@ -46,7 +46,8 @@ public:
 
     bool write_page(page_id_t page_id, const char *data);
     bool read_page(page_id_t page_id, char *dst);
-    page_id_t get_new_page();
+    page_id_t get_new_page() { return alloc_page(STATUS_EXIST); } // TODO useless, delete it and modify the test case
+    page_id_t alloc_page(char flag);
     bool free_page(page_id_t page_id);
     // bool write_log_page();
     // bool read_log_page();

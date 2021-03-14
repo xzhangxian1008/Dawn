@@ -11,9 +11,9 @@ BufferPoolManager::BufferPoolManager(DiskManager *disk_manager, int pool_size)
         free_list_.push_back(i);
 }
 
-Page* BufferPoolManager::new_page() {
+Page* BufferPoolManager::alloc_page(char flag) {
     // get new page id
-    page_id_t page_id = disk_manager_->get_new_page();
+    page_id_t page_id = disk_manager_->alloc_page(flag);
     frame_id_t frame_id;
 
     // ensure the free_list_ can provide a free frame id

@@ -13,21 +13,33 @@ void UnionExecutor::open() {
     // concatenate the left and right columns
     for (auto &col : right_child_col)
         left_child_col.push_back(col);
-    
+
     output_schema_ = new Schema(left_child_col);
+
+    initialize();
 }
 
 bool UnionExecutor::get_next(Tuple *tuple) {
+
+
     return true;
 }
 
 /** delete temporary pages and return and return memory to buffer pool manager */
 void UnionExecutor::close() {
-    
-
     get_context()->get_buffer_pool_manager()->return_threshold_page(threshold_pages_);
     threshold_pages_ = 0;
 
+    // TODO delete temporary pages
+
+    children_[0]->close();
+    children_[1]->close();
+}
+
+void UnionExecutor::initialize() {
+    while (load_more_) {
+        
+    }
 }
 
 } // namespace dawn

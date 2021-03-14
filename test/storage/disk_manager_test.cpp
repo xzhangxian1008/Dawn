@@ -344,6 +344,7 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
  *   1. write some pages and read it successfully with correct data
  *   2. write lots of pages and read it successfully with correct data
  *   3. release some pages and check operation have been allpied
+ * TODO test tmp pages
  */
 TEST_F(DiskManagerTest, DMFunctionTest) {
     const char *mtdf = "test.mtd";

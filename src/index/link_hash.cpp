@@ -156,7 +156,7 @@ void lk_ha_clear_empty_page(page_id_t first_page_id, BufferPoolManager *bpm, has
                 if (bpm->delete_page(empty_pages[i]->get_page_id())) {
                     break;
                 }
-                // FIXME BUG HERE
+
                 // someone else is accessing the page, wait...
                 std::this_thread::sleep_for(std::chrono::milliseconds(20));
             }
