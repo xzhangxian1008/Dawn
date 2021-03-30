@@ -27,7 +27,6 @@ public:
     Page* get_page(const page_id_t &page_id);
     Page* new_page() { return alloc_page(STATUS_EXIST); }
     Page* new_tmp_page() { return alloc_page(STATUS_TMP); }
-    Page* alloc_page(char flag);
     void unpin_page(const page_id_t &page_id, const bool is_dirty);
     bool flush_page(const page_id_t &page_id);
 
@@ -84,6 +83,8 @@ protected:
 
     ReaderWriterLatch latch_;
 private:
+    Page* alloc_page(char flag);
+
     // a page pool
     Page *pages_;
 

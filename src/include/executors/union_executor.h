@@ -15,7 +15,6 @@ public:
     }
 
     ~UnionExecutor() override {
-        delete output_schema_;
         delete left_child_tuple_;
         delete right_child_tuple_;
     }
@@ -38,22 +37,21 @@ private:
      */
     bool get_next_left_tuple();
 
+    /** spill the outer table's data which stay in the memory to the disk */
+    void spill_to_disk(bool is_dirtr);
+
+    /** get a batch of outer table's data from the disk */
+    void extract_from_disk();
+
     /** available temporary pages that store the left child's tuple */
     std::deque<page_id_t> avail_tmp_page_;
-
-    /**
-     * a flag tells the executor if more left child's tuple haven't been processed
-     * true:  yes
-     * false: no
-     */
-    bool load_more_ = true;
 
     /**
      * when all the right child's tuple have been traversed, it will be
      * set to true to tell the executor that it should load another
      * batch of tuples in the left child's table
      */
-    bool load_ = true;
+    bool load_ = false;
 
     /** store left and right child, and see left child as inner table */
     std::vector<ExecutorAbstract*> children_;
@@ -64,18 +62,14 @@ private:
     Schema *output_schema_;
 
     /**
-     * When the inner table is too large, we should spill some data to temporary pages on the disk.
+     * When the outer table is too large, we should spill some data to temporary pages on the disk.
      * This field is used for checking if we should trigger the spill to disk function.
+     * 
+     * When the outer table exceeds 1/2 of the threshold_pages_, spill the rest of the data to the disk.
      */
     size_t_ threshold_pages_;
 
-    /** number of temporary pages that the executor has got  */
-    size_t_ tmp_pages_;
-
-    /** record how many pages have been used for the inner table */
-    size_t_ page_usage_ = 0;
-
-    /** store pages in memory */
+    /** store outer table's pages in memory */
     std::deque<Page*> in_mem_pages_;
 
     /** a container to contain the left child's tuple so that we could reuse it repeatedly */
