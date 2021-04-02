@@ -103,6 +103,14 @@ public:
     inline static size_t_ get_tuple_record_sz() { return TUPLE_RECORD_SZ; }
 
     inline static size_t_ get_tp_load_data_space() { return LOAD_DATA_SPACE; }
+
+    /** 
+     * @param tp_size size of a tuple
+     * @return number of the tuples a page could contain
+     */
+    inline static size_t_ get_tp_num_capacity(size_t_ tp_size) {
+        return LOAD_DATA_SPACE / (tp_size + OFFSET_T_SIZE + SIZE_T_SIZE);
+    }
 private:
     static const offset_t START_OFFSET = COM_PG_HEADER_SZ;
     static const offset_t PREV_PGID_OFFSET = START_OFFSET;

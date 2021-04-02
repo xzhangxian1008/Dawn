@@ -78,6 +78,24 @@ const char *mtdf = "test.mtd";
 const char *dbf = "test.db";
 const char *logf = "test.log";
 
+/**
+ * For UnionExecutorTest
+ * pre-created files with few tuples that all can be loaded into memory at once
+ */
+const char *union_exec_meta_1 = "union_exec_test1";
+const char *union_exec_mtdf_1 = "union_exec_test1.mtd";
+const char *union_exec_dbf_1 = "union_exec_test1.db";
+const char *union_exec_logf_1 = "union_exec_test1.log";
+
+/**
+ * For UnionExecutorTest
+ * pre-created files with many tuples that will be spilled to the disk
+ */
+const char *union_exec_meta_2 = "union_exec_test2";
+const char *union_exec_mtdf_2 = "union_exec_test2.mtd";
+const char *union_exec_dbf_2 = "union_exec_test2.db";
+const char *union_exec_logf_2 = "union_exec_test2.log";
+
 integer_t v0;
 char v1[6];
 boolean_t v2;
@@ -103,11 +121,64 @@ public:
     }
 };
 
+/**
+ * set "table2" as left table and "table" as right table
+ */
 class UnionExecutorTest : public testing::Test {
 public:
-    size_t_ default_pool_sz = 50;
+    size_t_ default_pool_sz = 2000;
+    size_t_ left_table_tuple_num_1; // few tuples
+    size_t_ left_table_tuple_num_2; // many tuples
+    size_t_ right_table_tuple_num = 10000;
 
+    inline size_t_ get_right_tb_tp_num() { return right_table_tuple_num; }
 
+    /**
+     * check the existence of meta_1 and meta_2 first,
+     * create them when we can't find.
+     */
+    void SetUp() {
+        values.clear();
+
+        // check the meta_1
+        if (check_inexistence(union_exec_mtdf_1) ||
+             check_inexistence(union_exec_dbf_1) ||
+             check_inexistence(union_exec_logf_1)) {
+            create_meta1();
+        }
+
+        // check the meta_2
+        if (check_inexistence(union_exec_mtdf_2) ||
+             check_inexistence(union_exec_dbf_2) ||
+             check_inexistence(union_exec_logf_2)) {
+            create_meta2();
+        }
+    }
+
+    /** do nothing */
+    void TearDown() {}
+
+private:
+    void create_meta1() {
+        // remove, just in case
+        remove(union_exec_mtdf_1);
+        remove(union_exec_dbf_1);
+        remove(union_exec_logf_1);
+
+        db_manager.reset(new DBManager(union_exec_meta_1, true));
+        ASSERT_TRUE(db_manager->get_status());
+
+        // number of tuples a TablePage could contain
+        size_t_ tuple_num2page = TablePage::get_tp_num_capacity(tb2_tuple_size);
+
+    }
+
+    void create_meta2() {
+        // remove, just in case
+        remove(union_exec_mtdf_2);
+        remove(union_exec_dbf_2);
+        remove(union_exec_logf_2);
+    }
 };
 
 /** ensure we can get all the data through the SeqScanExecutor */
@@ -621,7 +692,7 @@ TEST_F(ExecutorsBasicTest, SelectionExecutorBasicTest) {
  *   2. too many inner tuples, spill them to the disk and execute the same query for several times.
  */
 TEST_F(UnionExecutorTest, UnionExecutorBasicTest) {
-
+    
 }
 
 } // namespace dawn
