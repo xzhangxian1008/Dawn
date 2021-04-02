@@ -21,9 +21,18 @@ void UnionExecutor::open() {
 }
 
 bool UnionExecutor::get_next(Tuple *tuple) {
+    while (true) {
+        while (children_[1]->get_next(right_child_tuple_)) {
+            while (in_mem_pages_[in_mem_idx_]->get)
+        }
 
+        if (!load_another_batch()) {
+            // all outer tuples have been consumed
+            break;
+        }
+    }
 
-    return true;
+    return false;
 }
 
 /** delete temporary pages and return memory to buffer pool manager */
@@ -53,11 +62,10 @@ void UnionExecutor::initialize() {
     in_mem_pages_.push_back(left_tb_page);
     RID rid;
     
+    BufferPoolManager *bpm = get_context()->get_buffer_pool_manager();
+
     /**
-     * load as many as tuples into memory, spill them to the disk when
-     * too many tuples loaded in to the memory.
-     * 
-     * Very inefficient!!!
+     * FIXME Very inefficient!!!
      * Spill to the disk operation will copy all of the outer table's data
      */
     while (children_[0]->get_next(left_child_tuple_)) {
@@ -69,7 +77,7 @@ void UnionExecutor::initialize() {
             }
 
             // get a new page to insert the tuple
-            left_tb_page = reinterpret_cast<TablePage*>(get_context()->get_buffer_pool_manager()->new_tmp_page());
+            left_tb_page = reinterpret_cast<TablePage*>(bpm->new_tmp_page());
             if (left_tb_page == nullptr) {
                 FATAL("UnionExecutor Error: left_tb_page == nullptr");
             }
@@ -82,20 +90,43 @@ void UnionExecutor::initialize() {
 void UnionExecutor::spill_to_disk(bool is_dirty) {
     BufferPoolManager *bpm = get_context()->get_buffer_pool_manager();
     while (!in_mem_pages_.empty()) {
-        Page *page = in_mem_pages_.front();
+        TablePage *page = in_mem_pages_.front();
         bpm->unpin_page(page->get_page_id(), is_dirty);
         in_mem_pages_.pop_front();
         avail_tmp_page_.push_back(page->get_page_id());
     }
 }
 
-void UnionExecutor::extract_from_disk() {
+// void UnionExecutor::extract_from_disk() {
+//     BufferPoolManager *bpm = get_context()->get_buffer_pool_manager();
+//     while (in_mem_pages_.size() < (1/2) * threshold_pages_) {
+//         Page *page = bpm->get_page(avail_tmp_page_.front());
+//         avail_tmp_page_.pop_front();
+//         in_mem_pages_.push_back(page);
+//     }
+// }
+
+bool UnionExecutor::load_another_batch() {
     BufferPoolManager *bpm = get_context()->get_buffer_pool_manager();
+    
+    while (!in_mem_pages_.empty()) {
+        TablePage *page = in_mem_pages_.front();
+        bpm->delete_page(page->get_page_id());
+        in_mem_pages_.pop_front();
+    }
+
     while (in_mem_pages_.size() < (1/2) * threshold_pages_) {
-        Page *page = bpm->get_page(avail_tmp_page_.front());
+        TablePage *page = reinterpret_cast<TablePage*>(bpm->get_page(avail_tmp_page_.front()));
         avail_tmp_page_.pop_front();
         in_mem_pages_.push_back(page);
     }
+
+    if (in_mem_pages_.size() > 0) {
+        in_mem_idx_ = 0;
+        return true;
+    }
+
+    return false;
 }
 
 } // namespace dawn

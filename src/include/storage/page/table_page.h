@@ -85,6 +85,7 @@ public:
     bool get_tuple(Tuple *tuple, const RID &rid) const;
     
     /**
+     * return the first tuple's rid when the cur_rid's page id is invalid
      * @return true: get successfully, false: get unsuccessfully
      */
     bool get_next_tuple_rid(const RID &cur_rid, RID *next_rid) const;

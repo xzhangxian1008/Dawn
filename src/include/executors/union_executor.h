@@ -26,8 +26,8 @@ public:
 private:
 
     /**
-     * load as many as tuples it can from the left child until
-     * it can't apply for more temporary pages
+     * load all the outer table's tuples into memory, and put them on the disk
+     * when the number ofallocated pages for outer table's tuples exceed the threshold
      */
     void initialize();
 
@@ -38,20 +38,25 @@ private:
     bool get_next_left_tuple();
 
     /** spill the outer table's data which stay in the memory to the disk */
-    void spill_to_disk(bool is_dirtr);
+    void spill_to_disk(bool is_dirty);
 
     /** get a batch of outer table's data from the disk */
-    void extract_from_disk();
+    // void extract_from_disk();
+
+    /**
+     * After traversing all the inner table's tuples, we should load another
+     * batch of outer table's tuples from disk and delete all the temporary pages
+     * that are current in the buffer pool manager.
+     * 
+     * FIXME Very inefficient!!!
+     * This function will stop the thread for a long time because of the I/O. 
+     * We may set two buffer. When one is used for concatenating with inner table's 
+     * tuples, the other could be under the I/O operation so that we can keep cpu running.
+     */
+    bool load_another_batch();
 
     /** available temporary pages that store the left child's tuple */
     std::deque<page_id_t> avail_tmp_page_;
-
-    /**
-     * when all the right child's tuple have been traversed, it will be
-     * set to true to tell the executor that it should load another
-     * batch of tuples in the left child's table
-     */
-    bool load_ = false;
 
     /** store left and right child, and see left child as inner table */
     std::vector<ExecutorAbstract*> children_;
@@ -70,7 +75,13 @@ private:
     size_t_ threshold_pages_;
 
     /** store outer table's pages in memory */
-    std::deque<Page*> in_mem_pages_;
+    std::deque<TablePage*> in_mem_pages_;
+
+    /**
+     * help to locate which page in the memory last time we visited
+     * so that we can know where to get the next outer table's tuple.
+     */
+    int in_mem_idx_;
 
     /** a container to contain the left child's tuple so that we could reuse it repeatedly */
     Tuple *left_child_tuple_;
