@@ -145,7 +145,17 @@ bool TablePage::get_tuple(Tuple *tuple, const RID &rid) const {
 
 bool TablePage::get_next_tuple_rid(const RID &cur_rid, RID *next_rid) const {
     if (cur_rid.get_page_id() == INVALID_PAGE_ID) {
-        // TODO get the first tuple's rid
+        // get the first tuple's position
+        size_t_ count = get_tuple_count();
+        for (size_t_ slot_num = 0; slot_num < count; slot_num++) {
+            offset_t offset = get_tuple_offset(slot_num);
+            if (offset != 0) {
+                next_rid->set(get_page_id(), slot_num);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     offset_t slot_num = cur_rid.get_slot_num();

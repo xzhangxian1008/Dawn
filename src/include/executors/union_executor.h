@@ -40,9 +40,6 @@ private:
     /** spill the outer table's data which stay in the memory to the disk */
     void spill_to_disk(bool is_dirty);
 
-    /** get a batch of outer table's data from the disk */
-    // void extract_from_disk();
-
     /**
      * After traversing all the inner table's tuples, we should load another
      * batch of outer table's tuples from disk and delete all the temporary pages
@@ -88,6 +85,21 @@ private:
 
     /** a container to contain the right child's tuple so that we could reuse it repeatedly */
     Tuple *right_child_tuple_;
+
+    /** used for record the position of the last outer table's tuple  */
+    RID pos_;
+
+    /** in avoid of the repeatable construction and destruction */
+    RID next_pos_;
+
+    /**
+     * every single inner table's tuple should be concatenate with all
+     * the outer table's tuples that are current in the memory.
+     * inner_next_ == true means that a single inner tuple has been
+     * concatenated with all the outer table's tuples and indicates that
+     * we should jump to the next inner table's tuple.
+     */
+    bool inner_next_ = true;
 };
 
 } // namespace dawn

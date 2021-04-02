@@ -103,6 +103,13 @@ public:
     }
 };
 
+class UnionExecutorTest : public testing::Test {
+public:
+    size_t_ default_pool_sz = 50;
+
+
+};
+
 /** ensure we can get all the data through the SeqScanExecutor */
 TEST_F(ExecutorsBasicTest, SeqScanExecutorBasicTest) {
     PRINT("start the basic SeqScanExecutor test...");
@@ -605,6 +612,16 @@ TEST_F(ExecutorsBasicTest, SelectionExecutorBasicTest) {
     }
 
     delete tb_schema;
+}
+
+
+/**
+ * Test List:
+ *   1. all the inner tuples could be loaded in the memory and execute the same query for several times.
+ *   2. too many inner tuples, spill them to the disk and execute the same query for several times.
+ */
+TEST_F(UnionExecutorTest, UnionExecutorBasicTest) {
+
 }
 
 } // namespace dawn
