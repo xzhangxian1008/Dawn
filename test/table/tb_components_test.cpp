@@ -33,10 +33,10 @@ size_t_ tb_char1_sz = 10;
 std::vector<size_t_> tb_char_size{tb_char0_sz, tb_char1_sz};
 size_t_ tb_tuple_size = Type::get_integer_size() + tb_char0_sz + Type::get_bool_size() + tb_char1_sz + Type::get_decimal_size();
 
-const char *meta = "test";
-const char *mtdf = "test.mtd";
-const char *dbf = "test.db";
-const char *logf = "test.log";
+constexpr char *meta = "test";
+constexpr char *mtdf = "test.mtd";
+constexpr char *dbf = "test.db";
+constexpr char *logf = "test.log";
 
 integer_t v0;
 char v1[6];
@@ -157,8 +157,8 @@ TEST_F(TbComponentTest, TablePageBasicTest) {
     EXPECT_EQ(INVALID_PAGE_ID, table_page->get_next_page_id());
     EXPECT_EQ(INVALID_PAGE_ID, table_page->get_prev_page_id());
 
-    const page_id_t next_page_id = 99;
-    const page_id_t prev_page_id = 98;
+    constexpr page_id_t next_page_id = 99;
+    constexpr page_id_t prev_page_id = 98;
     table_page->set_next_page_id(next_page_id);
     table_page->set_prev_page_id(prev_page_id);
     EXPECT_EQ(next_page_id, table_page->get_next_page_id());

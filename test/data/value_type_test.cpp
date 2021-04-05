@@ -14,11 +14,11 @@ namespace dawn {
 #define MIN_D(decimal_1, decimal_2) MIN(DECIMAL_T, decimal_1, decimal_2)
 #define MAX_D(decimal_1, decimal_2) MAX(DECIMAL_T, decimal_1, decimal_2)
 
-const int POOL_SIZE = 20;
-const char *meta = "bpm_test";
-const char *mtdf = "bpm_test.mtd";
-const char *dbf = "bpm_test.db";
-const char *logf = "bpm_test.log";
+constexpr int POOL_SIZE = 20;
+constexpr char *meta = "bpm_test";
+constexpr char *mtdf = "bpm_test.mtd";
+constexpr char *dbf = "bpm_test.db";
+constexpr char *logf = "bpm_test.log";
 
 // TODO test serialize and deserialize function
 TEST(ValueTest, BasicTest) {

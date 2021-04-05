@@ -7,6 +7,7 @@
 #include "executors/seq_scan_executor.h"
 #include "executors/proj_executor.h"
 #include "executors/selection_executor.h"
+#include "executors/union_executor.h"
 
 namespace dawn {
 
@@ -73,28 +74,33 @@ offset_t tb3_max_idx = 3;
 offset_t tb3_sum_idx = 4;
 offset_t tb3_cnt_idx = 5;
 
-const char *meta = "test";
-const char *mtdf = "test.mtd";
-const char *dbf = "test.db";
-const char *logf = "test.log";
-
 /**
- * For UnionExecutorTest
- * pre-created files with few tuples that all can be loaded into memory at once
+ * table name: table4
+ * column names:
+ * ---------------------
+ * | tb_col1 | tb_col2 |
+ * ---------------------
+ * column types:
+ * ---------------------
+ * | integer | decimal |
+ * ---------------------
  */
-const char *union_exec_meta_1 = "union_exec_test1";
-const char *union_exec_mtdf_1 = "union_exec_test1.mtd";
-const char *union_exec_dbf_1 = "union_exec_test1.db";
-const char *union_exec_logf_1 = "union_exec_test1.log";
+string_t table_name4("table4");
+std::vector<TypeId> tb4_col_types{TypeId::INTEGER, TypeId::DECIMAL};
+std::vector<string_t> tb4_col_names{"tb_col1", "tb_col2"};
+size_t_ tb4_tuple_size = Type::get_integer_size() + Type::get_decimal_size();
 
-/**
- * For UnionExecutorTest
- * pre-created files with many tuples that will be spilled to the disk
- */
-const char *union_exec_meta_2 = "union_exec_test2";
-const char *union_exec_mtdf_2 = "union_exec_test2.mtd";
-const char *union_exec_dbf_2 = "union_exec_test2.db";
-const char *union_exec_logf_2 = "union_exec_test2.log";
+constexpr char *meta = "test";
+constexpr char *mtdf = "test.mtd";
+constexpr char *dbf = "test.db";
+constexpr char *logf = "test.log";
+
+/** For UnionExecutorTest */
+constexpr char *union_exec_meta = "union_exec_test";
+constexpr char *union_exec_mtdf = "union_exec_test.mtd";
+constexpr char *union_exec_dbf = "union_exec_test.db";
+constexpr char *union_exec_logf = "union_exec_test.log";
+
 
 integer_t v0;
 char v1[6];
@@ -122,36 +128,43 @@ public:
 };
 
 /**
- * set "table2" as left table and "table" as right table
+ * FIXME reconstruct here!!!!! table ERROR!!!!
+ * set "table2" or "table4" as left table and "table" as right table
+ * insert few tuples into table2
+ * insert many tuples into table4
  */
 class UnionExecutorTest : public testing::Test {
 public:
-    size_t_ default_pool_sz = 2000;
-    size_t_ left_table_tuple_num_1; // few tuples
-    size_t_ left_table_tuple_num_2; // many tuples
-    size_t_ right_table_tuple_num = 10000;
+    size_t_ left_table_tuple_num_1; // few tuples, for table2
+    size_t_ left_table_tuple_num_2; // many tuples, for table4
+    constexpr static size_t_ default_pool_sz = 200;
+    constexpr static size_t_ right_table_tuple_num = 100;
 
-    inline size_t_ get_right_tb_tp_num() { return right_table_tuple_num; }
+    /** return the number of tuples inserted into the right table */
+    constexpr size_t_ get_right_tb_tp_num() { return right_table_tuple_num; }
+
+    inline size_t_ get_table2_tuples() { return left_table_tuple_num_1; }
+    inline size_t_ get_table4_tuples() { return left_table_tuple_num_2; }
+
+    /**
+     * Before running the UnionExecutor test, we need to prepare some data for it.
+     * If the preparation fails, the test should not start.
+     */
+    inline bool is_test_ready() { return ok; }
 
     /**
      * check the existence of meta_1 and meta_2 first,
      * create them when we can't find.
      */
     void SetUp() {
+        ok = true;
         values.clear();
 
         // check the meta_1
-        if (check_inexistence(union_exec_mtdf_1) ||
-             check_inexistence(union_exec_dbf_1) ||
-             check_inexistence(union_exec_logf_1)) {
-            create_meta1();
-        }
-
-        // check the meta_2
-        if (check_inexistence(union_exec_mtdf_2) ||
-             check_inexistence(union_exec_dbf_2) ||
-             check_inexistence(union_exec_logf_2)) {
-            create_meta2();
+        if (check_inexistence(union_exec_mtdf) ||
+             check_inexistence(union_exec_dbf) ||
+             check_inexistence(union_exec_logf)) {
+            create_meta();
         }
     }
 
@@ -159,25 +172,77 @@ public:
     void TearDown() {}
 
 private:
-    void create_meta1() {
-        // remove, just in case
-        remove(union_exec_mtdf_1);
-        remove(union_exec_dbf_1);
-        remove(union_exec_logf_1);
+    static bool ok;
 
-        db_manager.reset(new DBManager(union_exec_meta_1, true));
+    void create_meta() {
+        PRINT("create files for the UnionExecutor test...");
+        
+        // remove, just in case
+        remove(union_exec_mtdf);
+        remove(union_exec_dbf);
+        remove(union_exec_logf);
+
+        DBManager::set_default_pool_size(default_pool_sz);
+        db_manager.reset(new DBManager(union_exec_meta, true));
         ASSERT_TRUE(db_manager->get_status());
 
-        // number of tuples a TablePage could contain
-        size_t_ tuple_num2page = TablePage::get_tp_num_capacity(tb2_tuple_size);
+        {
+            /** insert tuples into table2 */
+            size_t_ tuple2_num2page = TablePage::get_tp_num_capacity(tb2_tuple_size); // number of table2's tuples a TablePage could contain
+            left_table_tuple_num_1 = (default_pool_sz / 3) * tuple2_num2page;
 
-    }
+            std::unique_ptr<Schema> tb_schema(create_table_schema(tb2_col_types, tb2_col_names, tb2_char_size));
+            Catalog *catalog = db_manager->get_catalog();
+            CatalogTable *catalog_table = catalog->get_catalog_table();
+            TableMetaData *table_md = catalog_table->get_table_meta_data(table_name2);
+            Table *table = table_md->get_table();
 
-    void create_meta2() {
-        // remove, just in case
-        remove(union_exec_mtdf_2);
-        remove(union_exec_dbf_2);
-        remove(union_exec_logf_2);
+            v0 = 0;
+            fill_char_array("apple", v1);
+            v4 = 3.1415926;
+
+            values.clear();
+            values.push_back(Value(v0));
+            values.push_back(Value(v1));
+            values.push_back(Value(v4));
+
+            for (size_t_ i = 0; i < left_table_tuple_num_1; i++) {
+                values[0] = Value(static_cast<integer_t>(i));
+                Tuple tuple(&values, *tb_schema);
+                if (!table->insert_tuple(&tuple, *tb_schema)) {
+                    ok = false;
+                    return;
+                }
+            }
+        }
+
+        {
+            /** insert tuples into table4 */
+            size_t_ tuple4_num2page = TablePage::get_tp_num_capacity(tb4_tuple_size); // number of table4's tuples a TablePage could contain
+            left_table_tuple_num_2 = 3 * default_pool_sz * tuple4_num2page;
+
+            std::unique_ptr<Schema> tb_schema(create_table_schema(tb4_col_types, tb4_col_names));
+            Catalog *catalog = db_manager->get_catalog();
+            CatalogTable *catalog_table = catalog->get_catalog_table();
+            TableMetaData *table_md = catalog_table->get_table_meta_data(table_name4);
+            Table *table = table_md->get_table();
+
+            integer_t v0 = 0;
+            decimal_t v4 = 3.14;
+
+            values.clear();
+            values.push_back(Value(v0));
+            values.push_back(Value(v4));
+
+            for (size_t_ i = 0; i < left_table_tuple_num_2; i++) {
+                values[0] = Value(static_cast<integer_t>(i));
+                Tuple tuple(&values, *tb_schema);
+                if (!table->insert_tuple(&tuple, *tb_schema)) {
+                    ok = false;
+                    return;
+                }
+            }
+        }
     }
 };
 
@@ -687,12 +752,67 @@ TEST_F(ExecutorsBasicTest, SelectionExecutorBasicTest) {
 
 
 /**
+ * set "table2" or "table4" as left table and "table" as right table
+ * insert few tuples into table2
+ * insert many tuples into table4
+ * 
  * Test List:
+ *   FIXME we check the number of output tuples first, then check the content of the tuples
  *   1. all the inner tuples could be loaded in the memory and execute the same query for several times.
  *   2. too many inner tuples, spill them to the disk and execute the same query for several times.
  */
 TEST_F(UnionExecutorTest, UnionExecutorBasicTest) {
-    
+    ASSERT_TRUE(UnionExecutorTest::is_test_ready());
+
+    db_manager.reset(new DBManager(union_exec_meta, false));
+
+    {
+        // test 1
+        Catalog *catalog = db_manager->get_catalog();
+        CatalogTable *catalog_table = catalog->get_catalog_table();
+
+        /** prepare the left table's sequence executor */
+        TableMetaData *table_md = catalog_table->get_table_meta_data(table_name2);
+        ASSERT_NE(nullptr, table_md);
+        Table *left_table = table_md->get_table();
+        ASSERT_NE(nullptr, left_table);
+
+        ExecutorContext left_seq_exec_ctx(db_manager->get_buffer_pool_manager());
+        SeqScanExecutor left_seq_scan_exec(&left_seq_exec_ctx, left_table);
+
+        /** prepare the right table's sequence executor */
+        table_md = catalog_table->get_table_meta_data(table_name);
+        ASSERT_NE(nullptr, table_md);
+        Table *right_table = table_md->get_table();
+        ASSERT_NE(nullptr, right_table);
+
+        ExecutorContext right_seq_exec_ctx(db_manager->get_buffer_pool_manager());
+        SeqScanExecutor right_seq_scan_exec(&right_seq_exec_ctx, right_table);
+
+        /** create the UnionExecutor */
+        ExecutorContext union_exec_ctx(db_manager->get_buffer_pool_manager());
+        std::vector<Schema*> child_schema;
+        child_schema.push_back(create_table_schema(tb2_col_types, tb2_col_names, tb2_char_size)); // left child's schema
+        child_schema.push_back(create_table_schema(tb_col_types, tb_col_names, tb_char_size)); // right child's schema
+
+        UnionExecutor union_exec(&union_exec_ctx, 
+            std::vector<ExecutorAbstract*>{&left_seq_scan_exec, &right_seq_scan_exec},
+            child_schema);
+        
+        union_exec.open();
+
+
+
+        union_exec.close();
+
+        delete child_schema[0];
+        delete child_schema[1];
+    }
+
+    {
+        // test 2
+        
+    }
 }
 
 } // namespace dawn

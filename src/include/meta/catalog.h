@@ -50,7 +50,7 @@ public:
 
     // TODO operation about catalog table
     
-    static const offset_t CATALOG_TABLE_PGID_OFFSET = COM_PG_HEADER_SZ;
+    static constexpr offset_t CATALOG_TABLE_PGID_OFFSET = COM_PG_HEADER_SZ;
 private:
     // call this function when the catalog has never been created before
     inline void init_catalog() {

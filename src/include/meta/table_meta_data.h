@@ -55,10 +55,10 @@ public:
     
     void delete_table_data();
 private:
-    static const offset_t FIRST_TABLE_PGID_OFFSET = COM_PG_HEADER_SZ;
-    static const offset_t INDEX_HEADER_PGID_OFFSET = COM_PG_HEADER_SZ + sizeof(page_id_t);
-    static const offset_t COLUMN_NUM_OFFSET = COM_PG_HEADER_SZ + 2*sizeof(page_id_t) + 64; // 64 is reserved space
-    static const offset_t FIRST_COLUMN_OFFSET = COM_PG_HEADER_SZ + 2*sizeof(page_id_t) + 64 + sizeof(size_t_);
+    static constexpr offset_t FIRST_TABLE_PGID_OFFSET = COM_PG_HEADER_SZ;
+    static constexpr offset_t INDEX_HEADER_PGID_OFFSET = COM_PG_HEADER_SZ + sizeof(page_id_t);
+    static constexpr offset_t COLUMN_NUM_OFFSET = COM_PG_HEADER_SZ + 2*sizeof(page_id_t) + 64; // 64 is reserved space
+    static constexpr offset_t FIRST_COLUMN_OFFSET = COM_PG_HEADER_SZ + 2*sizeof(page_id_t) + 64 + sizeof(size_t_);
 
     /**
      * column size means how many space a column need to record his info.

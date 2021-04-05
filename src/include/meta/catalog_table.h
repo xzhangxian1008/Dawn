@@ -134,8 +134,8 @@ private:
         *reinterpret_cast<size_t_*>(data_ + TABLE_NUM_OFFSET) = 0;
     }
 
-    static const int TABLE_RECORD_SZ = sizeof(offset_t) + sizeof(size_t_) + sizeof(page_id_t);
-    static const offset_t TABLE_NUM_OFFSET = COM_PG_HEADER_SZ;
+    static constexpr int TABLE_RECORD_SZ = sizeof(offset_t) + sizeof(size_t_) + sizeof(page_id_t);
+    static constexpr offset_t TABLE_NUM_OFFSET = COM_PG_HEADER_SZ;
 
     BufferPoolManager *bpm_;
     page_id_t self_page_id_; // it's his own page id

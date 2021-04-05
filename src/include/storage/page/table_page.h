@@ -112,14 +112,14 @@ public:
         return LOAD_DATA_SPACE / (tp_size + OFFSET_T_SIZE + SIZE_T_SIZE);
     }
 private:
-    static const offset_t START_OFFSET = COM_PG_HEADER_SZ;
-    static const offset_t PREV_PGID_OFFSET = START_OFFSET;
-    static const offset_t NEXT_PGID_OFFSET = PREV_PGID_OFFSET + PGID_T_SIZE;
-    static const offset_t FREE_SPACE_PTR_OFFSET = NEXT_PGID_OFFSET + PGID_T_SIZE;
-    static const offset_t TUPLE_CNT_OFFSET = FREE_SPACE_PTR_OFFSET + PGID_T_SIZE + TABLE_PAGE_RESERVED;
-    static const offset_t FIRST_TUPLE_OFFSET = TUPLE_CNT_OFFSET + SIZE_T_SIZE;
-    static const offset_t INVALID_FREE_SPACE_PTR = PAGE_SIZE;
-    static const size_t_ TUPLE_RECORD_SZ = SIZE_T_SIZE + OFFSET_T_SIZE;
+    static constexpr offset_t START_OFFSET = COM_PG_HEADER_SZ;
+    static constexpr offset_t PREV_PGID_OFFSET = START_OFFSET;
+    static constexpr offset_t NEXT_PGID_OFFSET = PREV_PGID_OFFSET + PGID_T_SIZE;
+    static constexpr offset_t FREE_SPACE_PTR_OFFSET = NEXT_PGID_OFFSET + PGID_T_SIZE;
+    static constexpr offset_t TUPLE_CNT_OFFSET = FREE_SPACE_PTR_OFFSET + PGID_T_SIZE + TABLE_PAGE_RESERVED;
+    static constexpr offset_t FIRST_TUPLE_OFFSET = TUPLE_CNT_OFFSET + SIZE_T_SIZE;
+    static constexpr offset_t INVALID_FREE_SPACE_PTR = PAGE_SIZE;
+    static constexpr size_t_ TUPLE_RECORD_SZ = SIZE_T_SIZE + OFFSET_T_SIZE;
 
     // describe how large space could be used to store tuple records and tuples' data in a TablePage
     static const size_t_ LOAD_DATA_SPACE = PAGE_SIZE - COM_PG_HEADER_SZ - 2 * PGID_T_SIZE - OFFSET_T_SIZE - SIZE_T_SIZE - TABLE_PAGE_RESERVED;

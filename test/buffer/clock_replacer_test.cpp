@@ -17,7 +17,7 @@ namespace dawn {
  *      evict successfully after unpin a frame
  */
 TEST(ClockReplacer, OneThreadTest) {
-    const int POOL_SIZE = 1000;
+    constexpr int POOL_SIZE = 1000;
     
     {
         // test 1

@@ -5,10 +5,10 @@
 
 namespace dawn {
 
-const char *meta = "test";
-const char *meta_name = "test.mtd";
-const char *db_name = "test.db";
-const char *log_name = "test.log";
+constexpr char *meta = "test";
+constexpr char *meta_name = "test.mtd";
+constexpr char *db_name = "test.db";
+constexpr char *log_name = "test.log";
 
 /**
  * Test List:

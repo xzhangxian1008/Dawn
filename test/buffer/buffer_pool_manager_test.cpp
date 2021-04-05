@@ -12,11 +12,11 @@ class BufferPoolManagerTest;
 namespace dawn {
 using page_list = std::vector<Page*>;
 
-const int POOL_SIZE = 20;
-const char *meta = "bpm_test";
-const char *mtdf = "bpm_test.mtd";
-const char *dbf = "bpm_test.db";
-const char *logf = "bpm_test.log";
+constexpr int POOL_SIZE = 20;
+constexpr char *meta = "bpm_test";
+constexpr char *mtdf = "bpm_test.mtd";
+constexpr char *dbf = "bpm_test.db";
+constexpr char *logf = "bpm_test.log";
 string_t mtdf_s(mtdf);
 string_t dbf_s(dbf);
 string_t logf_s(logf);
@@ -167,8 +167,8 @@ TEST_F(BPBasicTest, Test1) {
     ASSERT_TRUE(dm->is_allocated(page_id));
 
     // write
-    const int size1 = 6;
-    const char *s1 = "12345";
+    constexpr int size1 = 6;
+    constexpr char *s1 = "12345";
     bpmt.write_page(page, COM_PG_HEADER_SZ, s1, size1);
 
     // evict
@@ -192,8 +192,8 @@ TEST_F(BPBasicTest, Test1) {
     EXPECT_TRUE(ok);
 
     // write
-    const int size2 = 9;
-    const char *s2 = "abcdefgh";
+    constexpr int size2 = 9;
+    constexpr char *s2 = "abcdefgh";
     bpmt.write_page(page, COM_PG_HEADER_SZ, s2, size2);
     bpmt.unpin_page_test(page->get_page_id(), true);
 
@@ -242,16 +242,16 @@ TEST_F(BPBasicTest, Test1) {
         }
 
         //prepare the data set.
-        const char* Kuga = "Kuga";
-        const char* Kabuto = "Kabuto";
-        const char* Blade = "Blade";
-        const char* Black = "Black";
-        const char* BlackRX = "BlackRX";
-        const char* Faiz = "Faiz";
-        const char* Decade = "Decade";
-        const char* OOO = "OOO";
-        const char* Amazon = "Amazon";
-        const char* Agito = "Agito";
+        constexpr char* Kuga = "Kuga";
+        constexpr char* Kabuto = "Kabuto";
+        constexpr char* Blade = "Blade";
+        constexpr char* Black = "Black";
+        constexpr char* BlackRX = "BlackRX";
+        constexpr char* Faiz = "Faiz";
+        constexpr char* Decade = "Decade";
+        constexpr char* OOO = "OOO";
+        constexpr char* Amazon = "Amazon";
+        constexpr char* Agito = "Agito";
         std::vector<const char*> data_list{Kuga, Kabuto, Blade, Black, BlackRX, Faiz, Decade, OOO, Amazon, Agito,};
         std::vector<const char*>::const_iterator data_iter = data_list.begin();
 
