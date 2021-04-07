@@ -2,6 +2,7 @@
 
 #include "executors/executor_abstr.h"
 #include "table/schema.h"
+#include "storage/page/table_page.h"
 #include <deque>
 
 namespace dawn {
@@ -9,7 +10,7 @@ namespace dawn {
 class UnionExecutor : public ExecutorAbstract {
 public:
     UnionExecutor(ExecutorContext *exec_ctx, std::vector<ExecutorAbstract*> children, std::vector<Schema*> child_schema)
-    : ExecutorAbstract(exec_ctx), children_(children), child_schema_(child_schema) {
+    : ExecutorAbstract(exec_ctx), children_(children), child_schema_(child_schema), in_mem_idx_(0) {
         left_child_tuple_ = new Tuple();
         right_child_tuple_ = new Tuple();
     }
@@ -78,7 +79,7 @@ private:
      * help to locate which page in the memory last time we visited
      * so that we can know where to get the next outer table's tuple.
      */
-    int in_mem_idx_;
+    size_t in_mem_idx_;
 
     /** a container to contain the left child's tuple so that we could reuse it repeatedly */
     Tuple *left_child_tuple_;

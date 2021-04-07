@@ -194,10 +194,10 @@ bool read_write_pages_check(DiskManager_T &dmt, int page_num) {
  *   3. read mode: db should collect page id's info correctly when it starts
  */
 TEST_F(DiskManagerTest, ConstructorTEST) {
-    constexpr char *meta = "test";
-    constexpr char *mtdf = "test.mtd";
-    constexpr char *dbf = "test.db";
-    constexpr char *logf = "test.log";
+    const char *meta = "test";
+    const char *mtdf = "test.mtd";
+    const char *dbf = "test.db";
+    const char *logf = "test.log";
 
     string_t mtdf_s(mtdf);
     string_t dbf_s(dbf);
@@ -347,9 +347,9 @@ TEST_F(DiskManagerTest, ConstructorTEST) {
  * TODO test tmp pages
  */
 TEST_F(DiskManagerTest, DMFunctionTest) {
-    constexpr char *mtdf = "test.mtd";
-    constexpr char *dbf = "test.db";
-    constexpr char *logf = "test.log";
+    const char *mtdf = "test.mtd";
+    const char *dbf = "test.db";
+    const char *logf = "test.log";
 
     string_t mtdf_s(mtdf);
     string_t dbf_s(dbf);

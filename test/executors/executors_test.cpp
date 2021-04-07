@@ -75,31 +75,49 @@ offset_t tb3_sum_idx = 4;
 offset_t tb3_cnt_idx = 5;
 
 /**
- * table name: table4
+ * table for the UnionExecutor test with few tuples inserted
+ * table name: left_few_tp_table
  * column names:
- * ---------------------
- * | tb_col1 | tb_col2 |
- * ---------------------
+ * ---------------------------------------------------
+ * | left_few_tp_table_col1 | left_few_tp_table_col2 |
+ * ---------------------------------------------------
  * column types:
  * ---------------------
  * | integer | decimal |
  * ---------------------
  */
-string_t table_name4("table4");
-std::vector<TypeId> tb4_col_types{TypeId::INTEGER, TypeId::DECIMAL};
-std::vector<string_t> tb4_col_names{"tb_col1", "tb_col2"};
-size_t_ tb4_tuple_size = Type::get_integer_size() + Type::get_decimal_size();
+string_t left_few_tp_table("left_few_tp_table");
+std::vector<TypeId> left_few_tp_table_col_types{TypeId::INTEGER, TypeId::DECIMAL};
+std::vector<string_t> left_few_tp_table_col_names{"left_few_tp_table_col1", "left_few_tp_table_col2"};
+size_t_ left_few_tp_table_tuple_size = Type::get_integer_size() + Type::get_decimal_size();
 
-constexpr char *meta = "test";
-constexpr char *mtdf = "test.mtd";
-constexpr char *dbf = "test.db";
-constexpr char *logf = "test.log";
+/**
+ * table for the UnionExecutor test with many tuples inserted
+ * table name: left_many_tp_table
+ * column names:
+ * ---------------------------------------------------
+ * | left_few_tp_table_col1 | left_few_tp_table_col2 |
+ * ---------------------------------------------------
+ * column types:
+ * ---------------------
+ * | integer | decimal |
+ * ---------------------
+ */
+string_t left_many_tp_table("left_many_tp_table");
+std::vector<TypeId> left_many_tp_table_col_types{TypeId::INTEGER, TypeId::DECIMAL};
+std::vector<string_t> left_many_tp_table_col_names{"left_many_tp_table_col1", "left_many_tp_table_col2"};
+size_t_ left_many_tp_table_tuple_size = Type::get_integer_size() + Type::get_decimal_size();
+
+const char *meta = "test";
+const char *mtdf = "test.mtd";
+const char *dbf = "test.db";
+const char *logf = "test.log";
 
 /** For UnionExecutorTest */
-constexpr char *union_exec_meta = "union_exec_test";
-constexpr char *union_exec_mtdf = "union_exec_test.mtd";
-constexpr char *union_exec_dbf = "union_exec_test.db";
-constexpr char *union_exec_logf = "union_exec_test.log";
+const char *union_exec_meta = "union_exec_test";
+const char *union_exec_mtdf = "union_exec_test.mtd";
+const char *union_exec_dbf = "union_exec_test.db";
+const char *union_exec_logf = "union_exec_test.log";
 
 
 integer_t v0;
@@ -128,23 +146,22 @@ public:
 };
 
 /**
- * FIXME reconstruct here!!!!! table ERROR!!!!
- * set "table2" or "table4" as left table and "table" as right table
- * insert few tuples into table2
- * insert many tuples into table4
+ * set "left_few_tp_table" or "left_many_tp_table" as left table and "table" as right table
+ * insert few tuples into left_few_tp_table
+ * insert many tuples into left_many_tp_table
  */
 class UnionExecutorTest : public testing::Test {
 public:
-    size_t_ left_table_tuple_num_1; // few tuples, for table2
-    size_t_ left_table_tuple_num_2; // many tuples, for table4
+    size_t_ left_table_tuple_num_1; // few tuples, for left_few_tp_table
+    size_t_ left_table_tuple_num_2; // many tuples, for left_many_tp_table
     constexpr static size_t_ default_pool_sz = 200;
     constexpr static size_t_ right_table_tuple_num = 100;
 
     /** return the number of tuples inserted into the right table */
-    constexpr size_t_ get_right_tb_tp_num() { return right_table_tuple_num; }
+    constexpr size_t_ get_right_tuples_num() { return right_table_tuple_num; }
 
-    inline size_t_ get_table2_tuples() { return left_table_tuple_num_1; }
-    inline size_t_ get_table4_tuples() { return left_table_tuple_num_2; }
+    inline size_t_ get_few_tuples_num() { return left_table_tuple_num_1; }
+    inline size_t_ get_many_tuples_num() { return left_table_tuple_num_2; }
 
     /**
      * Before running the UnionExecutor test, we need to prepare some data for it.
@@ -174,6 +191,7 @@ public:
 private:
     static bool ok;
 
+    // TODO delete all the files when create_meta() exit abnormally
     void create_meta() {
         PRINT("create files for the UnionExecutor test...");
         
@@ -187,14 +205,15 @@ private:
         ASSERT_TRUE(db_manager->get_status());
 
         {
-            /** insert tuples into table2 */
-            size_t_ tuple2_num2page = TablePage::get_tp_num_capacity(tb2_tuple_size); // number of table2's tuples a TablePage could contain
-            left_table_tuple_num_1 = (default_pool_sz / 3) * tuple2_num2page;
+            /** insert tuples into left_few_tp_table */
+            size_t_ left_few_tp_table_num2page = TablePage::get_tp_num_capacity(left_few_tp_table_tuple_size); // number of table2's tuples a TablePage could contain
+            left_table_tuple_num_1 = (default_pool_sz / 3) * left_few_tp_table_num2page;
 
-            std::unique_ptr<Schema> tb_schema(create_table_schema(tb2_col_types, tb2_col_names, tb2_char_size));
+            std::unique_ptr<Schema> tb_schema(create_table_schema(left_few_tp_table_col_types, left_few_tp_table_col_names));
             Catalog *catalog = db_manager->get_catalog();
             CatalogTable *catalog_table = catalog->get_catalog_table();
-            TableMetaData *table_md = catalog_table->get_table_meta_data(table_name2);
+            catalog_table->create_table(left_few_tp_table, *tb_schema);
+            TableMetaData *table_md = catalog_table->get_table_meta_data(left_few_tp_table);
             Table *table = table_md->get_table();
 
             v0 = 0;
@@ -217,14 +236,15 @@ private:
         }
 
         {
-            /** insert tuples into table4 */
-            size_t_ tuple4_num2page = TablePage::get_tp_num_capacity(tb4_tuple_size); // number of table4's tuples a TablePage could contain
+            /** insert tuples into left_many_tp_table */
+            size_t_ tuple4_num2page = TablePage::get_tp_num_capacity(left_many_tp_table_tuple_size); // number of table4's tuples a TablePage could contain
             left_table_tuple_num_2 = 3 * default_pool_sz * tuple4_num2page;
 
-            std::unique_ptr<Schema> tb_schema(create_table_schema(tb4_col_types, tb4_col_names));
+            std::unique_ptr<Schema> tb_schema(create_table_schema(left_many_tp_table_col_types, left_many_tp_table_col_names));
             Catalog *catalog = db_manager->get_catalog();
             CatalogTable *catalog_table = catalog->get_catalog_table();
-            TableMetaData *table_md = catalog_table->get_table_meta_data(table_name4);
+            catalog_table->create_table(left_many_tp_table, *tb_schema);
+            TableMetaData *table_md = catalog_table->get_table_meta_data(left_many_tp_table);
             Table *table = table_md->get_table();
 
             integer_t v0 = 0;
@@ -246,8 +266,10 @@ private:
     }
 };
 
+bool UnionExecutorTest::ok = true;
+
 /** ensure we can get all the data through the SeqScanExecutor */
-TEST_F(ExecutorsBasicTest, SeqScanExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, DISABLED_SeqScanExecutorBasicTest) {
     PRINT("start the basic SeqScanExecutor test...");
     Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();
@@ -327,7 +349,7 @@ TEST_F(ExecutorsBasicTest, SeqScanExecutorBasicTest) {
  * In the current test, we push only one tuple, one input and output schema through it.
  * Multiple tuples or other possible input and output schemas may need be tested.
  */
-TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, DISABLED_ProjectionExecutorBasicTest) {
     PRINT("start the basic ProjectionExecutor test...");
 
     // projection executor's input schema and it's seqscan executor's schema
@@ -527,7 +549,7 @@ TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
  * In the current test, we only test the Integer type, other types may need tests,
  * but we suppose that they are ok when Integer type tests are passed.
  */
-TEST_F(ExecutorsBasicTest, SelectionExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
     PRINT("start the basic SelectionExecutorBasicTest test...");
     Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();
@@ -801,12 +823,19 @@ TEST_F(UnionExecutorTest, UnionExecutorBasicTest) {
         
         union_exec.open();
 
+        int cnt = 0;
+        Tuple output_tuple;
 
+        // TODO so far, we only check the number of the output tuples, further checks will be done in the future
+        while (union_exec.get_next(&output_tuple)) {
+            cnt++;
+        }
 
         union_exec.close();
 
         delete child_schema[0];
         delete child_schema[1];
+        ASSERT_EQ(cnt, UnionExecutorTest::get_few_tuples_num() * UnionExecutorTest::get_right_tuples_num());
     }
 
     {
