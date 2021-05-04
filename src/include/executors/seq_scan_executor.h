@@ -17,6 +17,8 @@ public:
             delete tb_iter_;
     }
 
+    DISALLOW_COPY_AND_MOVE(SeqScanExecutor);
+
     void open() override;
     bool get_next(Tuple *tuple) override;
     void close() override;

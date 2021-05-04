@@ -49,6 +49,8 @@ public:
         delete[] data_;
     }
 
+    DISALLOW_COPY_AND_MOVE(Page);
+
     inline void w_lock() { latch_.w_lock(); }
     inline void w_unlock() { latch_.w_unlock(); }
     inline void r_lock() { latch_.r_lock(); }

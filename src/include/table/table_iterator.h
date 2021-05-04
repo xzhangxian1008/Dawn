@@ -26,6 +26,7 @@ public:
         // table->get_the_first_tuple(tuple_);
     }
 
+    // TODO add assignment function
     TableIterator(const TableIterator &table_iter) : table_(table_iter.table_), tuple_(new Tuple(*(table_iter.tuple_))) {}
 
     ~TableIterator() { delete tuple_; }

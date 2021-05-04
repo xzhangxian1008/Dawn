@@ -14,6 +14,8 @@ public:
 
     ~LinkHashTableIter() override { delete tuple_; }
 
+    DISALLOW_COPY(LinkHashTableIter);
+
     const Tuple& operator*() const override { return *tuple_; }
 
     Tuple* operator->() const override { return tuple_; }

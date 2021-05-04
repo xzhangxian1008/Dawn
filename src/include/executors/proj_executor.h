@@ -106,6 +106,8 @@ public:
 
     ~ProjectionExecutor() = default;
 
+    DISALLOW_COPY_AND_MOVE(ProjectionExecutor);
+
     void open() override;
     bool get_next(Tuple *tuple) override;
     void close() override;

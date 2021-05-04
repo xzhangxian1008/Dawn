@@ -20,6 +20,8 @@ public:
         delete right_child_tuple_;
     }
 
+    DISALLOW_COPY_AND_MOVE(UnionExecutor);
+
     void open() override;
     bool get_next(Tuple *tuple) override;
     void close() override;

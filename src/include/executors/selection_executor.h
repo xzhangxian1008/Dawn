@@ -14,6 +14,8 @@ public:
         : ExecutorAbstract(exec_ctx), predicate_(predicate), child_(child), schema_(schema), cmp_(true) {}
     ~SelectionExecutor() = default;
 
+    DISALLOW_COPY_AND_MOVE(SelectionExecutor);
+
     void open() override;
     bool get_next(Tuple *tuple) override;
     void close() override;

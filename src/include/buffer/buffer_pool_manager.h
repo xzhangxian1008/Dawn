@@ -19,6 +19,8 @@ class BufferPoolManager {
 public:
     explicit BufferPoolManager(DiskManager *disk_manager, int pool_size);
 
+    DISALLOW_COPY(BufferPoolManager);
+
     ~BufferPoolManager() {
         delete[] pages_;
         delete replacer_;

@@ -12,6 +12,7 @@ class ClockReplacer : public ReplacerAbstract {
 public:
     explicit ClockReplacer(int pool_size);
     virtual ~ClockReplacer() override { delete[] flags; }
+    DISALLOW_COPY(ClockReplacer);
 
     void pin(frame_id_t frame_id) override;
     void unpin(frame_id_t frame_id) override;

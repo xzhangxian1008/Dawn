@@ -42,6 +42,8 @@ public:
             shutdown();
     }
 
+    DISALLOW_COPY_AND_MOVE(DiskManager);
+
     // TODO write, read and free for meta data file
 
     bool write_page(page_id_t page_id, const char *data);

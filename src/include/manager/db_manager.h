@@ -32,7 +32,7 @@ public:
         delete disk_manager_;
     }
 
-    DISALLOW_COPY(DBManager)
+    DISALLOW_COPY_AND_MOVE(DBManager)
 
     inline page_id_t get_catalog_page_id() const { return catalog_page_id_; }
     inline DiskManager* get_disk_manager() const { return disk_manager_; }

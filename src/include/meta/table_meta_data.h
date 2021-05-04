@@ -46,6 +46,8 @@ public:
         bpm_->unpin_page(self_page_id_, true); // always true
     }
 
+    DISALLOW_COPY(TableMetaData);
+
     inline const Schema* get_table_schema() const { return table_schema_; }
     inline string_t get_table_name() const { return table_name_; }
     inline Table* get_table() const { return table_; }
