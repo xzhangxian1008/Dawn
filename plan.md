@@ -34,10 +34,10 @@ other 标签下的任务完成即删除
   - 写页面
   - 分配新页面
   - 释放页面
-- (TODO)并发使用DiskManager(待计划)
-- (TODO)日志页面管理(待计划)
-- (TODO)定期裁剪文件大小(待计划)
-- (TODO)对元数据文件的logging和recovery(待计划)
+- (TODO)并发使用DiskManager
+- (TODO)日志页面管理
+- (TODO)定期裁剪文件大小
+- (TODO)对元数据文件的logging和recovery
 
 ### 页面布局
 
