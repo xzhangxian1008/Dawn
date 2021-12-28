@@ -112,9 +112,25 @@ TablePage：这是实际存放数据的地方，可以形成一张单链表
 - DQL
   - SELECT后面只支持聚集函数和列名，不支持其它功能
   - FROM后面最多只支持两张表的联结
-  - where后面支持"<" "<=" ">" ">=" "=" "!="
+  - where后面支持"<" "<=" ">" ">=" "=" "!="，不支持and、or等
 - DCL
   - 目前不准备支持任何DCL
+
+### DDL
+
+- CREATE
+    - 有且只有一个key
+    - 全部not null
+    - 目前支持的类型：Bool、Integer、Decimal和Char
+- DROP
+
+### DML
+
+- INSERT
+    - 只支持如下形式：
+    - `INSERT INTO table_name VALUES('123', 1);`
+- DELETE
+- SELECT
 
 # 系统数据与管理
 

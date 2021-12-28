@@ -94,6 +94,15 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
 
 ### SQL解析
 
+SQL Plan：
+- DDL
+    - CREATE(TODO P1)
+    - DROP(TODO P2)
+- DML
+    - INSERT(TODO P3)
+    - DELETE(TODO P4)
+    - SELECT(TODO P5)
+
 ## 数据与系统管理
 
 总体功能：

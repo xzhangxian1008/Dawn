@@ -1,0 +1,24 @@
+CREATE TABLE books (
+    id INT,
+    book_name CHAR(10),
+    price DECIMAL,
+    discount BOOLEAN,
+    PRIMARY KEY(id)
+);
+
+DROP TABLE books;
+
+INSERT INTO books
+VALUES (
+    1,
+    '1234',
+    23.33,
+    true
+);
+
+DELETE FROM books
+WHERE id < 1;
+
+SELECT id
+FROM books
+WHERE id > 100;
