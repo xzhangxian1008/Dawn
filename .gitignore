@@ -1,5 +1,2 @@
 .vscode
 build
-src/sql/lex.yy.cpp
-src/sql/y.tab.cpp
-src/sql/y.tab.h
