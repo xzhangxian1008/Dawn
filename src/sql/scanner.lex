@@ -1,19 +1,23 @@
 %{
 #include <string>
 #include <cstring>
+#include "y.tab.h"
 
-char* str_id;
-int64_t integer;
-double float;
+char* lex_str;
+int64_t int_num;
+double float_num;
 %}
 
 digit   [0-9]
 letter  [A-Za-z]
 id      ({letter}|_)({letter}|{digit}|_)*
 integer [1-9]{digit}*|0
-float   {integer}\.{integer}
+float   {integer}\.{digit}*
+string  '.*'
 %%
 
+"natural" {return NATURAL;}
+"join" {return JOIN;}
 "create" {return CREATE;}
 "drop" {return DROP;}
 "insert" {return INSERT;}
@@ -44,12 +48,28 @@ float   {integer}\.{integer}
 ";" {return ';';}
 "," {return ',';}
 {id}    {
-            str_id = new char[yyleng+1];
-            std::memcpy(str_id, yytext, yyleng);
-            str_id[yyleng] = 0;
+            lex_str = new char[yyleng+1]; // ATTENTION! BE CAREFUL OF  THEMEMORY LEAK!
+            std::memcpy(lex_str, yytext, yyleng);
+            lex_str[yyleng] = 0;
             return ID;
         }
 
+{integer} {
+            int_num = atoi(yytext);
+            return INT_NUM;
+        }
+
+{float} {
+            float_num = atof(yytext);
+            return FLOAT_NUM;
+        }
+
+{string} {
+            lex_str = new char[yyleng-1]; // ATTENTION! BE CAREFUL OF  THEMEMORY LEAK!
+            std::memcpy(lex_str, yytext+1, yyleng-2);
+            lex_str[yyleng-2] = 0;
+            return STRING;
+        }
 %%
 
 int yywrap(void) {

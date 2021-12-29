@@ -20,6 +20,9 @@ set(VALGRIND_OPTIONS
         )
 set(VALGRIND_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/build_support/valgrind.supp")
 
+# Copy test files to destination
+file(GLOB_RECURSE test_files ${PROJECT_SOURCE_DIR}/test/sql/test_cases/*)
+file(COPY ${test_files} DESTINATION ${CMAKE_BINARY_DIR}/test/)
 
 ##########################################
 # "make XYZ_test"

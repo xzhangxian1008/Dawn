@@ -1,5 +1,7 @@
 # reference to the CMU Database Group
 
+# set(CFiles ${PROJECT_SOURCE_DIR}/src/sql/lex.yy.c ${PROJECT_SOURCE_DIR}/src/sql/y.tab.c )
+
 file(GLOB_RECURSE dawn_sources ${PROJECT_SOURCE_DIR}/src/*/*.cpp ${PROJECT_SOURCE_DIR}/src/*/*/*.cpp ${PROJECT_SOURCE_DIR}/src/*/*/*/*.cpp)
 add_library(dawn_shared SHARED ${dawn_sources})
 
