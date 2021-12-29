@@ -10,7 +10,7 @@ void yyerror(std::string str) {}
 
 static bool debug = true;
 
-extern char* str_id;
+extern char* lex_str;
 extern int64_t int_num;
 extern double float_num;
 
@@ -81,6 +81,9 @@ stmt_list
 
 stmt: ddl {debug_print("sql: ddl");}
     | dml {debug_print("sql: dml");}
+    | empty_stmt {debug_print("sql: empty_stmt");}
+
+empty_stmt: {debug_print("empty_stmt");}
 
 ddl: create {debug_print("ddl: create");}
     | drop {debug_print("ddl: drop");}
@@ -90,8 +93,8 @@ dml: insert {debug_print("dml: insert");}
     | select {debug_print("dml: select");}
 
 create
-    : CREATE TABLE ID '(' create_def_list ')' {
-        debug_print("create: CREATE TABLE ID '(' create_def_list ')'");
+    : CREATE TABLE identity '(' create_def_list ')' {
+        debug_print("create: CREATE TABLE identity '(' create_def_list ')'");
     }
 
 create_def_list
@@ -118,7 +121,7 @@ data_type
     | DECIMAL {debug_print("data_type: DECIMAL");}
     | BOOLEAN {debug_print("data_type: BOOLEAN");}
 
-identity: ID {debug_print("identity: ID");}
+identity: ID {debug_print("identity: ID"); delete[] lex_str;}
 
 drop: DROP TABLE identity {debug_print("drop: DROP TABLE identity");}
 
@@ -155,6 +158,16 @@ constant
     }
     | FLOAT_NUM {
         debug_print("constant: FLOAT_NUM");
+    }
+    | STRING {
+        debug_print("constant: STRING");
+        delete[] lex_str;
+    }
+    | TRUE {
+        debug_print("constant: TRUE");
+    }
+    | FALSE {
+        debug_print("constant: FALSE");
     }
 
 select
