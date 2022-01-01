@@ -1,0 +1,7 @@
+CREATE TABLE books (
+    id INT,
+    book_name CHAR(10),
+    price DECIMAL,
+    discount BOOLEAN,
+    PRIMARY KEY(id)
+);

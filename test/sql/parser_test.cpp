@@ -31,7 +31,7 @@ bool run_test(size_t test_num, const TestParam& test_param) {
 }
 
 TEST(ParserTests, ParserTest0) {
-    TestParam tp("./test/scanner_test0");
+    TestParam tp("./test/parser_test0");
     bool success = run_test(0, tp);
     EXPECT_TRUE(success);
 }
