@@ -17,7 +17,7 @@ public:
 
     // for the char initialization
     explicit Column(const string_t &column_name, offset_t offset, size_t_ char_length)
-        : column_name_(column_name), offset_(offset), char_length_(char_length), fixed_length_(PTR_SIZE), column_type_(TypeId::CHAR) {}
+        : column_name_(column_name), offset_(offset), char_length_(char_length), fixed_length_(PTR_SIZE), column_type_(TypeId::kChar) {}
 
     ~Column() = default;
 
@@ -26,9 +26,9 @@ public:
     inline string_t get_column_name() const { return column_name_; }
 
     inline size_t_ get_data_size() const {
-        if (column_type_ != TypeId::CHAR)
+        if (column_type_ != TypeId::kChar)
             return fixed_length_;
-        else if (column_type_ == TypeId::CHAR)
+        else if (column_type_ == TypeId::kChar)
             return char_length_;
         
         return -1;
@@ -41,7 +41,7 @@ public:
         os << "Column[" << column_name_ << ", " << type_to_string(column_type_) << ", "
             << "offset:" << offset_ << ", ";
 
-        if (column_type_ != TypeId::CHAR) {
+        if (column_type_ != TypeId::kChar) {
             os << "fixed length:" << fixed_length_;
         } else {
             os << "char length:" << char_length_;
@@ -76,15 +76,15 @@ public:
 private:
     size_t_ get_type_size(TypeId type_id) {
         switch (type_id) {
-            case TypeId::INVALID:
+            case TypeId::kInvalid:
                 return -1;
-            case TypeId::BOOLEAN:
+            case TypeId::kBoolean:
                 return Type::get_bool_size();
-            case TypeId::INTEGER:
+            case TypeId::kInteger:
                 return Type::get_integer_size();
-            case TypeId::CHAR:
+            case TypeId::kChar:
                 return char_length_;
-            case TypeId::DECIMAL:
+            case TypeId::kDecimal:
                 return Type::get_decimal_size();
         }
 

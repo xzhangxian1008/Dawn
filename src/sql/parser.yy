@@ -24,6 +24,8 @@ inline void debug_print(std::string info) {
     }
 }
 
+// This is bad because multi sql parsers will use this variable
+// TODO Modify this when we need to run in the multi-thread environment
 dawn::StmtListNode* ast_root;
 
 %}

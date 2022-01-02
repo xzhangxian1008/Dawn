@@ -1,8 +1,10 @@
 #pragma once
 
-#include "util/util.h"
 #include <vector>
 #include <stdint.h>
+
+#include "util/util.h"
+#include "data/types.h"
 
 namespace dawn {
 
@@ -13,13 +15,6 @@ enum class NodeType : int8_t {
     kDataType,
     kStmtList,
     kEmptyStmt
-};
-
-enum class DataType : int8_t {
-    kChar,
-    kInteger,
-    kBoolean,
-    kDecimal
 };
 
 /**
@@ -57,14 +52,14 @@ private:
 class DataTypeNode : public Node {
 public:
     DISALLOW_COPY_AND_MOVE(DataTypeNode);
-    DataTypeNode(DataType type) : type_(type), char_len_(-1), Node(NodeType::kDataType) {}
-    DataTypeNode(DataType type, int char_len)
+    DataTypeNode(TypeId type) : type_(type), char_len_(-1), Node(NodeType::kDataType) {}
+    DataTypeNode(TypeId type, int char_len)
         : type_(type), char_len_(char_len), Node(NodeType::kDataType) {}
     
-    DataType get_data_type() const { return type_; }
+    TypeId get_data_type() const { return type_; }
     int get_char_len() const { return char_len_; }
 private:
-    DataType type_;
+    TypeId type_;
     int char_len_;
 };
 
@@ -73,7 +68,9 @@ public:
     DISALLOW_COPY_AND_MOVE(StmtListNode);
     StmtListNode() : Node(NodeType::kStmtList) {}
 
-    // TODO get StmtNode
+    std::vector<StmtNode*> get_stmt_nodes() const {
+        return get_children();
+    }
 };
 
 using StmtNode = Node;

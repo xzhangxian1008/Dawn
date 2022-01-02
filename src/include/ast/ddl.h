@@ -2,7 +2,10 @@
 
 #include <stdint.h>
 #include <assert.h>
+
+#include "data/types.h"
 #include "ast/node.h"
+#include "util/config.h"
 
 namespace dawn {
 
@@ -12,7 +15,7 @@ class DDLNode;
 
 enum DDLType : int8_t {
     kCreateTable,
-    kDelete,
+    kDrop,
     kCreateDefList,
     kCreateDef,
     kColumnDef
@@ -59,7 +62,7 @@ public:
         add_child(create_def_list_node);
     }
 
-    std::string get_tb_name() const {
+    string_t get_tb_name() const {
         IdentityNode* id_node = dynamic_cast<IdentityNode*>(at(0));
         assert(id_node);
 
@@ -82,7 +85,7 @@ public:
         add_child(data_type);
     }
     
-    DataType get_data_type() const {
+    TypeId get_data_type() const {
         Node* node = at(0);
         DataTypeNode* data_node = dynamic_cast<DataTypeNode*>(node);
         assert(data_node);
@@ -125,7 +128,7 @@ public:
         add_child(primary_key);
     }
 
-    std::string get_col_name() const {
+    string_t get_col_name() const {
         Node* node = at(0);
         IdentityNode* id_node = dynamic_cast<IdentityNode*>(node);
         assert(id_node);
@@ -133,7 +136,7 @@ public:
         return id_node->get_id();
     }
 
-    DataType get_col_type() const {
+    TypeId get_col_type() const {
         Node* node = at(1);
         ColumnDefNode* col_def_node = dynamic_cast<ColumnDefNode*>(node);
         assert(col_def_node);

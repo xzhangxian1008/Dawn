@@ -41,7 +41,7 @@ void print__(const T& firstArg, const Types&... args) {
     print__(args...);
 }
 
-// TODO add switch、time and so no
+// TODO add switch、time and so on
 inline void log__(std::string file_name, std::string func_name, int line, std::string info) {
     std::string out = file_name + " " + func_name + ", line " + std::to_string(line) + ": " + info;
     std::cout << out << std::endl;

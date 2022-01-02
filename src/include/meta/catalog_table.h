@@ -93,10 +93,11 @@ public:
 
     bool create_table(const string_t &table_name, const Schema &schema);
     bool delete_table(const string_t &table_name);
-    bool delete_table(table_id_t table_id); // TODO also delete the table's data
+    bool delete_table(table_id_t table_id); // TODO table's data should be deleted
     std::vector<string_t> get_all_table_name();
     std::vector<table_id_t> get_all_table_id();
     string_t to_string();
+
     bool check_space(size_t_ size_needed){
         offset_t insert_offset = TABLE_NUM_OFFSET + table_num_ * TABLE_RECORD_SZ;
         size_t_ available_space = free_space_pointer_ - insert_offset;

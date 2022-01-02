@@ -8,15 +8,15 @@ class Type;
 extern Type *singleton[4];
 
 // TODO VARCHAR
-enum class TypeId : enum_size_t { INVALID = -1, BOOLEAN, INTEGER, DECIMAL, CHAR };
+enum class TypeId : enum_size_t { kInvalid = -1, kBoolean, kInteger, kDecimal, kChar };
 
-enum class CmpResult : enum_size_t { TRUE = 0, FALSE };
+enum class CmpResult : enum_size_t { kTrue = 0, kFalse };
 
 /** ComparisonType represents the type of comparison that we want to perform. */
-enum class ComparisonType { Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual };
+enum class ComparisonType { kEqual, kNotEqual, kLessThan, kLessThanOrEqual, kGreaterThan, kGreaterThanOrEqual };
 
 /** AggregationType enumerates all the possible aggregation functions in our system. */
-enum class AggregationType : enum_size_t { CountAggregate, SumAggregate, MinAggregate, MaxAggregate };
+enum class AggregationType : enum_size_t { kCountAggregate, kSumAggregate, kMinAggregate, kMaxAggregate };
 
 class Value;
 
@@ -50,11 +50,11 @@ public:
 
     static size_t_ get_type_size(TypeId type_id) {
         switch (type_id) {
-            case TypeId::BOOLEAN:
+            case TypeId::kBoolean:
                 return sizeof(boolean_t);
-            case TypeId::INTEGER:
+            case TypeId::kInteger:
                 return sizeof(integer_t);
-            case TypeId::DECIMAL:
+            case TypeId::kDecimal:
                 return sizeof(decimal_t);
             default:
                 return -1;

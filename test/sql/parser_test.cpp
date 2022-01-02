@@ -5,35 +5,27 @@
 #include <iostream>
 #include <string>
 
-#include "test_util.h"
-
 extern FILE* yyin;
 int yyparse();
 
 namespace dawn {
-bool test0(const TestParam&);
-const std::vector<bool(*)(const TestParam&)> tests{test0};
 
-bool test0(const TestParam& param) {
-    std::string file_path(param.get_tcase());
+TEST(ParserTests, ParserTest0) {
+    std::string file_path("./test/parser_test0");
     yyin = fopen(file_path.data(),"r");
     assert(yyin != nullptr);
 
-    if (yyparse() == 0) {
-        return true;
-    }
-    return false;
+    EXPECT_EQ(yyparse(), 0);
 }
 
-bool run_test(size_t test_num, const TestParam& test_param) {
-    assert(test_num < tests.size());
-    return tests[test_num](test_param);
-}
+TEST(ParserTests, ParserTest1) {
+    std::string file_path("./test/parser_test1");
+    yyin = fopen(file_path.data(),"r");
+    assert(yyin != nullptr);
 
-TEST(ParserTests, ParserTest0) {
-    TestParam tp("./test/parser_test0");
-    bool success = run_test(0, tp);
-    EXPECT_TRUE(success);
+    EXPECT_EQ(yyparse(), 0);
+
+    
 }
 
 } // namespace dawn
