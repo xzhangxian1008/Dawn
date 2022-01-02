@@ -1,6 +1,10 @@
 %{
 #include <stdio.h>
 #include <iostream>
+#include <assert.h>
+
+#include "ast/node.h"
+#include "ast/ddl.h"
 
 extern FILE *yyin;
 int yylex();
@@ -14,18 +18,33 @@ extern char* lex_str;
 extern int64_t int_num;
 extern double float_num;
 
-void debug_print(std::string info) {
+inline void debug_print(std::string info) {
     if (debug) {
         std::cout << info << std::endl;
     }
 }
 
+dawn::StmtListNode* ast_root;
+
 %}
+
+%code requires {
+    #include "ast/node.h"
+    #include "ast/ddl.h"
+}
 
 %union{
     int int_val;
     char* str_val;
-    int node;
+    dawn::Node* node;
+    dawn::DataTypeNode* data_type_node;
+    dawn::IdentityNode* id_node;
+    dawn::ColumnDefNode* col_def_node;
+    dawn::CreateDefNode* create_def_node;
+    dawn::CreateDefListNode* create_def_list_node;
+    dawn::CreateNode* create_node;
+    dawn::DDLNode* ddl_node;
+    dawn::StmtListNode* stmt_list_node;
 }
 
 %token <str_val> ID
@@ -38,16 +57,16 @@ void debug_print(std::string info) {
 
 %left '=' '>' '<' GT_EQ LE_EQ NOT_EQ
 
-%type <node> stmt_list
+%type <stmt_list_node> stmt_list
 %type <node> stmt
 
-%type <node> ddl
-%type <node> create
+%type <ddl_node> ddl
+%type <create_node> create
 %type <node> drop
-%type <node> create_def_list
-%type <node> create_def
-%type <node> col_name
-%type <node> column_def
+%type <create_def_list_node> create_def_list
+%type <create_def_node> create_def
+%type <id_node> col_name
+%type <col_def_node> column_def
 
 
 %type <node> dml
@@ -55,8 +74,8 @@ void debug_print(std::string info) {
 %type <node> delete
 %type <node> select
 
-%type <node> data_type
-%type <node> identity
+%type <data_type_node> data_type
+%type <id_node> identity
 %type <node> expr_list
 %type <node> expr
 %type <node> constant
@@ -73,19 +92,40 @@ void debug_print(std::string info) {
 
 %%
 
-sql: stmt_list {debug_print("sql: stmt_list");}
+sql: stmt_list {
+        debug_print("sql: stmt_list");
+        ast_root = $1;
+    }
 
 stmt_list
-    : stmt {debug_print("stmt_list: stmt");}
-    | stmt_list ';' stmt {debug_print("stmt_list: stmt_list ';' stmt");}
+    : stmt {
+        debug_print("stmt_list: stmt");
+        $$ = new dawn::StmtListNode();
+        $$->add_child($1);
+    }
+    | stmt_list ';' stmt {
+        debug_print("stmt_list: stmt_list ';' stmt");
+        $1->add_child($3);
+        $$ = $1;
+    }
 
-stmt: ddl {debug_print("sql: ddl");}
+stmt: ddl {
+        debug_print("sql: ddl");
+        $$ = $1;
+    }
     | dml {debug_print("sql: dml");}
-    | empty_stmt {debug_print("sql: empty_stmt");}
+    | empty_stmt {
+        debug_print("sql: empty_stmt");
+        $$ = new dawn::StmtNode(dawn::NodeType::kEmptyStmt);
+    }
 
 empty_stmt: {debug_print("empty_stmt");}
 
-ddl: create {debug_print("ddl: create");}
+ddl: create {
+        debug_print("ddl: create");
+        $$ = new dawn::DDLNode(dawn::DDLType::kCreateTable);
+        $$->add_child($1);
+    }
     | drop {debug_print("ddl: drop");}
 
 dml: insert {debug_print("dml: insert");}
@@ -95,33 +135,67 @@ dml: insert {debug_print("dml: insert");}
 create
     : CREATE TABLE identity '(' create_def_list ')' {
         debug_print("create: CREATE TABLE identity '(' create_def_list ')'");
+        $$ = new dawn::CreateNode($3, $5);
     }
 
 create_def_list
-    : create_def {debug_print("create_def_list: create_def");}
-    | create_def_list ',' create_def {debug_print("create_def_list: create_def_list ',' create_def");}
+    : create_def {
+        debug_print("create_def_list: create_def");
+        $$ = new dawn::CreateDefListNode();
+        $$->add_child($1);
+    }
+    | create_def_list ',' create_def {
+        debug_print("create_def_list: create_def_list ',' create_def");
+        $1->add_child($3);
+        $$ = $1;
+    }
 
 create_def
     : col_name column_def {
         debug_print("create_def: col_name column_def");
+        $$ = new dawn::CreateDefNode($1, $2);
     }
     | PRIMARY_KEY '(' identity ')' {
         debug_print("create_def: PRIMARY_KEY '(' identity ')'");
+        $$ = new dawn::CreateDefNode($3);
     }
 
-col_name: identity {debug_print("col_name: identity");}
+col_name
+    : identity {
+        debug_print("col_name: identity");
+        $$ = $1;
+    }
 
-column_def: data_type {debug_print("column_def: data_type");}
+column_def
+    : data_type {
+        debug_print("column_def: data_type");
+        $$ = new dawn::ColumnDefNode($1);
+    }
 
 data_type
     : CHAR '(' INT_NUM ')' {
         debug_print("data_type: CHAR '(' NUMBER ')'");
+        $$ = new dawn::DataTypeNode(dawn::DataType::kChar, int_num);
     }
-    | INT {debug_print("data_type: INT");}
-    | DECIMAL {debug_print("data_type: DECIMAL");}
-    | BOOLEAN {debug_print("data_type: BOOLEAN");}
+    | INT {
+        debug_print("data_type: INT");
+        $$ = new dawn::DataTypeNode(dawn::DataType::kInteger);
+    }
+    | DECIMAL {
+        debug_print("data_type: DECIMAL");
+        $$ = new dawn::DataTypeNode(dawn::DataType::kDecimal);
+    }
+    | BOOLEAN {
+        debug_print("data_type: BOOLEAN");
+        $$ = new dawn::DataTypeNode(dawn::DataType::kBoolean);
+    }
 
-identity: ID {debug_print("identity: ID"); delete[] lex_str;}
+identity
+    : ID {
+        debug_print("identity: ID");
+        $$ = new dawn::IdentityNode(lex_str);
+        delete[] lex_str;
+    }
 
 drop: DROP TABLE identity {debug_print("drop: DROP TABLE identity");}
 

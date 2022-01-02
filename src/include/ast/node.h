@@ -10,7 +10,9 @@ enum class NodeType : int8_t {
     kDDL,
     kDML,
     kIdentity,
-    kDataType
+    kDataType,
+    kStmtList,
+    kEmptyStmt
 };
 
 enum class DataType : int8_t {
@@ -28,12 +30,12 @@ public:
     DISALLOW_COPY_AND_MOVE(Node);
     Node(NodeType type) : type_(type) {}
 
-    ~Node() {
+    virtual ~Node() {
         for(auto node : children_)
             delete node;
     }
 
-    void add_child(const Node* child) { children_.push_back(child); }
+    void add_child(Node* child) { children_.push_back(child); }
     NodeType get_type() const { return type_; }
     std::vector<Node*> get_children() const { return children_; }
     Node* at(size_t idx) const { return children_[idx]; }
@@ -65,5 +67,15 @@ private:
     DataType type_;
     int char_len_;
 };
+
+class StmtListNode : public Node {
+public:
+    DISALLOW_COPY_AND_MOVE(StmtListNode);
+    StmtListNode() : Node(NodeType::kStmtList) {}
+
+    // TODO get StmtNode
+};
+
+using StmtNode = Node;
 
 } // namespace dawn

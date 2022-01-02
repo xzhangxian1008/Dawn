@@ -1,9 +1,14 @@
 #pragma once
 
 #include <stdint.h>
+#include <assert.h>
 #include "ast/node.h"
 
 namespace dawn {
+
+class CreateNode;
+class CreateDefListNode;
+class DDLNode;
 
 enum DDLType : int8_t {
     kCreateTable,
@@ -17,26 +22,51 @@ class DDLNode : public Node {
 public:
     DISALLOW_COPY_AND_MOVE(DDLNode);
     DDLNode(DDLType type) : type_(type), Node(NodeType::kDDL) {}
+
+    /** We have to dynamic_cast this node in the outside */
+    Node* get_node() const { return at(0); }
+
+    DDLType get_ddl_type() const { return type_; }
 private:
     DDLType type_;
 };
 
 /**
- * So far, it has three children:
- *   - idx 0: IdentityNode: save the table name
- *   - idx 1: CreateDefListNode: save the table's fields
+ * It has many CreateDefNode children
  */
-class CreateTableNode : public DDLNode {
-public:
-    DISALLOW_COPY_AND_MOVE(CreateTableNode);
-    CreateTableNode() : DDLNode(DDLType::kCreateTable) {}
-private:
-};
-
 class CreateDefListNode : public DDLNode {
 public:
     DISALLOW_COPY_AND_MOVE(CreateDefListNode);
     CreateDefListNode() : DDLNode(DDLType::kCreateDefList) {}
+
+    // TODO get children
+};
+
+/**
+ * So far, it has two children:
+ *   - idx 0: IdentityNode: save the table name
+ *   - idx 1: CreateDefListNode: save the table's fields
+ * 
+ * It will have more types such as kCreateDatabase etc.
+ */
+class CreateNode : public DDLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(CreateNode);
+    CreateNode(IdentityNode* id_node, CreateDefListNode* create_def_list_node)
+        : DDLNode(DDLType::kCreateTable)
+    {
+        add_child(id_node);
+        add_child(create_def_list_node);
+    }
+
+    std::string get_tb_name() const {
+        IdentityNode* id_node = dynamic_cast<IdentityNode*>(at(0));
+        assert(id_node);
+
+        return id_node->get_id();
+    }
+
+    // TODO get table's fields
 };
 
 /**
@@ -49,11 +79,15 @@ public:
     ColumnDefNode(DataTypeNode* data_type)
         : DDLNode(DDLType::kColumnDef)
     {
-        add(data_type);
+        add_child(data_type);
     }
     
     DataType get_data_type() const {
-        // TODO get data type
+        Node* node = at(0);
+        DataTypeNode* data_node = dynamic_cast<DataTypeNode*>(node);
+        assert(data_node);
+
+        return data_node->get_data_type();
     }
 };
 
@@ -78,27 +112,33 @@ public:
 
     DISALLOW_COPY_AND_MOVE(CreateDefNode);
 
-    CreateDefNode(IdentityNode col_name, ColumnDefNode col_type)
+    CreateDefNode(IdentityNode* col_name, ColumnDefNode* col_type)
         : type_(CreateDefNodeType::kField), DDLNode(DDLType::kCreateDef)
     {
-        add(col_name);
-        add(col_type);
+        add_child(col_name);
+        add_child(col_type);
     }
 
-    CreateDefNode(IdentityNode primary_key)
+    CreateDefNode(IdentityNode* primary_key)
         : type_(CreateDefNodeType::kPrimaryKey), DDLNode(DDLType::kCreateDef)
     {
-        add(primary_key);
+        add_child(primary_key);
     }
 
     std::string get_col_name() const {
         Node* node = at(0);
-        // TODO get column name
+        IdentityNode* id_node = dynamic_cast<IdentityNode*>(node);
+        assert(id_node);
+
+        return id_node->get_id();
     }
 
     DataType get_col_type() const {
         Node* node = at(1);
-        // TODO get column type
+        ColumnDefNode* col_def_node = dynamic_cast<ColumnDefNode*>(node);
+        assert(col_def_node);
+
+        return col_def_node->get_data_type();
     }
 private:
     CreateDefNodeType type_;
