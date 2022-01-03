@@ -53,15 +53,17 @@ class DataTypeNode : public Node {
 public:
     DISALLOW_COPY_AND_MOVE(DataTypeNode);
     DataTypeNode(TypeId type) : type_(type), char_len_(-1), Node(NodeType::kDataType) {}
-    DataTypeNode(TypeId type, int char_len)
+    DataTypeNode(TypeId type, size_t_ char_len)
         : type_(type), char_len_(char_len), Node(NodeType::kDataType) {}
     
     TypeId get_data_type() const { return type_; }
-    int get_char_len() const { return char_len_; }
+    size_t_ get_char_len() const { return char_len_; }
 private:
     TypeId type_;
-    int char_len_;
+    size_t_ char_len_;
 };
+
+using StmtNode = Node;
 
 class StmtListNode : public Node {
 public:
@@ -72,7 +74,5 @@ public:
         return get_children();
     }
 };
-
-using StmtNode = Node;
 
 } // namespace dawn

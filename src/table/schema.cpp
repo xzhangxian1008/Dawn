@@ -10,7 +10,7 @@ Schema* create_table_schema(const std::vector<TypeId> &types, const std::vector<
     std::vector<Column> cols;
     size_t j = 0;
     for (size_t i = 0; i < types.size(); i++) {
-        if (types[i] == TypeId::CHAR) {
+        if (types[i] == TypeId::kChar) {
             cols.push_back(Column(names[i], offset, char_len[j]));
             offset += char_len[j++];
             continue;

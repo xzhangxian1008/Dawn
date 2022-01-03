@@ -10,34 +10,34 @@ namespace dawn {
 Type *singleton[4] = { new Boolean(), new Integer(), new Decimal(), new Char()};
 
 Value::Value() {
-    type_id_ = TypeId::INVALID;
+    type_id_ = TypeId::kInvalid;
 }
     
 Value::Value(boolean_t val) {
-    type_id_ = TypeId::BOOLEAN;
+    type_id_ = TypeId::kBoolean;
     value_.boolean = val;
 }
 
 Value::Value(CmpResult val) {
-    type_id_ = TypeId::BOOLEAN;
-    if (val == CmpResult::TRUE)
+    type_id_ = TypeId::kBoolean;
+    if (val == CmpResult::kTrue)
         value_.boolean = true;
     else
         value_.boolean = false;
 }
 
 Value::Value(integer_t val) {
-    type_id_ = TypeId::INTEGER;
+    type_id_ = TypeId::kInteger;
     value_.integer = val;
 }
 
 Value::Value(decimal_t val) {
-    type_id_ = TypeId::DECIMAL;
+    type_id_ = TypeId::kDecimal;
     value_.decimal = val;
 }
 
 Value::Value(char *val, int size) : str_size_(size) {
-    type_id_ = TypeId::CHAR;
+    type_id_ = TypeId::kChar;
     value_.char_ = new char[size+1];
     memset(value_.char_, 0, size + 1);
     memcpy(value_.char_, val, size);
@@ -45,7 +45,7 @@ Value::Value(char *val, int size) : str_size_(size) {
 }
 
 Value::Value(const string_t &val) : str_size_(val.length()) {
-    type_id_ = TypeId::CHAR;
+    type_id_ = TypeId::kChar;
     value_.char_ = new char[str_size_+1];
     memset(value_.char_, 0, str_size_ + 1);
     for (int i = 0; i < str_size_; i++)
@@ -54,7 +54,7 @@ Value::Value(const string_t &val) : str_size_(val.length()) {
 }
 
 Value::Value(char *value, TypeId type_id, size_t_ str_size) : type_id_(type_id), str_size_(str_size) {
-    if (type_id_ == TypeId::CHAR) {
+    if (type_id_ == TypeId::kChar) {
         value_.char_ = new char[str_size_+1];
         memset(value_.char_, 0, str_size_ + 1);
     }
@@ -62,7 +62,7 @@ Value::Value(char *value, TypeId type_id, size_t_ str_size) : type_id_(type_id),
 }
 
 Value::~Value() {
-    if (type_id_ == TypeId::CHAR)
+    if (type_id_ == TypeId::kChar)
         delete[] value_.char_;
 }
 

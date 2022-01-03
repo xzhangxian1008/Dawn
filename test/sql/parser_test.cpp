@@ -5,8 +5,11 @@
 #include <iostream>
 #include <string>
 
+#include "ast/ddl.h"
+
 extern FILE* yyin;
 int yyparse();
+extern dawn::StmtListNode* ast_root;
 
 namespace dawn {
 
@@ -16,6 +19,7 @@ TEST(ParserTests, ParserTest0) {
     assert(yyin != nullptr);
 
     EXPECT_EQ(yyparse(), 0);
+    delete ast_root;
 }
 
 TEST(ParserTests, ParserTest1) {
@@ -25,7 +29,8 @@ TEST(ParserTests, ParserTest1) {
 
     EXPECT_EQ(yyparse(), 0);
 
-    
+    // TODO test if we create the table successfully
+    delete ast_root;
 }
 
 } // namespace dawn

@@ -5,7 +5,7 @@ namespace dawn {
 Value Tuple::get_value(const Schema &schema, int idx) const {
     Column col = schema.get_column(idx);
     TypeId type_id = col.get_type_id();
-    if (type_id == TypeId::CHAR) {
+    if (type_id == TypeId::kChar) {
         size_t_ str_size = col.get_data_size();
 
         // we have to create a temporary string, because the Tuple and string stored on the disk doesn't end with '\0'
@@ -20,7 +20,7 @@ Value Tuple::get_value(const Schema &schema, int idx) const {
 // ATTENTION length of string is not checked here
 void Tuple::set_value(const Schema &schema, Value *value, int idx) {
     Column col = schema.get_column(idx);
-    if (col.get_type_id() == TypeId::CHAR) {
+    if (col.get_type_id() == TypeId::kChar) {
         size_t_ str_size = col.get_data_size();
         // we have to create a temporary string, because the string stored on the disk and Tupe doesn't end with '\0'
         char tmp[str_size+1];

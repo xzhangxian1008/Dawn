@@ -177,19 +177,19 @@ column_def
 data_type
     : CHAR '(' INT_NUM ')' {
         debug_print("data_type: CHAR '(' NUMBER ')'");
-        $$ = new dawn::DataTypeNode(dawn::DataType::kChar, int_num);
+        $$ = new dawn::DataTypeNode(dawn::TypeId::kChar, int_num);
     }
     | INT {
         debug_print("data_type: INT");
-        $$ = new dawn::DataTypeNode(dawn::DataType::kInteger);
+        $$ = new dawn::DataTypeNode(dawn::TypeId::kInteger);
     }
     | DECIMAL {
         debug_print("data_type: DECIMAL");
-        $$ = new dawn::DataTypeNode(dawn::DataType::kDecimal);
+        $$ = new dawn::DataTypeNode(dawn::TypeId::kDecimal);
     }
     | BOOLEAN {
         debug_print("data_type: BOOLEAN");
-        $$ = new dawn::DataTypeNode(dawn::DataType::kBoolean);
+        $$ = new dawn::DataTypeNode(dawn::TypeId::kBoolean);
     }
 
 identity

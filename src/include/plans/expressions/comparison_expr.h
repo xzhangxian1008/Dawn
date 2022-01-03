@@ -20,17 +20,17 @@ public:
 private:
     CmpResult perform_cmp(const Value &lhs, const Value &rhs) const {
         switch (cmp_type_) {
-            case ComparisonType::Equal:
+            case ComparisonType::kEqual:
                 return CMP_EQ(lhs.get_type_id(), lhs, rhs);
-            case ComparisonType::NotEqual:
+            case ComparisonType::kNotEqual:
                 return CMP_NOT_EQ(lhs.get_type_id(), lhs, rhs);
-            case ComparisonType::LessThan:
+            case ComparisonType::kLessThan:
                 return CMP_LESS(lhs.get_type_id(), lhs, rhs);
-            case ComparisonType::LessThanOrEqual:
+            case ComparisonType::kLessThanOrEqual:
                 return CMP_LESS_EQ(lhs.get_type_id(), lhs, rhs);
-            case ComparisonType::GreaterThan:
+            case ComparisonType::kGreaterThan:
                 return CMP_GREATER(lhs.get_type_id(), lhs, rhs);
-            case ComparisonType::GreaterThanOrEqual:
+            case ComparisonType::kGreaterThanOrEqual:
                 return CMP_GREATER_EQ(lhs.get_type_id(), lhs, rhs);
             default: {
                 LOG("should not reach here");

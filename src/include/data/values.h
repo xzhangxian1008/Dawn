@@ -30,7 +30,7 @@ public:
         this->type_id_ = value.type_id_;
         this->str_size_ = value.str_size_;
         
-        if (value.type_id_ != TypeId::CHAR) {
+        if (value.type_id_ != TypeId::kChar) {
             this->value_ = value.value_;
         } else {
             this->value_.char_ = new char[str_size_+1];
@@ -41,14 +41,14 @@ public:
 
     // deep copy
     Value& operator=(const Value &value) {
-        if (this->type_id_ == TypeId::CHAR) {
+        if (this->type_id_ == TypeId::kChar) {
             delete[] value_.char_;
         }
 
         this->type_id_ = value.type_id_;
         this->str_size_ = value.str_size_;
 
-        if (value.type_id_ != TypeId::CHAR) {
+        if (value.type_id_ != TypeId::kChar) {
             this->value_ = value.value_;
         } else {
             this->value_.char_ = new char[str_size_+1];
@@ -65,19 +65,19 @@ public:
             
         bool ok = true;
         switch (value.type_id_) {
-            case TypeId::INTEGER:
+            case TypeId::kInteger:
                 if (this->value_.integer != value.value_.integer)
                     ok = false;
                 break;
-            case TypeId::BOOLEAN:
+            case TypeId::kBoolean:
                 if (this->value_.boolean != value.value_.boolean)
                     ok = false;
                 break;
-            case TypeId::DECIMAL:
+            case TypeId::kDecimal:
                 if (this->value_.decimal != value.value_.decimal)
                     ok = false;
                 break;
-            case TypeId::CHAR:
+            case TypeId::kChar:
                 if (string_t(this->value_.char_) != string_t(value.value_.char_)) 
                     ok = false;
                 break;
@@ -94,19 +94,19 @@ public:
             
         bool ok = true;
         switch (value.type_id_) {
-            case TypeId::INTEGER:
+            case TypeId::kInteger:
                 if (this->value_.integer == value.value_.integer)
                     ok = false;
                 break;
-            case TypeId::BOOLEAN:
+            case TypeId::kBoolean:
                 if (this->value_.boolean == value.value_.boolean)
                     ok = false;
                 break;
-            case TypeId::DECIMAL:
+            case TypeId::kDecimal:
                 if (this->value_.decimal == value.value_.decimal)
                     ok = false;
                 break;
-            case TypeId::CHAR:
+            case TypeId::kChar:
                 if (string_t(this->value_.char_) == string_t(value.value_.char_)) 
                     ok = false;
                 break;
@@ -123,23 +123,23 @@ public:
             return false;
         
         switch (type_id_) {
-            case TypeId::BOOLEAN: {
+            case TypeId::kBoolean: {
                 return false; // illegal
             }
-            case TypeId::INTEGER: {
+            case TypeId::kInteger: {
                 return this->value_.integer < value.value_.integer;
             }
-            case TypeId::DECIMAL: {
+            case TypeId::kDecimal: {
                 return this->value_.decimal < value.value_.decimal;
             }
-            case TypeId::CHAR: {
+            case TypeId::kChar: {
                 string_t s1(value_.char_);
                 string_t s2(value.value_.char_);
                 if (s1.compare(s2) < 0)
                     return true;
                 return false;
             }
-            case TypeId::INVALID: {
+            case TypeId::kInvalid: {
                 return false;
             }
             default:
@@ -148,9 +148,9 @@ public:
     }
 
     Value& operator++() {
-        if (type_id_ == TypeId::INTEGER) {
+        if (type_id_ == TypeId::kInteger) {
             value_.integer++;
-        } else if (type_id_ == TypeId::DECIMAL) {
+        } else if (type_id_ == TypeId::kDecimal) {
             value_.decimal++;
         }
         return *this;
@@ -164,7 +164,7 @@ public:
 
     // similar to shallow copy
     void load(const Value &val) {
-        if (type_id_ == TypeId::CHAR)
+        if (type_id_ == TypeId::kChar)
             delete[] value_.char_;
         type_id_ = val.type_id_;
         value_ = val.value_;
@@ -182,7 +182,7 @@ public:
 
     // string should end with '\0'
     inline void serialize_to(char *storage) {
-        if (type_id_ == TypeId::CHAR) {
+        if (type_id_ == TypeId::kChar) {
             singleton[static_cast<int>(type_id_)]->serialize_to(storage, value_.char_);
             return;
         }
@@ -190,7 +190,7 @@ public:
     }
 
     inline void deserialize_from(char *src) {
-        if (type_id_ == TypeId::CHAR) {
+        if (type_id_ == TypeId::kChar) {
             singleton[static_cast<int>(type_id_)]->deserialize_from(value_.char_, src);
             return;
         }
@@ -200,23 +200,23 @@ public:
     // TODO test it!
     hash_t get_hash_value() const {
         switch (type_id_) {
-            case TypeId::BOOLEAN: {
+            case TypeId::kBoolean: {
                 boolean_t *val = const_cast<boolean_t*>(&(value_.boolean));
                 return do_hash(static_cast<void*>(val), BOOLEAN_T_SIZE);
             }
-            case TypeId::INTEGER: {
+            case TypeId::kInteger: {
                 integer_t *val = const_cast<integer_t*>(&(value_.integer));
                 return do_hash(static_cast<void*>(val), INTEGER_T_SIZE);
             }
-            case TypeId::DECIMAL: {
+            case TypeId::kDecimal: {
                 decimal_t *val = const_cast<decimal_t*>(&(value_.decimal));
                 return do_hash(static_cast<void*>(val), DECIMAL_T_SIZE);
             }
-            case TypeId::CHAR: {
+            case TypeId::kChar: {
                 char *val = const_cast<char*>(value_.char_);
                 return do_hash(static_cast<void*>(val), str_size_);
             }
-            case TypeId::INVALID: {
+            case TypeId::kInvalid: {
                 return 0;
             }
             default:
@@ -227,19 +227,19 @@ public:
 
     string_t get_value_string() const {
         switch (type_id_) {
-            case TypeId::BOOLEAN:
+            case TypeId::kBoolean:
                 if (value_.boolean) {
                     return "true";
                 }
                 return "false";
-            case TypeId::INTEGER:
+            case TypeId::kInteger:
                 return std::to_string(value_.integer);
-            case TypeId::DECIMAL:
+            case TypeId::kDecimal:
                 return std::to_string(value_.decimal);
-            case TypeId::CHAR: 
+            case TypeId::kChar: 
                 return value_.char_;
             default:
-                return string_t("INVALID VALUE");
+                return string_t("kInvalid VALUE");
         }
     }
 private:

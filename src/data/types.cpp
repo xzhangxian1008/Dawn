@@ -4,16 +4,16 @@ namespace dawn {
 
 string_t type_to_string(TypeId type_id) {
     switch (type_id) {
-        case TypeId::INVALID:
-            return "INVALID";
-        case TypeId::BOOLEAN:
-            return "BOOLEAN";
-        case TypeId::INTEGER:
-            return "INTEGER";
-        case TypeId::DECIMAL:
-            return "DECIMAL";
-        case TypeId::CHAR:
-            return "CHAR";
+        case TypeId::kInvalid:
+            return "kInvalid";
+        case TypeId::kBoolean:
+            return "kBoolean";
+        case TypeId::kInteger:
+            return "kInteger";
+        case TypeId::kDecimal:
+            return "kDecimal";
+        case TypeId::kChar:
+            return "kChar";
     }
     return "ILLEGAL";
 }

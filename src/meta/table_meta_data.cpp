@@ -50,7 +50,7 @@ TableMetaData::TableMetaData(BufferPoolManager *bpm, const string_t &table_name,
         char *name = reinterpret_cast<char*>(data_ + name_offset);
 
         // make column
-        if (type_id == TypeId::CHAR) {
+        if (type_id == TypeId::kChar) {
             cols.push_back(Column(name, offset_in_tp, data_size));
         } else {
             cols.push_back(Column(type_id, name, offset_in_tp));

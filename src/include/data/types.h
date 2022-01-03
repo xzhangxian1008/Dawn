@@ -44,18 +44,18 @@ public:
     virtual void deserialize_from(char *dst, char *src) = 0;
 
     inline static Type* get_instance(TypeId type_id) { return singleton[(int)type_id]; }
-    inline static size_t_ get_bool_size() { return sizeof(boolean_t); }
-    inline static size_t_ get_integer_size() { return sizeof(integer_t); }
-    inline static size_t_ get_decimal_size() { return sizeof(decimal_t); }
+    inline static size_t_ get_bool_size() { return BOOLEAN_T_SIZE; }
+    inline static size_t_ get_integer_size() { return INTEGER_T_SIZE; }
+    inline static size_t_ get_decimal_size() { return DECIMAL_T_SIZE; }
 
     static size_t_ get_type_size(TypeId type_id) {
         switch (type_id) {
             case TypeId::kBoolean:
-                return sizeof(boolean_t);
+                return BOOLEAN_T_SIZE;
             case TypeId::kInteger:
-                return sizeof(integer_t);
+                return INTEGER_T_SIZE;
             case TypeId::kDecimal:
-                return sizeof(decimal_t);
+                return DECIMAL_T_SIZE;
             default:
                 return -1;
         }

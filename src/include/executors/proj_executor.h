@@ -68,31 +68,31 @@ public:
         for (int i = 0; i < agg_num_; i++) {
             TypeId type_id = output_schema_->get_column_type(proj_col_num + i);
             switch (agg_type[i]) {
-                case AggregationType::CountAggregate:
+                case AggregationType::kCountAggregate:
                     agg_vals_.push_back(init_agg_cnt_val());
                     break;
-                case AggregationType::SumAggregate:
-                    if (type_id == TypeId::INTEGER) {
+                case AggregationType::kSumAggregate:
+                    if (type_id == TypeId::kInteger) {
                         agg_vals_.push_back(init_agg_sum_val<integer_t>());
-                    } else if (type_id == TypeId::DECIMAL) {
+                    } else if (type_id == TypeId::kDecimal) {
                         agg_vals_.push_back(init_agg_sum_val<decimal_t>());
                     } else {
                         FATAL("Invalid Aggregation Type");
                     }
                     break;
-                case AggregationType::MinAggregate:
-                    if (type_id == TypeId::INTEGER) {
+                case AggregationType::kMinAggregate:
+                    if (type_id == TypeId::kInteger) {
                         agg_vals_.push_back(init_agg_min_val<integer_t>());
-                    } else if (type_id == TypeId::DECIMAL) {
+                    } else if (type_id == TypeId::kDecimal) {
                         agg_vals_.push_back(init_agg_min_val<decimal_t>());
                     } else {
                         FATAL("Invalid Aggregation Type");
                     }
                     break;
-                case AggregationType::MaxAggregate:
-                    if (type_id == TypeId::INTEGER) {
+                case AggregationType::kMaxAggregate:
+                    if (type_id == TypeId::kInteger) {
                         agg_vals_.push_back(init_agg_max_val<integer_t>());
-                    } else if (type_id == TypeId::DECIMAL) {
+                    } else if (type_id == TypeId::kDecimal) {
                         agg_vals_.push_back(init_agg_max_val<decimal_t>());
                     } else {
                         FATAL("Invalid Aggregation Type");

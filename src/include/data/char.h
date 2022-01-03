@@ -8,12 +8,12 @@ public:
     ~Char() override {}
 
     // TODO implement these cmp function
-    CmpResult cmp_less(const Value &left, const Value &right) override { return CmpResult::FALSE; }
-    CmpResult cmp_less_and_eq(const Value &left, const Value &right) override { return CmpResult::FALSE; }
-    CmpResult cmp_eq(const Value &left, const Value &right) override { return CmpResult::FALSE; }
-    CmpResult cmp_not_eq(const Value &left, const Value &right) override { return CmpResult::FALSE; }
-    CmpResult cmp_greater_and_eq(const Value &left, const Value &right) override { return CmpResult::FALSE; }
-    CmpResult cmp_greater(const Value &left, const Value &right) override { return CmpResult::FALSE; }
+    CmpResult cmp_less(const Value &left, const Value &right) override { return CmpResult::kFalse; }
+    CmpResult cmp_less_and_eq(const Value &left, const Value &right) override { return CmpResult::kFalse; }
+    CmpResult cmp_eq(const Value &left, const Value &right) override { return CmpResult::kFalse; }
+    CmpResult cmp_not_eq(const Value &left, const Value &right) override { return CmpResult::kFalse; }
+    CmpResult cmp_greater_and_eq(const Value &left, const Value &right) override { return CmpResult::kFalse; }
+    CmpResult cmp_greater(const Value &left, const Value &right) override { return CmpResult::kFalse; }
     Value minus(const Value &left, const Value &right) override { return Value(); }
     Value add(const Value &left, const Value &right) override { return Value(); }
     Value multiply(const Value &left, const Value &right) { return Value(); }
