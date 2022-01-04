@@ -16,7 +16,7 @@ class DDLNode;
 class ColumnDefNode;
 
 enum DDLType : int8_t {
-    kCreateTable,
+    kCreateTable = 0,
     kDrop,
     kCreateDefList,
     kCreateDef,

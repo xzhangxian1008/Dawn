@@ -27,7 +27,7 @@ const char *log_name = "test.log";
  * --------
  */
 string_t table0("table0");
-std::vector<TypeId> tb0_col_types{TypeId::BOOLEAN};
+std::vector<TypeId> tb0_col_types{TypeId::kBoolean};
 std::vector<string_t> tb0_col_names{"tb0_col1"};
 std::vector<size_t_> tb0_char_size;
 size_t_ tb0_tuple_size = Type::get_bool_size();
@@ -44,7 +44,7 @@ size_t_ tb0_tuple_size = Type::get_bool_size();
  * ------------------
  */
 string_t table1("table1");
-std::vector<TypeId> tb1_col_types{TypeId::BOOLEAN, TypeId::INTEGER};
+std::vector<TypeId> tb1_col_types{TypeId::kBoolean, TypeId::kInteger};
 std::vector<string_t> tb1_col_names{"tb1_col1", "tb1_col2"};
 std::vector<size_t_> tb1_char_size;
 size_t_ tb1_tuple_size = Type::get_bool_size() + Type::get_integer_size();
@@ -61,7 +61,7 @@ size_t_ tb1_tuple_size = Type::get_bool_size() + Type::get_integer_size();
  * ----------------------------
  */
 string_t table2("table2");
-std::vector<TypeId> tb2_col_types{TypeId::INTEGER, TypeId::BOOLEAN, TypeId::DECIMAL};
+std::vector<TypeId> tb2_col_types{TypeId::kInteger, TypeId::kBoolean, TypeId::kDecimal};
 std::vector<string_t> tb2_col_names{"tb2_col1", "tb2_col2", "tb2_col3"};
 std::vector<size_t_> tb2_char_size;
 size_t_ tb2_tuple_size = Type::get_integer_size() + Type::get_bool_size() + Type::get_decimal_size();
@@ -78,7 +78,7 @@ size_t_ tb2_tuple_size = Type::get_integer_size() + Type::get_bool_size() + Type
  * ----------------------------------------
  */
 string_t table3("table3");
-std::vector<TypeId> tb3_col_types{TypeId::DECIMAL, TypeId::BOOLEAN, TypeId::CHAR, TypeId::INTEGER};
+std::vector<TypeId> tb3_col_types{TypeId::kDecimal, TypeId::kBoolean, TypeId::kChar, TypeId::kInteger};
 std::vector<string_t> tb3_col_names{"tb3_col1", "tb3_col2", "tb3_col3", "tb3_col4"};
 size_t_ tb3_char0_sz = 10;
 std::vector<size_t_> tb3_char_size{tb3_char0_sz};
@@ -96,7 +96,7 @@ size_t_ tb3_tuple_size = Type::get_decimal_size() + Type::get_bool_size() + tb3_
  * ----------------------------------------------------
  */
 string_t table4("table4");
-std::vector<TypeId> tb4_col_types{TypeId::INTEGER, TypeId::CHAR, TypeId::BOOLEAN, TypeId::CHAR, TypeId::DECIMAL};
+std::vector<TypeId> tb4_col_types{TypeId::kInteger, TypeId::kChar, TypeId::kBoolean, TypeId::kChar, TypeId::kDecimal};
 std::vector<string_t> tb4_col_names{"tb4_col1", "tb4_col2", "tb4_col3", "tb4_col4", "tb4_col5"};
 size_t_ tb4_char0_sz = 20;
 size_t_ tb4_char1_sz = 10;
@@ -116,7 +116,7 @@ size_t_ tb4_tuple_size = Type::get_integer_size() + tb4_char0_sz + Type::get_boo
  */
 
 string_t mr_table("Masked Rider");
-std::vector<TypeId> mr_col_types{TypeId::INTEGER, TypeId::CHAR, TypeId::BOOLEAN, TypeId::CHAR, TypeId::DECIMAL};
+std::vector<TypeId> mr_col_types{TypeId::kInteger, TypeId::kChar, TypeId::kBoolean, TypeId::kChar, TypeId::kDecimal};
 std::vector<string_t> mr_col_names{"id", "name", "gender", "skill", "height"};
 size_t_ ml_name_sz = 10;
 size_t_ ml_skill_sz = 20;

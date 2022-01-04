@@ -9,7 +9,7 @@
 namespace dawn {
 
 enum class NodeType : int8_t {
-    kDDL,
+    kDDL = 0,
     kDML,
     kIdentity,
     kDataType,
