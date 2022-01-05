@@ -26,7 +26,7 @@ extern std::unique_ptr<DBManager> db_manager;
  * ----------------------------------------------------
  */
 string_t table_name("table4");
-std::vector<TypeId> tb_col_types{TypeId::INTEGER, TypeId::CHAR, TypeId::BOOLEAN, TypeId::CHAR, TypeId::DECIMAL};
+std::vector<TypeId> tb_col_types{TypeId::kInteger, TypeId::kChar, TypeId::kBoolean, TypeId::kChar, TypeId::kDecimal};
 std::vector<string_t> tb_col_names{"tb4_col1", "tb4_col2", "tb4_col3", "tb4_col4", "tb4_col5"};
 size_t_ tb_char0_sz = 5;
 size_t_ tb_char1_sz = 10;

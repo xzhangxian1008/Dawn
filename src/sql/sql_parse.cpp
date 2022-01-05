@@ -47,6 +47,14 @@ bool create_table(CreateNode* node) {
     return true;
 }
 
+bool drop_table(DropNode* node) {
+    Catalog* catalog = db_manager->get_catalog();
+    CatalogTable* catalog_tb = catalog->get_catalog_table();
+    string_t tb_name = node->get_tb_name(); // get dropped table's name
+
+    return catalog_tb->delete_table(tb_name);
+}
+
 /**
  * @brief So far, I have no idea that how to set string as the source for yyin.
  *        And this is the temporary method to save sql commands in files.
@@ -85,9 +93,12 @@ bool sql_execute(std::string file_name) {
                 success = create_table(node);
                 break;
             }
-            case DDLType::kDrop:
-                success = false;
+            case DDLType::kDropTable:{
+                DropNode* node = dynamic_cast<DropNode*>(ddl_node);
+                assert(node);
+                success = drop_table(node);
                 break;
+            }
             default:
                 // invalid ddl type
                 assert(0);

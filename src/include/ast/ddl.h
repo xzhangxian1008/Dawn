@@ -17,7 +17,7 @@ class ColumnDefNode;
 
 enum DDLType : int8_t {
     kCreateTable = 0,
-    kDrop,
+    kDropTable,
     kCreateDefList,
     kCreateDef,
     kColumnDef
@@ -260,6 +260,29 @@ private:
         CreateDefListNode* create_def_list = dynamic_cast<CreateDefListNode*>(at(1));
         assert(create_def_list);
         return create_def_list;
+    }
+};
+
+/**
+ * So far, it has only one child:
+ *   - idx 0: IdentityNode: save the table name
+ * 
+ * It will have more types such as kDropDatabase etc.
+ */
+class DropNode : public DDLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(DropNode);
+    DropNode(IdentityNode* id_node)
+        : DDLNode(DDLType::kDropTable)
+    {
+        add_child(id_node); // add dropped table name
+    }
+
+    string_t get_tb_name() const {
+        IdentityNode* id_node = dynamic_cast<IdentityNode*>(at(0));
+        assert(id_node);
+
+        return id_node->get_id();
     }
 };
 

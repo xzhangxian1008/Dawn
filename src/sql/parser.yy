@@ -25,7 +25,7 @@ inline void debug_print(std::string info) {
 }
 
 // This is bad because multi sql parsers will use this variable
-// TODO Modify this when we need to run in the multi-thread environment
+// TODO: Modify this when we need to run in the multi-thread environment
 dawn::StmtListNode* ast_root;
 
 %}
@@ -47,6 +47,7 @@ dawn::StmtListNode* ast_root;
     dawn::CreateNode* create_node;
     dawn::DDLNode* ddl_node;
     dawn::StmtListNode* stmt_list_node;
+    dawn::DropNode* drop_node;
 }
 
 %token <str_val> ID
@@ -128,7 +129,11 @@ ddl: create {
         $$ = new dawn::DDLNode(dawn::DDLType::kCreateTable);
         $$->add_child($1);
     }
-    | drop {debug_print("ddl: drop");}
+    | drop {
+        debug_print("ddl: drop");
+        $$ = new dawn::DDLNode(dawn::DDLType::kDropTable);
+        $$->add_child($1);
+    }
 
 dml: insert {debug_print("dml: insert");}
     | delete {debug_print("dml: delete");}
@@ -199,7 +204,11 @@ identity
         delete[] lex_str;
     }
 
-drop: DROP TABLE identity {debug_print("drop: DROP TABLE identity");}
+drop
+    : DROP TABLE identity {
+        debug_print("drop: DROP TABLE identity");
+        $$ = new dawn::DropNode($3);
+    }
 
 insert: INSERT INTO identity VALUES '(' value_list ')' {debug_print("insert: INSERT INTO identity VALUES '(' value_list ')'");}
 
