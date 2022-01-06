@@ -5,6 +5,7 @@
 
 #include "ast/node.h"
 #include "ast/ddl.h"
+#include "ast/dml.h"
 
 extern FILE *yyin;
 int yylex();
@@ -33,6 +34,7 @@ dawn::StmtListNode* ast_root;
 %code requires {
     #include "ast/node.h"
     #include "ast/ddl.h"
+    #include "ast/dml.h"
 }
 
 %union{
@@ -48,6 +50,10 @@ dawn::StmtListNode* ast_root;
     dawn::DDLNode* ddl_node;
     dawn::StmtListNode* stmt_list_node;
     dawn::DropNode* drop_node;
+    dawn::ConstantNode* constant_node;
+    dawn::ValueListNode* value_list_node;
+    dawn::ValueNode* value_node;
+    dawn::InsertNode* insert_node;
 }
 
 %token <str_val> ID
@@ -73,7 +79,7 @@ dawn::StmtListNode* ast_root;
 
 
 %type <node> dml
-%type <node> insert
+%type <insert_node> insert
 %type <node> delete
 %type <node> select
 
@@ -81,10 +87,10 @@ dawn::StmtListNode* ast_root;
 %type <id_node> identity
 %type <node> expr_list
 %type <node> expr
-%type <node> constant
+%type <constant_node> constant
 %type <node> where_condition
-%type <node> value_list
-%type <node> value
+%type <value_list_node> value_list
+%type <value_node> value
 %type <node> table_references
 %type <node> table_reference
 %type <node> table_factor
@@ -116,7 +122,10 @@ stmt: ddl {
         debug_print("sql: ddl");
         $$ = $1;
     }
-    | dml {debug_print("sql: dml");}
+    | dml {
+        debug_print("sql: dml");
+        $$ = $1;
+    }
     | empty_stmt {
         debug_print("sql: empty_stmt");
         $$ = new dawn::StmtNode(dawn::NodeType::kEmptyStmt);
@@ -135,7 +144,12 @@ ddl: create {
         $$->add_child($1);
     }
 
-dml: insert {debug_print("dml: insert");}
+dml
+    : insert {
+        debug_print("dml: insert");
+        $$ = new dawn::DMLNode(dawn::DMLType::kInsert);
+        $$->add_child($1);
+    }
     | delete {debug_print("dml: delete");}
     | select {debug_print("dml: select");}
 
@@ -210,13 +224,30 @@ drop
         $$ = new dawn::DropNode($3);
     }
 
-insert: INSERT INTO identity VALUES '(' value_list ')' {debug_print("insert: INSERT INTO identity VALUES '(' value_list ')'");}
+insert
+    : INSERT INTO identity VALUES '(' value_list ')' {
+        debug_print("insert: INSERT INTO identity VALUES '(' value_list ')'");
+        $$ = new dawn::InsertNode($3, $6);
+    }
 
 value_list
-    : value {debug_print("value_list: value");}
-    | value_list ',' value {debug_print("value_list: value_list ',' value");}
+    : value {
+        debug_print("value_list: value");
+        dawn::ValueListNode* node = new dawn::ValueListNode();
+        node->add_child($1);
+        $$ = node;
+    }
+    | value_list ',' value {
+        debug_print("value_list: value_list ',' value");
+        $1->add_child($3);
+        $$ = $1;
+    }
 
-value: constant {debug_print("value: constant");}
+value
+    : constant {
+        debug_print("value: constant");
+        $$ = new dawn::ValueNode($1);
+    }
 
 delete
     : DELETE FROM identity WHERE where_condition {
@@ -240,19 +271,28 @@ expr
 constant
     : INT_NUM {
         debug_print("constant: INT_NUM");
+        $$ = new dawn::ConstantNode();
+        $$->set_integer(int_num);
     }
     | FLOAT_NUM {
         debug_print("constant: FLOAT_NUM");
+        $$ = new dawn::ConstantNode();
+        $$->set_decimal(float_num);
     }
     | STRING {
         debug_print("constant: STRING");
-        delete[] lex_str;
+        $$ = new dawn::ConstantNode();
+        $$->set_str(lex_str);
     }
     | TRUE {
         debug_print("constant: TRUE");
+        $$ = new dawn::ConstantNode();
+        $$->set_boolean(true);
     }
     | FALSE {
         debug_print("constant: FALSE");
+        $$ = new dawn::ConstantNode();
+        $$->set_boolean(false);
     }
 
 select

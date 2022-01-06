@@ -2,10 +2,11 @@
 #include <string>
 #include <cstring>
 #include "y.tab.h"
+#include "util/config.h"
 
-char* lex_str;
-int64_t int_num;
-double float_num;
+dawn::varchar_t lex_str;
+dawn::integer_t int_num;
+dawn::decimal_t float_num;
 %}
 
 digit   [0-9]
