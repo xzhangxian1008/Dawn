@@ -274,7 +274,7 @@ op_code_t lk_ha_insert_tuple(INSERT_TUPLE_FUNC_PARAMS) {
             continue;
         }
 
-        // get the next apge
+        // get the next page
         TablePage *next_page = reinterpret_cast<TablePage*>(bpm->get_page(third_level_page_id));
         third_level_page->w_unlock();
         bpm->unpin_page(third_level_page->get_page_id(), false);

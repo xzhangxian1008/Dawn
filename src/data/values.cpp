@@ -14,34 +14,23 @@ Value::Value() {
 }
     
 Value::Value(boolean_t val) {
-    type_id_ = TypeId::kBoolean;
-    value_.boolean = val;
+    construct(val);
 }
 
 Value::Value(CmpResult val) {
-    type_id_ = TypeId::kBoolean;
-    if (val == CmpResult::kTrue)
-        value_.boolean = true;
-    else
-        value_.boolean = false;
+    construct(val);
 }
 
 Value::Value(integer_t val) {
-    type_id_ = TypeId::kInteger;
-    value_.integer = val;
+    construct(val);
 }
 
 Value::Value(decimal_t val) {
-    type_id_ = TypeId::kDecimal;
-    value_.decimal = val;
+    construct(val);
 }
 
 Value::Value(char *val, int size) : str_size_(size) {
-    type_id_ = TypeId::kChar;
-    value_.char_ = new char[size+1];
-    memset(value_.char_, 0, size + 1);
-    memcpy(value_.char_, val, size);
-    value_.char_[size] = '\0'; // remind us that there needs a string end
+    construct(val, size);
 }
 
 Value::Value(const string_t &val) : str_size_(val.length()) {

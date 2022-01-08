@@ -25,6 +25,37 @@ public:
     Value(char *value, TypeId type_id, size_t_ str_size = -1);
     ~Value();
 
+    void construct(boolean_t val) {
+        type_id_ = TypeId::kBoolean;
+        value_.boolean = val;
+    }
+
+    void construct(CmpResult val) {
+        type_id_ = TypeId::kBoolean;
+        if (val == CmpResult::kTrue)
+            value_.boolean = true;
+        else
+            value_.boolean = false;
+    }
+
+    void construct(integer_t val) {
+        type_id_ = TypeId::kInteger;
+        value_.integer = val;
+    }
+
+    void construct(decimal_t val) {
+        type_id_ = TypeId::kDecimal;
+        value_.decimal = val;
+    }
+
+    void construct(char* val, int size) {
+        type_id_ = TypeId::kChar;
+        value_.char_ = new char[size+1];
+        memset(value_.char_, 0, size + 1);
+        memcpy(value_.char_, val, size);
+        value_.char_[size] = '\0'; // remind us that there needs a string end
+    }
+
     // deep copy
     Value(const Value &value) {
         this->type_id_ = value.type_id_;
@@ -243,14 +274,13 @@ public:
         }
     }
 private:
-    union values {
+    union {
         boolean_t boolean;
         integer_t integer;
         decimal_t decimal;
         char *char_; // string
-    };
+    } value_;
     
-    values value_;
     TypeId type_id_;
     int str_size_ = -1;
 };

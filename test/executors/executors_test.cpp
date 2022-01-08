@@ -25,7 +25,7 @@ extern std::unique_ptr<DBManager> db_manager;
  * ---------------------------------------------------
  */
 string_t table_name("table");
-std::vector<TypeId> tb_col_types{TypeId::INTEGER, TypeId::CHAR, TypeId::BOOLEAN, TypeId::CHAR, TypeId::DECIMAL};
+std::vector<TypeId> tb_col_types{TypeId::kInteger, TypeId::kChar, TypeId::kBoolean, TypeId::kChar, TypeId::kDecimal};
 std::vector<string_t> tb_col_names{"tb_col1", "tb_col2", "tb_col3", "tb_col4", "tb_col5"};
 size_t_ tb_char0_sz = 5;
 size_t_ tb_char1_sz = 10;
@@ -45,7 +45,7 @@ size_t_ tb_tuple_size = Type::get_integer_size() + tb_char0_sz + Type::get_bool_
  * ----------------------
  */
 string_t table_name2("table2"); // output table by the projection executor
-std::vector<TypeId> tb2_col_types{TypeId::CHAR, TypeId::DECIMAL};
+std::vector<TypeId> tb2_col_types{TypeId::kChar, TypeId::kDecimal};
 std::vector<string_t> tb2_col_names{"tb_col2", "tb_col5"};
 size_t_ tb2_char0_sz = 5;
 std::vector<size_t_> tb2_char_size{tb2_char0_sz};
@@ -64,7 +64,7 @@ size_t_ tb2_tuple_size = tb2_char0_sz + Type::get_decimal_size();
  * --------------------------------------------------------------
  */
 string_t table_name3("table3"); // output table by the projection executor
-std::vector<TypeId> tb3_col_types{TypeId::CHAR, TypeId::INTEGER, TypeId::INTEGER, TypeId::INTEGER, TypeId::INTEGER, TypeId::INTEGER};
+std::vector<TypeId> tb3_col_types{TypeId::kChar, TypeId::kInteger, TypeId::kInteger, TypeId::kInteger, TypeId::kInteger, TypeId::kInteger};
 std::vector<string_t> tb3_col_names{"tb_col2", "tb_col5", "min(tb_col5)", "max(tb_col5)", "sum(tb_col5)", "count(tb_col5)"};
 size_t_ tb3_char0_sz = 5;
 std::vector<size_t_> tb3_char_size{tb3_char0_sz};
@@ -87,7 +87,7 @@ offset_t tb3_cnt_idx = 5;
  * ---------------------
  */
 string_t left_few_tp_table("left_few_tp_table");
-std::vector<TypeId> left_few_tp_table_col_types{TypeId::INTEGER, TypeId::DECIMAL};
+std::vector<TypeId> left_few_tp_table_col_types{TypeId::kInteger, TypeId::kDecimal};
 std::vector<string_t> left_few_tp_table_col_names{"left_few_tp_table_col1", "left_few_tp_table_col2"};
 size_t_ left_few_tp_table_tuple_size = Type::get_integer_size() + Type::get_decimal_size();
 
@@ -104,7 +104,7 @@ size_t_ left_few_tp_table_tuple_size = Type::get_integer_size() + Type::get_deci
  * ---------------------
  */
 string_t left_many_tp_table("left_many_tp_table");
-std::vector<TypeId> left_many_tp_table_col_types{TypeId::INTEGER, TypeId::DECIMAL};
+std::vector<TypeId> left_many_tp_table_col_types{TypeId::kInteger, TypeId::kDecimal};
 std::vector<string_t> left_many_tp_table_col_names{"left_many_tp_table_col1", "left_many_tp_table_col2"};
 size_t_ left_many_tp_table_tuple_size = Type::get_integer_size() + Type::get_decimal_size();
 
@@ -457,16 +457,16 @@ TEST_F(ExecutorsBasicTest, DISABLED_ProjectionExecutorBasicTest) {
         exprs.push_back(new ColumnValueExpression(4));
 
         std::vector<ExpressionAbstract*> agg_expr;
-        agg_expr.push_back(new AggregateExpression(AggregationType::MinAggregate, key_idx));
-        agg_expr.push_back(new AggregateExpression(AggregationType::MaxAggregate, key_idx));
-        agg_expr.push_back(new AggregateExpression(AggregationType::SumAggregate, key_idx));
-        agg_expr.push_back(new AggregateExpression(AggregationType::CountAggregate, key_idx));
+        agg_expr.push_back(new AggregateExpression(AggregationType::kMinAggregate, key_idx));
+        agg_expr.push_back(new AggregateExpression(AggregationType::kMaxAggregate, key_idx));
+        agg_expr.push_back(new AggregateExpression(AggregationType::kSumAggregate, key_idx));
+        agg_expr.push_back(new AggregateExpression(AggregationType::kCountAggregate, key_idx));
 
         std::vector<AggregationType> agg_type;
-        agg_type.push_back(AggregationType::MinAggregate);
-        agg_type.push_back(AggregationType::MaxAggregate);
-        agg_type.push_back(AggregationType::SumAggregate);
-        agg_type.push_back(AggregationType::CountAggregate);
+        agg_type.push_back(AggregationType::kMinAggregate);
+        agg_type.push_back(AggregationType::kMaxAggregate);
+        agg_type.push_back(AggregationType::kSumAggregate);
+        agg_type.push_back(AggregationType::kCountAggregate);
         
         ExecutorContext *proj_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
         ProjectionExecutor proj_exec(proj_exec_ctx, &seq_scan_exec, exprs, agg_type, agg_expr, input_tb_schema, output_tb_schema);
@@ -610,7 +610,7 @@ TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
         ColumnValueExpression col_expr(cmp_idx);
         ConstantExpression const_expr(target_num);
         std::vector<ExpressionAbstract*> cmp_children{&col_expr, &const_expr};
-        ComparisonExpression cmp_expr(cmp_children, ComparisonType::Equal);
+        ComparisonExpression cmp_expr(cmp_children, ComparisonType::kEqual);
 
         // create the SelectionExecutor
         ExecutorContext *sel_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
@@ -648,7 +648,7 @@ TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
         ColumnValueExpression col_expr(cmp_idx);
         ConstantExpression const_expr(target_num);
         std::vector<ExpressionAbstract*> cmp_children{&col_expr, &const_expr};
-        ComparisonExpression cmp_expr(cmp_children, ComparisonType::NotEqual);
+        ComparisonExpression cmp_expr(cmp_children, ComparisonType::kNotEqual);
 
         // create the SelectionExecutor
         ExecutorContext *sel_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
@@ -691,7 +691,7 @@ TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
         ColumnValueExpression col_expr(cmp_idx);
         ConstantExpression const_expr(target_num);
         std::vector<ExpressionAbstract*> cmp_children{&col_expr, &const_expr};
-        ComparisonExpression cmp_expr(cmp_children, ComparisonType::LessThanOrEqual);
+        ComparisonExpression cmp_expr(cmp_children, ComparisonType::kLessThanOrEqual);
 
         // create the SelectionExecutor
         ExecutorContext *sel_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());
@@ -737,7 +737,7 @@ TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
         ColumnValueExpression col_expr(cmp_idx);
         ConstantExpression const_expr(target_num);
         std::vector<ExpressionAbstract*> cmp_children{&col_expr, &const_expr};
-        ComparisonExpression cmp_expr(cmp_children, ComparisonType::GreaterThanOrEqual);
+        ComparisonExpression cmp_expr(cmp_children, ComparisonType::kGreaterThanOrEqual);
 
         // create the SelectionExecutor
         ExecutorContext *sel_exec_ctx = new ExecutorContext(db_manager->get_buffer_pool_manager());

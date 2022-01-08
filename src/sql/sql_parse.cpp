@@ -55,9 +55,28 @@ bool drop_table(DropNode* node) {
     return catalog_tb->delete_table(tb_name);
 }
 
+bool insert_data(InsertNode* node) {
+    Catalog* catalog = db_manager->get_catalog();
+    CatalogTable* catalog_tb = catalog->get_catalog_table();
+    string_t tb_name = node->get_tb_name(); // get inserted table's name
+    TableMetaData* table_meta = catalog_tb->get_table_meta_data(tb_name);
+
+    if (table_meta == nullptr)
+        return false;
+
+    // get inserted table
+    const Schema* schema = table_meta->get_table_schema();
+    Table* table = table_meta->get_table();
+
+    // construct Tuple from InsertNode
+    std::vector<Value> values =  node->get_values();
+    Tuple tuple(&values, *schema);
+    return table->insert_tuple(&tuple, *schema);
+}
+
 /**
- * @brief So far, I have no idea that how to set string as the source for yyin.
- *        And this is the temporary method to save sql commands in files.
+ * So far, I have no idea that how to set string as the source for yyin.
+ * And this is the temporary method to save sql commands in files.
  * @param file_name file that contains sql commands
  */
 bool sql_execute(std::string file_name) {
@@ -104,8 +123,18 @@ bool sql_execute(std::string file_name) {
                 assert(0);
             }
         } else if (DMLNode* dml_node = dynamic_cast<DMLNode*>(dml_node)) {
-            // TODO handle the dml_node
-            success = false;
+            DMLType dml_type = dml_node->get_dml_type();
+            switch (dml_type) {
+            case DMLType::kInsert:{
+                InsertNode* node = dynamic_cast<InsertNode*>(ddl_node);
+                assert(node);
+                success = insert_data(node);
+                break;
+            }
+            default:
+                // invalid dml type
+                assert(0);
+            }
         } else {
             // invalid node
             assert(0);

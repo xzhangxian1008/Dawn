@@ -6,6 +6,7 @@
 #include "ast/node.h"
 #include "ast/ddl.h"
 #include "ast/dml.h"
+#include "util/config.h"
 
 extern FILE *yyin;
 int yylex();
@@ -15,9 +16,10 @@ void yyerror(std::string str) {}
 
 static bool debug = true;
 
-extern char* lex_str;
-extern int64_t int_num;
-extern double float_num;
+extern int yyleng;
+extern dawn::varchar_t lex_str;
+extern dawn::integer_t int_num;
+extern dawn::decimal_t float_num;
 
 inline void debug_print(std::string info) {
     if (debug) {
@@ -282,7 +284,7 @@ constant
     | STRING {
         debug_print("constant: STRING");
         $$ = new dawn::ConstantNode();
-        $$->set_str(lex_str);
+        $$->set_str(lex_str, yyleng);
     }
     | TRUE {
         debug_print("constant: TRUE");

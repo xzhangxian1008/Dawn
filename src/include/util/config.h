@@ -40,11 +40,11 @@ constexpr long READ_DB_BUF_SZ = PAGE_SIZE * READ_DB_PG_NUM; // 10240 pages, appr
 #define TUPLE_NOT_FOUND      -3 // can't find tuple
 #define MARK_DELETE_FAIL     -4
 
-#define INVALID_T TypeId::INVALID
-#define BOOLEAN_T TypeId::BOOLEAN
-#define INTEGER_T TypeId::INTEGER
-#define DECIMAL_T TypeId::DECIMAL
-#define VARCHAR_T TypeId::VARCHAR
+#define INVALID_T TypeId::kInvalid
+#define BOOLEAN_T TypeId::kBoolean
+#define INTEGER_T TypeId::kInteger
+#define DECIMAL_T TypeId::kDecimal
+#define VARCHAR_T TypeId::kVarchar
 
 #define CMP_EQ(type, left, right) Type::get_instance(type)->cmp_eq(left, right)
 #define CMP_NOT_EQ(type, left, right) Type::get_instance(type)->cmp_not_eq(left, right)

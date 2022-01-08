@@ -15,6 +15,8 @@
 namespace dawn {
 
 /**
+ * Insert duplicated key is not allowd.
+ * 
  * the link hash insert operation is divided into three level
  * first level: only one LinkHashPage, his slots store the page ids that refer to the second level's LinkHashPage
  * second level: many LinkHashPage, their slots store the page ids that refer to the third level's TablePage

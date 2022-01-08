@@ -6,6 +6,7 @@
 #include <string>
 
 #include "ast/ddl.h"
+#include "ast/dml.h"
 #include "manager/db_manager.h"
 
 extern FILE* yyin;
@@ -16,23 +17,16 @@ namespace dawn {
 
 bool create_table(CreateNode* node);
 bool drop_table(DropNode* node);
+bool insert_data(InsertNode* node);
 extern std::unique_ptr<DBManager> db_manager;
-
-const char *meta = "test";
-const char *meta_name = "test.mtd";
-const char *db_name = "test.db";
-const char *log_name = "test.log";
-
-std::string tb_name("books");
-std::vector<TypeId> tb1_col_types{TypeId::kBoolean, TypeId::kInteger};
-std::vector<string_t> tb1_col_names{"tb1_col1", "tb1_col2"};
 
 /** DO NOT DELETE THE db */
 bool manually_create_tb(
     DBManager* db,
     const string_t& tb_name,
     const std::vector<TypeId>& types,
-    const std::vector<string_t>& names)
+    const std::vector<string_t>& names,
+    const std::vector<size_t_>& char_len = std::vector<size_t_>{})
 {
     Catalog* catalog = db->get_catalog();
     CatalogTable* catalog_tb = catalog->get_catalog_table();
@@ -44,7 +38,7 @@ bool manually_create_tb(
         return false;
     }
 
-    std::unique_ptr<Schema> schema(create_table_schema(types, names));
+    std::unique_ptr<Schema> schema(create_table_schema(types, names, char_len));
 
     if (!catalog_tb->create_table(tb_name, *schema)) {
         return false;
@@ -52,11 +46,31 @@ bool manually_create_tb(
     return true;
 }
 
+class ParserTests : public testing::Test {
+public:
+    void SetUp() {}
+
+    void TearDown() {
+        remove(meta_name);
+        remove(db_name);
+        remove(log_name);
+    }
+
+    string_t tb_name{"books"};
+    std::vector<TypeId> col_types{TypeId::kBoolean, TypeId::kInteger};
+    std::vector<string_t> col_names{"tb1_col1", "tb1_col2"};
+
+    const char *meta = "test";
+    const char *meta_name = "test.mtd";
+    const char *db_name = "test.db";
+    const char *log_name = "test.log";
+};
+
 /**
  * Test List:
  *   1. Check if we can parse "parser_test0" successfully.
  */
-TEST(ParserTests, DISABLED_ParserTest0) {
+TEST_F(ParserTests, DISABLED_ParserTest0) {
     std::string file_path("./test/parser_test0");
     yyin = fopen(file_path.data(),"r");
     assert(yyin != nullptr);
@@ -73,7 +87,7 @@ TEST(ParserTests, DISABLED_ParserTest0) {
  *   2. Ensure the tables are stored in the disk and can be read
  *      after we reboot the DB.
  */
-TEST(ParserTests, ParserTest1) {
+TEST_F(ParserTests, ParserTest1) {
     std::string file_path("./test/parser_test1");
     std::string tb_name("books");
 
@@ -95,7 +109,6 @@ TEST(ParserTests, ParserTest1) {
         Node* ddl_node = children.front();
         std::vector<Node*> ddl_children = ddl_node->get_children();
         EXPECT_EQ(ddl_children.size(), 1);
-        
         Node* create_node = ddl_children[0];
         CreateNode* create_tb_root = dynamic_cast<CreateNode*>(create_node);
         ASSERT_NE(create_tb_root, nullptr);
@@ -128,10 +141,6 @@ TEST(ParserTests, ParserTest1) {
         EXPECT_EQ(catalog_tb->get_table_num(), 1); // So far, we create only one table
         EXPECT_NE(catalog_tb->get_table_id(tb_name), -1); // Check if we can get the table
     }
-
-    remove(meta_name);
-    remove(db_name);
-    remove(log_name);
 }
 
 /**
@@ -142,11 +151,7 @@ TEST(ParserTests, ParserTest1) {
  *      Return true when delete an nonexistent table
  *   2. Drop table and reboot db, this table should no longer be found
  */
-TEST(ParserTests, ParserTest2) {
-    std::string tb_name("books");
-    std::vector<TypeId> col_types{TypeId::kBoolean, TypeId::kInteger};
-    std::vector<string_t> col_names{"tb1_col1", "tb1_col2"};
-
+TEST_F(ParserTests, ParserTest2) {
     std::string file_path("./test/parser_test2");
 
     // Test 1
@@ -173,7 +178,6 @@ TEST(ParserTests, ParserTest2) {
         Node* ddl_node = children.front();
         std::vector<Node*> ddl_children = ddl_node->get_children();
         EXPECT_EQ(ddl_children.size(), 1);
-
         Node* drop_node = ddl_children[0];
         DropNode* drop_tb_root = dynamic_cast<DropNode*>(drop_node);
         ASSERT_NE(drop_tb_root, nullptr);
@@ -208,10 +212,89 @@ TEST(ParserTests, ParserTest2) {
         // This table should no longer be found after reboot
         EXPECT_EQ(catalog_tb->get_table_id(tb_name), -1);
     }
+}
 
-    remove(meta_name);
-    remove(db_name);
-    remove(log_name);
+/**
+ * Test INSERT INTO table
+ * 
+ * Test List:
+ *   1. Insert data into table successfully,
+ *      find this data successfully,
+ *      reinsert the same data into table unsuccessfully,
+ *      reboot db and find this data successfully.
+ */
+TEST_F(ParserTests, ParserTest3) {
+    std::string file_path("./test/parser_test3");
+    string_t tb_name{"books"};
+    std::vector<TypeId> col_types{
+        TypeId::kInteger, TypeId::kChar, TypeId::kDecimal, TypeId::kBoolean};
+    std::vector<string_t> col_names{"tb1_col1", "tb1_col2", "tb1_col3", "tb1_col4"};
+    std::vector<size_t_> char_len{4};
+
+    // Test 1
+    {
+        {
+            db_manager = std::make_unique<DBManager>(meta, true);
+            ASSERT_TRUE(db_manager->get_status());
+
+            // Ensure we create table manually successfully 
+            Catalog* catalog = db_manager->get_catalog();
+            CatalogTable* catalog_tb = catalog->get_catalog_table();
+            ASSERT_TRUE(
+                manually_create_tb(db_manager.get(), tb_name, col_types, col_names, char_len)
+            );
+            ASSERT_NE(catalog_tb->get_table_id(tb_name), -1);
+
+            yyin = fopen(file_path.data(),"r");
+            ASSERT_NE(yyin, nullptr);
+            ASSERT_EQ(yyparse(), 0);
+
+            std::vector<Node*> children = ast_root->get_stmt_nodes();
+
+            // There is only one sql in parser_test3, the other is empty stmt
+            EXPECT_EQ(children.size(), 2);
+            
+            // Get InsertNode node
+            Node* ddl_node = children.front();
+            std::vector<Node*> ddl_children = ddl_node->get_children();
+            EXPECT_EQ(ddl_children.size(), 1);
+            Node* insert_node = ddl_children[0];
+            InsertNode* insert_root = dynamic_cast<InsertNode*>(insert_node);
+            ASSERT_NE(insert_root, nullptr);
+
+            // Insert data into table, ought to be successfully
+            EXPECT_TRUE(insert_data(insert_root));
+
+            // Find this data.
+            {
+                // Key value is set manually corresponding to the file parser_test3, default key value index is 0
+                Value key_value(1);
+                TableMetaData* table_meta = catalog_tb->get_table_meta_data(tb_name);
+                const Schema* schema = table_meta->get_table_schema();
+                Table* table = table_meta->get_table();
+                ASSERT_NE(table, nullptr);
+                Tuple tuple;
+                EXPECT_TRUE(table->get_tuple(key_value, &tuple, *schema)); // Find this data
+
+                // These values are set manually corresponding to the file parser_test3
+                std::vector<Value> values{Value(1), Value("1234"), Value(23.33), Value(true)};
+
+                // Check
+                size_t size = values.size();
+                for (size_t i = 0; i < size; i++) {
+                    EXPECT_EQ(values[i], tuple.get_value(*schema, i));
+                }
+            }
+
+            // Reinsert data into table, ought to be unsuccessfully
+            EXPECT_FALSE(insert_data(insert_root));
+        }
+
+        // Reboot db and find this data successfully
+        {
+            // TODO:
+        }
+    }
 }
 
 } // namespace dawn

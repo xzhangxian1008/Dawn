@@ -6,6 +6,7 @@ namespace dawn {
 
 Table::Table(BufferPoolManager *bpm, const page_id_t first_table_page_id, bool from_scratch) :
     bpm_(bpm), first_table_page_id_(first_table_page_id) {
+    // TODO: More access methods will be implemented in the future
     switch (LINK_HASH) {
         case LINK_HASH:
             insert_tuple_func = lk_ha_insert_tuple;

@@ -2,7 +2,10 @@
 
 namespace dawn {
 
-Schema* create_table_schema(const std::vector<TypeId> &types, const std::vector<string_t> &names, const std::vector<size_t_> &char_len) {
+Schema* create_table_schema(
+    const std::vector<TypeId> &types,
+    const std::vector<string_t> &names,
+    const std::vector<size_t_> &char_len) {
     if (types.size() != names.size())
         return nullptr;
     
