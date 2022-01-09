@@ -284,7 +284,7 @@ constant
     | STRING {
         debug_print("constant: STRING");
         $$ = new dawn::ConstantNode();
-        $$->set_str(lex_str, yyleng);
+        $$->set_str(lex_str, yyleng-2); // These two "'" should be ignored
     }
     | TRUE {
         debug_print("constant: TRUE");

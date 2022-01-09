@@ -288,11 +288,37 @@ TEST_F(ParserTests, ParserTest3) {
 
             // Reinsert data into table, ought to be unsuccessfully
             EXPECT_FALSE(insert_data(insert_root));
+            
+            delete ast_root;
         }
 
         // Reboot db and find this data successfully
         {
-            // TODO:
+            db_manager = std::make_unique<DBManager>(meta, false);
+            ASSERT_TRUE(db_manager->get_status());
+
+            // Ensure we create table manually successfully 
+            Catalog* catalog = db_manager->get_catalog();
+            CatalogTable* catalog_tb = catalog->get_catalog_table();
+            ASSERT_NE(catalog_tb->get_table_id(tb_name), -1);
+
+            // Key value is set manually corresponding to the file parser_test3, default key value index is 0
+            Value key_value(1);
+            TableMetaData* table_meta = catalog_tb->get_table_meta_data(tb_name);
+            const Schema* schema = table_meta->get_table_schema();
+            Table* table = table_meta->get_table();
+            ASSERT_NE(table, nullptr);
+            Tuple tuple;
+            EXPECT_TRUE(table->get_tuple(key_value, &tuple, *schema)); // Find this data
+
+            // These values are set manually corresponding to the file parser_test3
+            std::vector<Value> values{Value(1), Value("1234"), Value(23.33), Value(true)};
+
+            // Check
+            size_t size = values.size();
+            for (size_t i = 0; i < size; i++) {
+                EXPECT_EQ(values[i], tuple.get_value(*schema, i));
+            }
         }
     }
 }

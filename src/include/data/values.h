@@ -13,6 +13,10 @@ class Type;
 
 extern Type *singleton[4];
 
+/**
+ * WARNING: DO NOT IMPLEMENT THE SHALLOW COPY!
+ * Deconstructor always deletes the pointer when TypeId is kChar.
+ */
 class Value {
 public:
     Value();
@@ -20,10 +24,12 @@ public:
     Value(CmpResult val);
     Value(integer_t val);
     Value(decimal_t val);
-    Value(char *val, int size);
+    Value(const char* val);
     Value(const string_t &val);
     Value(char *value, TypeId type_id, size_t_ str_size = -1);
     ~Value();
+
+    // TODO: construct should not be accessed in outside of the Value, or check TypeId before in the function
 
     void construct(boolean_t val) {
         type_id_ = TypeId::kBoolean;
@@ -48,7 +54,7 @@ public:
         value_.decimal = val;
     }
 
-    void construct(char* val, int size) {
+    void construct(const char* val, int size) {
         type_id_ = TypeId::kChar;
         value_.char_ = new char[size+1];
         memset(value_.char_, 0, size + 1);
@@ -59,14 +65,14 @@ public:
     // deep copy
     Value(const Value &value) {
         this->type_id_ = value.type_id_;
-        this->str_size_ = value.str_size_;
+        this->str_len_ = value.str_len_;
         
         if (value.type_id_ != TypeId::kChar) {
             this->value_ = value.value_;
         } else {
-            this->value_.char_ = new char[str_size_+1];
-            memset(this->value_.char_, 0, str_size_ + 1);
-            memcpy(this->value_.char_, value.value_.char_, str_size_ + 1);
+            this->value_.char_ = new char[str_len_+1];
+            memset(this->value_.char_, 0, str_len_ + 1);
+            memcpy(this->value_.char_, value.value_.char_, str_len_ + 1);
         }
     }
 
@@ -77,14 +83,14 @@ public:
         }
 
         this->type_id_ = value.type_id_;
-        this->str_size_ = value.str_size_;
+        this->str_len_ = value.str_len_;
 
         if (value.type_id_ != TypeId::kChar) {
             this->value_ = value.value_;
         } else {
-            this->value_.char_ = new char[str_size_+1];
-            memset(this->value_.char_, 0, str_size_ + 1);
-            memcpy(this->value_.char_, value.value_.char_, str_size_ + 1);
+            this->value_.char_ = new char[str_len_+1];
+            memset(this->value_.char_, 0, str_len_ + 1);
+            memcpy(this->value_.char_, value.value_.char_, str_len_ + 1);
         }
 
         return *this;
@@ -190,16 +196,7 @@ public:
     void swap(Value &val) {
         std::swap(val.type_id_, type_id_);
         std::swap(val.value_, value_);
-        std::swap(val.str_size_, str_size_);
-    }
-
-    // similar to shallow copy
-    void load(const Value &val) {
-        if (type_id_ == TypeId::kChar)
-            delete[] value_.char_;
-        type_id_ = val.type_id_;
-        value_ = val.value_;
-        str_size_ = val.str_size_;
+        std::swap(val.str_len_, str_len_);
     }
 
     TypeId get_type_id() const { return type_id_; }
@@ -209,7 +206,7 @@ public:
         return *reinterpret_cast<const T*>(&value_);
     }
 
-    int get_char_size() const { return str_size_; }
+    int get_char_size() const { return str_len_; }
 
     // string should end with '\0'
     inline void serialize_to(char *storage) {
@@ -228,7 +225,7 @@ public:
         singleton[static_cast<int>(type_id_)]->deserialize_from((char*)(&value_), src);
     }
 
-    // TODO test it!
+    // TODO: test it!
     hash_t get_hash_value() const {
         switch (type_id_) {
             case TypeId::kBoolean: {
@@ -245,7 +242,7 @@ public:
             }
             case TypeId::kChar: {
                 char *val = const_cast<char*>(value_.char_);
-                return do_hash(static_cast<void*>(val), str_size_);
+                return do_hash(static_cast<void*>(val), str_len_);
             }
             case TypeId::kInvalid: {
                 return 0;
@@ -256,7 +253,7 @@ public:
         return 0;
     }
 
-    string_t get_value_string() const {
+    string_t to_string() const {
         switch (type_id_) {
             case TypeId::kBoolean:
                 if (value_.boolean) {
@@ -282,7 +279,7 @@ private:
     } value_;
     
     TypeId type_id_;
-    int str_size_ = -1;
+    int str_len_ = -1;
 };
 
 } // namespace dawn

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <assert.h>
    
 #include "util/util.h"
 #include "util/config.h"
@@ -82,6 +83,9 @@ public:
     inline void deserialize_from(char *src) {
         if (allocated_) {
             memcpy(data_, src, size_);
+        } else {
+            // TODO: handle allocated_ == false
+            assert(0);
         }
     }
 

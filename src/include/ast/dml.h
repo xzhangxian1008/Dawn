@@ -34,7 +34,7 @@ public:
 
     ~ConstantNode() override {
         if (type_ == TypeId::kChar)
-            delete data_.str_;
+            delete[] data_.str_;
     }
 
     TypeId get_dml_type() const { return type_; }
@@ -44,10 +44,20 @@ public:
     char* get_str() const { return data_.str_; }
     size_t_ get_str_len() const { return str_len_; }
 
-    void set_integer(integer_t integer) { data_.integer_ = integer; }
-    void set_boolean(boolean_t boolean) { data_.boolean_ = boolean; }
-    void set_decimal(decimal_t decimal) { data_.decimal_ = decimal; }
+    void set_integer(integer_t integer) {
+        type_ = TypeId::kInteger;
+        data_.integer_ = integer;
+    }
+    void set_boolean(boolean_t boolean) {
+        type_ = TypeId::kBoolean;
+        data_.boolean_ = boolean;
+    }
+    void set_decimal(decimal_t decimal) {
+        type_ = TypeId::kDecimal;
+        data_.decimal_ = decimal;
+    }
     void set_str(char* str, size_t_ str_len) {
+        type_ = TypeId::kChar;
         data_.str_ = str;
         str_len_ = str_len;
     }
@@ -64,8 +74,10 @@ public:
             value->construct(data_.boolean_);
             break;
         case TypeId::kChar:
-            value->construct(data_.str_);
+            value->construct(data_.str_, str_len_);
+            break;
         default:
+            assert(0); // Invalid type
             break;
         }
     }
@@ -92,7 +104,7 @@ public:
     }
 
     /**
-     * Pass value to reduce overhead,
+     * Pass Value pointer to reduce overhead,
      * or we will new char* twice.
      */
     void set_value(Value* value) const {
@@ -146,7 +158,7 @@ public:
         assert(value_list_node);
 
         std::vector<Node*> children = value_list_node->get_values();
-        values.reserve(children.size());
+        values.resize(children.size());
 
         size_t size = children.size();
         for (size_t i = 0; i < size; i++) {

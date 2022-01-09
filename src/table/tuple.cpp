@@ -12,7 +12,7 @@ Value Tuple::get_value(const Schema &schema, int idx) const {
         char tmp[str_size+1];
         memcpy(tmp, data_ + col.get_offset(), str_size);
         tmp[str_size] = '\0';
-        return Value(tmp, type_id, str_size);
+        return Value(tmp, TypeId::kChar, str_size);
     }
     return Value(data_ + col.get_offset(), type_id);
 }
@@ -49,7 +49,7 @@ string_t Tuple::to_string(const Schema &schema) const {
         }
 
         Value value = get_value(schema, i);
-        os << type_to_string(col.get_type_id()) << ": " << value.get_value_string();
+        os << type_to_string(col.get_type_id()) << ": " << value.to_string();
     }
 
     os << ")]";

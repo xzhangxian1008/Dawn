@@ -29,23 +29,23 @@ Value::Value(decimal_t val) {
     construct(val);
 }
 
-Value::Value(char *val, int size) : str_size_(size) {
-    construct(val, size);
+Value::Value(const char* val) : str_len_(strlen(val)) {
+    construct(val, str_len_);
 }
 
-Value::Value(const string_t &val) : str_size_(val.length()) {
+Value::Value(const string_t &val) : str_len_(val.length()) {
     type_id_ = TypeId::kChar;
-    value_.char_ = new char[str_size_+1];
-    memset(value_.char_, 0, str_size_ + 1);
-    for (int i = 0; i < str_size_; i++)
+    value_.char_ = new char[str_len_+1];
+    memset(value_.char_, 0, str_len_ + 1);
+    for (int i = 0; i < str_len_; i++)
         value_.char_[i] = val[i];
-    value_.char_[str_size_] = '\0'; // remind us that there needs a string end
+    value_.char_[str_len_] = '\0'; // remind us that there needs a string end
 }
 
-Value::Value(char *value, TypeId type_id, size_t_ str_size) : type_id_(type_id), str_size_(str_size) {
+Value::Value(char *value, TypeId type_id, size_t_ str_size) : type_id_(type_id), str_len_(str_size) {
     if (type_id_ == TypeId::kChar) {
-        value_.char_ = new char[str_size_+1];
-        memset(value_.char_, 0, str_size_ + 1);
+        value_.char_ = new char[str_len_+1];
+        memset(value_.char_, 0, str_len_ + 1);
     }
     deserialize_from(value);
 }
