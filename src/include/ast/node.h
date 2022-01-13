@@ -11,7 +11,7 @@ namespace dawn {
 enum class NodeType : int8_t {
     kDDL = 0,
     kDML,
-    kIdentity,
+    kIdentifier,
     kDataType,
     kStmtList,
     kEmptyStmt
@@ -39,10 +39,10 @@ private:
     NodeType type_;
 };
 
-class IdentityNode : public Node {
+class IdentifierNode : public Node {
 public:
-    DISALLOW_COPY_AND_MOVE(IdentityNode);
-    IdentityNode(std::string id) : id_(id), Node(NodeType::kIdentity) {}
+    DISALLOW_COPY_AND_MOVE(IdentifierNode);
+    IdentifierNode(std::string id) : id_(id), Node(NodeType::kIdentifier) {}
 
     std::string get_id() const { return id_; }
 private:

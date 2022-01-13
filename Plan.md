@@ -96,11 +96,12 @@ Tips：有关事务和日志等功能应该被嵌入其中，但是考虑到方�
 
 SQL Plan：
 - DDL
-    - CREATE(TODO P1)
-    - DROP(TODO P2)
+    - CREATE
+    - DROP
 - DML
-    - INSERT(TODO P3)
+    - INSERT(P3)
     - DELETE(TODO P4)
+        - Executor和Expression的指针成员变量，考虑通过析构函数进行销毁(可能吧，我也不知道应不应该用析构函数销毁，先把所有功能实现了再谈这件事)
     - SELECT(TODO P5)
 
 ## 数据与系统管理
@@ -135,8 +136,6 @@ SQL Plan：
   - (TODO) BigInt sum()函数可能会导致数据溢出，暂时不紧迫
   - (TODO) Varchar (这个有点复杂，暂时不做)
 - Value类
-
-#######################################################################
 
 # 测试
 

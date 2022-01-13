@@ -269,7 +269,7 @@ private:
 bool UnionExecutorTest::ok = true;
 
 /** ensure we can get all the data through the SeqScanExecutor */
-TEST_F(ExecutorsBasicTest, DISABLED_SeqScanExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, SeqScanExecutorBasicTest) {
     PRINT("start the basic SeqScanExecutor test...");
     Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();
@@ -297,9 +297,9 @@ TEST_F(ExecutorsBasicTest, DISABLED_SeqScanExecutorBasicTest) {
 
     values.clear();
     values.push_back(Value(v0));
-    values.push_back(Value(v1, tb_char0_sz));
+    values.push_back(Value(v1));
     values.push_back(Value(v2));
-    values.push_back(Value(v3, tb_char1_sz));
+    values.push_back(Value(v3));
     values.push_back(Value(v4));
 
     // insert a lot of tuples
@@ -349,7 +349,7 @@ TEST_F(ExecutorsBasicTest, DISABLED_SeqScanExecutorBasicTest) {
  * In the current test, we push only one tuple, one input and output schema through it.
  * Multiple tuples or other possible input and output schemas may need be tested.
  */
-TEST_F(ExecutorsBasicTest, DISABLED_ProjectionExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, ProjectionExecutorBasicTest) {
     PRINT("start the basic ProjectionExecutor test...");
 
     // projection executor's input schema and it's seqscan executor's schema
@@ -376,9 +376,9 @@ TEST_F(ExecutorsBasicTest, DISABLED_ProjectionExecutorBasicTest) {
 
     values.clear();
     values.push_back(Value(v0));
-    values.push_back(Value(v1, tb_char0_sz));
+    values.push_back(Value(v1));
     values.push_back(Value(v2));
-    values.push_back(Value(v3, tb_char1_sz));
+    values.push_back(Value(v3));
     values.push_back(Value(v4));
 
     {
@@ -489,7 +489,7 @@ TEST_F(ExecutorsBasicTest, DISABLED_ProjectionExecutorBasicTest) {
                 break;
             }
 
-            /** these commented codes are used for debugging */
+            /** these commented codes are saved for debugging */
             // if (tuple.get_value(*output_tb_schema, tb3_min_idx) != min_num) {
             //     PRINT(tuple.get_value(*output_tb_schema, tb3_min_idx).get_value_string());
             //     LOG("HERE");
@@ -549,7 +549,7 @@ TEST_F(ExecutorsBasicTest, DISABLED_ProjectionExecutorBasicTest) {
  * In the current test, we only test the Integer type, other types may need tests,
  * but we suppose that they are ok when Integer type tests are passed.
  */
-TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
+TEST_F(ExecutorsBasicTest, SelectionExecutorBasicTest) {
     PRINT("start the basic SelectionExecutorBasicTest test...");
     Schema *tb_schema = create_table_schema(tb_col_types, tb_col_names, tb_char_size);
     offset_t key_idx = tb_schema->get_key_idx();
@@ -577,9 +577,9 @@ TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
 
     values.clear();
     values.push_back(Value(v0));
-    values.push_back(Value(v1, tb_char0_sz));
+    values.push_back(Value(v1));
     values.push_back(Value(v2));
-    values.push_back(Value(v3, tb_char1_sz));
+    values.push_back(Value(v3));
     values.push_back(Value(v4));
 
     // insert a lot of tuples
@@ -774,13 +774,13 @@ TEST_F(ExecutorsBasicTest, DISABLED_SelectionExecutorBasicTest) {
 
 
 /**
- * FIXME bug here, ignore it so far
+ * FIXME: bug here, ignore it so far
  * set "table2" or "table4" as left table and "table" as right table
  * insert few tuples into table2
  * insert many tuples into table4
  * 
  * Test List:
- *   FIXME we check the number of output tuples first, then check the content of the tuples
+ *   FIXME: we check the number of output tuples first, then check the content of the tuples
  *   1. all the inner tuples could be loaded in the memory and execute the same query for several times.
  *   2. too many inner tuples, spill them to the disk and execute the same query for several times.
  */

@@ -80,11 +80,11 @@ private:
  *   - kPrimaryKey: designate the primary key that must exists in fields
  * 
  * When it's kColumn type, it has two children:
- *   - idx 0: IdentityNode: save the column's name
+ *   - idx 0: IdentifierNode: save the column's name
  *   - idx 1: ColumnDefNode: save the colums's type
  * 
  * When it's kPrimaryKey type, it has only one child:
- *   - idx 0: IdentityNode: save the primary key's column name
+ *   - idx 0: IdentifierNode: save the primary key's column name
  */
 class CreateDefNode : public DDLNode {
 public:
@@ -95,14 +95,14 @@ public:
 
     DISALLOW_COPY_AND_MOVE(CreateDefNode);
 
-    CreateDefNode(IdentityNode* col_name, ColumnDefNode* col_type)
+    CreateDefNode(IdentifierNode* col_name, ColumnDefNode* col_type)
         : type_(CreateDefNodeType::kColumn), DDLNode(DDLType::kCreateDef)
     {
         add_child(col_name);
         add_child(col_type);
     }
 
-    CreateDefNode(IdentityNode* primary_key)
+    CreateDefNode(IdentifierNode* primary_key)
         : type_(CreateDefNodeType::kPrimaryKey), DDLNode(DDLType::kCreateDef)
     {
         add_child(primary_key);
@@ -110,7 +110,7 @@ public:
 
     string_t get_col_name() const {
         Node* node = at(0);
-        IdentityNode* id_node = dynamic_cast<IdentityNode*>(node);
+        IdentifierNode* id_node = dynamic_cast<IdentifierNode*>(node);
         assert(id_node);
 
         return id_node->get_id();
@@ -209,7 +209,7 @@ private:
 
 /**
  * So far, it has two children:
- *   - idx 0: IdentityNode: save the table name
+ *   - idx 0: IdentifierNode: save the table name
  *   - idx 1: CreateDefListNode: save the table's columns
  * 
  * It will have more types such as kCreateDatabase etc.
@@ -217,7 +217,7 @@ private:
 class CreateNode : public DDLNode {
 public:
     DISALLOW_COPY_AND_MOVE(CreateNode);
-    CreateNode(IdentityNode* id_node, CreateDefListNode* create_def_list_node)
+    CreateNode(IdentifierNode* id_node, CreateDefListNode* create_def_list_node)
         : DDLNode(DDLType::kCreateTable)
     {
         add_child(id_node);
@@ -225,7 +225,7 @@ public:
     }
 
     string_t get_tb_name() const {
-        IdentityNode* id_node = dynamic_cast<IdentityNode*>(at(0));
+        IdentifierNode* id_node = dynamic_cast<IdentifierNode*>(at(0));
         assert(id_node);
 
         return id_node->get_id();
@@ -265,21 +265,21 @@ private:
 
 /**
  * So far, it has only one child:
- *   - idx 0: IdentityNode: save the table name
+ *   - idx 0: IdentifierNode: save the table name
  * 
  * It will have more types such as kDropDatabase etc.
  */
 class DropNode : public DDLNode {
 public:
     DISALLOW_COPY_AND_MOVE(DropNode);
-    DropNode(IdentityNode* id_node)
+    DropNode(IdentifierNode* id_node)
         : DDLNode(DDLType::kDropTable)
     {
         add_child(id_node); // add dropped table name
     }
 
     string_t get_tb_name() const {
-        IdentityNode* id_node = dynamic_cast<IdentityNode*>(at(0));
+        IdentifierNode* id_node = dynamic_cast<IdentifierNode*>(at(0));
         assert(id_node);
 
         return id_node->get_id();

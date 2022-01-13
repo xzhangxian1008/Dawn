@@ -2,8 +2,11 @@
 
 #include "ast/node.h"
 #include "data/values.h"
+#include "executors/executor_abstr.h"
 
 namespace dawn {
+
+using TableNameNode = IdentifierNode;
 
 enum DMLType : int8_t {
     kSelect,
@@ -11,7 +14,31 @@ enum DMLType : int8_t {
     kDelete,
     kValueList,
     kValue,
-    kConstant
+    kConstant,
+    kSelectExprList,
+    kSelectExpr,
+    kTableRefs,
+    kTableRef,
+    kTableFactor,
+    kWhereCond,
+    kExpr,
+    kSimpleExpr,
+    kBitExpr,
+    kPredicate,
+    kComparisonOpr,
+    kBooleanPrimary
+};
+
+enum ExprType : int8_t {
+    kPlus,
+    kMinus,
+    kMultiply,
+    kDivide,
+    kGreater,
+    kLess,
+    kGreaterEq,
+    kLessEq,
+    kEqual
 };
 
 class DMLNode : public Node {
@@ -27,12 +54,12 @@ private:
     DMLType type_;
 };
 
-class ConstantNode : public DMLNode {
+class LiteralNode : public DMLNode {
 public:
-    DISALLOW_COPY_AND_MOVE(ConstantNode);
-    ConstantNode() : type_(TypeId::kInteger), DMLNode(DMLType::kConstant) {}
+    DISALLOW_COPY_AND_MOVE(LiteralNode);
+    LiteralNode() : type_(TypeId::kInteger), DMLNode(DMLType::kConstant) {}
 
-    ~ConstantNode() override {
+    ~LiteralNode() override {
         if (type_ == TypeId::kChar)
             delete[] data_.str_;
     }
@@ -94,12 +121,12 @@ private:
 
 /**
  * It has only one child that contain the value:
- *   - idx 0: ConstantNode: contain the value
+ *   - idx 0: LiteralNode: contain the value
  */
 class ValueNode : public DMLNode {
 public:
     DISALLOW_COPY_AND_MOVE(ValueNode);
-    ValueNode(ConstantNode* node) : DMLNode(DMLType::kValue) {
+    ValueNode(LiteralNode* node) : DMLNode(DMLType::kValue) {
         add_child(node);
     }
 
@@ -108,10 +135,10 @@ public:
      * or we will new char* twice.
      */
     void set_value(Value* value) const {
-        ConstantNode* constant_node = dynamic_cast<ConstantNode*>(at(0));
-        assert(constant_node);
+        LiteralNode* literal_node = dynamic_cast<LiteralNode*>(at(0));
+        assert(literal_node);
 
-        constant_node->set_value(value);
+        literal_node->set_value(value);
     }
 };
 
@@ -131,13 +158,13 @@ public:
 
 /**
  * It has two children:
- *   - idx 0: IdentityNode: save the table name
+ *   - idx 0: IdentifierNode: save the table name
  *   - idx 1: ValueListNode: save inserted values
  */
 class InsertNode : public DMLNode {
 public:
     DISALLOW_COPY_AND_MOVE(InsertNode);
-    InsertNode(IdentityNode* tb_name, ValueListNode* value_list)
+    InsertNode(IdentifierNode* tb_name, ValueListNode* value_list)
         : DMLNode(DMLType::kInsert)
     {
         add_child(tb_name);
@@ -145,7 +172,7 @@ public:
     }
 
     string_t get_tb_name() const {
-        IdentityNode* id_node = dynamic_cast<IdentityNode*>(at(0));
+        IdentifierNode* id_node = dynamic_cast<IdentifierNode*>(at(0));
         assert(id_node);
 
         return id_node->get_id();
@@ -169,6 +196,91 @@ public:
         }
         
         return values;
+    }
+};
+
+class SimpleExprNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(SimpleExprNode);
+    SimpleExprNode() : DMLNode(DMLType::kSimpleExpr) {}
+};
+
+class BitExprNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(BitExprNode);
+    BitExprNode() : DMLNode(DMLType::kBitExpr) {}
+};
+
+class PredicateNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(PredicateNode);
+    PredicateNode() : DMLNode(DMLType::kPredicate) {}
+};
+
+class ComparisonOprNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(ComparisonOprNode);
+    ComparisonOprNode() : DMLNode(DMLType::kComparisonOpr) {}
+};
+
+class BooleanPrimaryNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(BooleanPrimaryNode);
+    BooleanPrimaryNode() : DMLNode(DMLType::kBooleanPrimary) {}
+};
+
+class ExprNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(ExprNode);
+    ExprNode() : DMLNode(DMLType::kExpr) {}
+};
+
+class WhereCondNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(WhereCondNode);
+    WhereCondNode() : DMLNode(DMLType::kWhereCond) {}
+};
+
+class TableFactor : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(TableFactor);
+    TableFactor() : DMLNode(DMLType::kTableFactor) {}
+};
+
+class TableRefNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(TableRefNode);
+    TableRefNode() : DMLNode(DMLType::kTableRef) {}
+};
+
+class TableRefsNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(TableRefsNode);
+    TableRefsNode() : DMLNode(DMLType::kTableRefs) {}
+};
+
+class SelectExprNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(SelectExprNode);
+    SelectExprNode() : DMLNode(DMLType::kSelectExpr) {}
+};
+
+class SelectExprListNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(SelectExprListNode);
+    SelectExprListNode() : DMLNode(DMLType::kSelectExprList) {}
+};
+
+class SelectNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(SelectNode);
+    SelectNode() : DMLNode(DMLType::kSelect) {
+
+    }
+
+    ExecutorAbstract* get_root_node() const {
+        // TODO: Construct the tree from ast
+        return nullptr;
     }
 };
 

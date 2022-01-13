@@ -106,9 +106,9 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
 
             values.clear();
             values.push_back(Value(v0));
-            values.push_back(Value(v1, tb_char0_sz));
+            values.push_back(Value(v1));
             values.push_back(Value(v2));
-            values.push_back(Value(v3, tb_char1_sz));
+            values.push_back(Value(v3));
             values.push_back(Value(v4));
 
             // insert a lot of tuples
@@ -205,9 +205,9 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
 
             values.clear();
             values.push_back(Value(v0));
-            values.push_back(Value(v1, tb_char0_sz));
+            values.push_back(Value(v1));
             values.push_back(Value(v2));
-            values.push_back(Value(v3, tb_char1_sz));
+            values.push_back(Value(v3));
             values.push_back(Value(v4));
 
             PRINT("start to update some tuples...");
@@ -394,9 +394,9 @@ TEST_F(LinkHashBasicTest, BasicIndexTest) {
 
             values.clear();
             values.push_back(Value(v0));
-            values.push_back(Value(v1, tb_char0_sz));
+            values.push_back(Value(v1));
             values.push_back(Value(v2));
-            values.push_back(Value(v3, tb_char1_sz));
+            values.push_back(Value(v3));
             values.push_back(Value(v4));
 
             PRINT("start to reinsert some tuples...");
@@ -509,9 +509,9 @@ TEST_F(LinkHashBasicTest, BasicIterTest) {
 
     values.clear();
     values.push_back(Value(v0));
-    values.push_back(Value(v1, tb_char0_sz));
+    values.push_back(Value(v1));
     values.push_back(Value(v2));
-    values.push_back(Value(v3, tb_char1_sz));
+    values.push_back(Value(v3));
     values.push_back(Value(v4));
 
     // insert a lot of tuples

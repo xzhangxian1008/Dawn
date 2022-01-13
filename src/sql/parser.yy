@@ -44,7 +44,7 @@ dawn::StmtListNode* ast_root;
     char* str_val;
     dawn::Node* node;
     dawn::DataTypeNode* data_type_node;
-    dawn::IdentityNode* id_node;
+    dawn::IdentifierNode* id_node;
     dawn::ColumnDefNode* col_def_node;
     dawn::CreateDefNode* create_def_node;
     dawn::CreateDefListNode* create_def_list_node;
@@ -52,7 +52,7 @@ dawn::StmtListNode* ast_root;
     dawn::DDLNode* ddl_node;
     dawn::StmtListNode* stmt_list_node;
     dawn::DropNode* drop_node;
-    dawn::ConstantNode* constant_node;
+    dawn::LiteralNode* literal_node;
     dawn::ValueListNode* value_list_node;
     dawn::ValueNode* value_node;
     dawn::InsertNode* insert_node;
@@ -66,7 +66,7 @@ dawn::StmtListNode* ast_root;
     TRUE FALSE NATURAL JOIN
 %token INT_NUM FLOAT_NUM STRING
 
-%left '=' '>' '<' GT_EQ LE_EQ NOT_EQ
+%left '+' '-' '*' '/' '=' '>' '<' GT_EQ LE_EQ NOT_EQ OR AND
 
 %type <stmt_list_node> stmt_list
 %type <node> stmt
@@ -86,10 +86,9 @@ dawn::StmtListNode* ast_root;
 %type <node> select
 
 %type <data_type_node> data_type
-%type <id_node> identity
-%type <node> expr_list
+%type <id_node> identifier
 %type <node> expr
-%type <constant_node> constant
+%type <literal_node> literal
 %type <node> where_condition
 %type <value_list_node> value_list
 %type <value_node> value
@@ -97,7 +96,7 @@ dawn::StmtListNode* ast_root;
 %type <node> table_reference
 %type <node> table_factor
 %type <node> joined_table
-%type <node> tbl_name
+%type <node> tb_name
 
 %start sql
 
@@ -156,8 +155,8 @@ dml
     | select {debug_print("dml: select");}
 
 create
-    : CREATE TABLE identity '(' create_def_list ')' {
-        debug_print("create: CREATE TABLE identity '(' create_def_list ')'");
+    : CREATE TABLE identifier '(' create_def_list ')' {
+        debug_print("create: CREATE TABLE identifier '(' create_def_list ')'");
         $$ = new dawn::CreateNode($3, $5);
     }
 
@@ -178,14 +177,14 @@ create_def
         debug_print("create_def: col_name column_def");
         $$ = new dawn::CreateDefNode($1, $2);
     }
-    | PRIMARY_KEY '(' identity ')' {
-        debug_print("create_def: PRIMARY_KEY '(' identity ')'");
+    | PRIMARY_KEY '(' identifier ')' {
+        debug_print("create_def: PRIMARY_KEY '(' identifier ')'");
         $$ = new dawn::CreateDefNode($3);
     }
 
 col_name
-    : identity {
-        debug_print("col_name: identity");
+    : identifier {
+        debug_print("col_name: identifier");
         $$ = $1;
     }
 
@@ -213,22 +212,22 @@ data_type
         $$ = new dawn::DataTypeNode(dawn::TypeId::kBoolean);
     }
 
-identity
+identifier
     : ID {
-        debug_print("identity: ID");
-        $$ = new dawn::IdentityNode(lex_str);
+        debug_print("identifier: ID");
+        $$ = new dawn::IdentifierNode(lex_str);
         delete[] lex_str;
     }
 
 drop
-    : DROP TABLE identity {
-        debug_print("drop: DROP TABLE identity");
+    : DROP TABLE identifier {
+        debug_print("drop: DROP TABLE identifier");
         $$ = new dawn::DropNode($3);
     }
 
 insert
-    : INSERT INTO identity VALUES '(' value_list ')' {
-        debug_print("insert: INSERT INTO identity VALUES '(' value_list ')'");
+    : INSERT INTO identifier VALUES '(' value_list ')' {
+        debug_print("insert: INSERT INTO identifier VALUES '(' value_list ')'");
         $$ = new dawn::InsertNode($3, $6);
     }
 
@@ -246,55 +245,14 @@ value_list
     }
 
 value
-    : constant {
-        debug_print("value: constant");
+    : literal {
+        debug_print("value: literal");
         $$ = new dawn::ValueNode($1);
     }
 
 delete
-    : DELETE FROM identity WHERE where_condition {
-        debug_print("delete: DELETE FROM identity WHERE where_condition");
-    }
-
-expr_list
-    : expr {debug_print("expr_list: expr");}
-    | expr_list ',' expr {debug_print("expr_list: expr_list ',' expr");}
-
-expr
-    : expr '=' expr {debug_print("expr: expr '=' expr");}
-    | expr '>' expr {debug_print("expr: expr '>' expr");}
-    | expr '<' expr {debug_print("expr: expr '<' expr");}
-    | expr GT_EQ expr {debug_print("expr: expr GT_EQ expr");}
-    | expr LE_EQ expr {debug_print("expr: expr LE_EQ expr");}
-    | expr NOT_EQ expr {debug_print("expr: expr NOT_EQ expr");}
-    | constant {debug_print("expr: constant");}
-    | identity {debug_print("expr: identity");}
-
-constant
-    : INT_NUM {
-        debug_print("constant: INT_NUM");
-        $$ = new dawn::ConstantNode();
-        $$->set_integer(int_num);
-    }
-    | FLOAT_NUM {
-        debug_print("constant: FLOAT_NUM");
-        $$ = new dawn::ConstantNode();
-        $$->set_decimal(float_num);
-    }
-    | STRING {
-        debug_print("constant: STRING");
-        $$ = new dawn::ConstantNode();
-        $$->set_str(lex_str, yyleng-2); // These two "'" should be ignored
-    }
-    | TRUE {
-        debug_print("constant: TRUE");
-        $$ = new dawn::ConstantNode();
-        $$->set_boolean(true);
-    }
-    | FALSE {
-        debug_print("constant: FALSE");
-        $$ = new dawn::ConstantNode();
-        $$->set_boolean(false);
+    : DELETE FROM identifier WHERE where_condition {
+        debug_print("delete: DELETE FROM identifier WHERE where_condition");
     }
 
 select
@@ -308,27 +266,94 @@ select_expr_list
 
 select_expr
     : col_name {debug_print("select_expr: col_name");}
-
-table_references
-    : table_reference {debug_print("table_references: table_reference");}
-    | table_references ',' table_reference {
-        debug_print("table_references: table_references ',' table_reference");
+    | '*' {
+        debug_print("select_expr: *");
     }
 
+// We only support the single table so far.
+table_references
+    : table_reference {
+        debug_print("table_references: table_reference");
+    }
+    | table_references ',' table_reference {
+        debug_print("table_references: table_references ',' table_reference");
+        // TODO: Cartesian product
+    }
+
+// Only support single table so far.
 table_reference
     : table_factor {debug_print("table_reference: table_factor");}
     | joined_table {debug_print("table_reference: joined_table");}
 
 table_factor
-    : tbl_name {debug_print("table_factor: tbl_name");}
+    : tb_name {debug_print("table_factor: tb_name");}
 
 joined_table
     : table_reference NATURAL JOIN table_factor {
         debug_print("joined_table: table_reference NATURAL JOIN table_factor");
     }
 
-tbl_name
-    : identity {debug_print("tbl_name: identity");}
+tb_name
+    : identifier {debug_print("tb_name: identifier");}
 
 where_condition
-    : expr_list {debug_print("where_condition: expr_list");}
+    : expr {debug_print("where_condition: expr");}
+
+expr
+    : expr AND expr {debug_print("expr: expr AND expr");}
+    | expr OR expr {debug_print("expr: expr OR expr");}
+    | boolean_primary {debug_print("expr: boolean_primary");}
+
+boolean_primary
+    : boolean_primary comparison_operator predicate {
+        debug_print("boolean_primary: boolean_primary comparison_operator predicate");
+    }
+    | predicate {debug_print("boolean_primary: predicate");}
+
+comparison_operator
+    : '=' {debug_print("comparison_operator: =");}
+    | '>' {debug_print("comparison_operator: >");}
+    | GT_EQ {debug_print("comparison_operator: GT_EQ");}
+    | LE_EQ {debug_print("comparison_operator: LE_EQ");}
+    | NOT_EQ {debug_print("comparison_operator: NOT_EQ");}
+
+predicate
+    : bit_expr {debug_print("predicate: bit_expr");}
+
+bit_expr
+    : bit_expr '+' bit_expr {debug_print("bit_expr: bit_expr '+' bit_expr");}
+    | bit_expr '-' bit_expr {debug_print("bit_expr: bit_expr '-' bit_expr");}
+    | bit_expr '*' bit_expr {debug_print("bit_expr: bit_expr '*' bit_expr");}
+    | bit_expr '/' bit_expr {debug_print("bit_expr: bit_expr '/' bit_expr");}
+    | simple_expr {debug_print("bit_expr: simple_expr");}
+
+simple_expr
+    : literal {debug_print("simple_expr: literal");}
+    | identifier {debug_print("simple_expr: identifier");}
+
+literal
+    : INT_NUM {
+        debug_print("literal: INT_NUM");
+        $$ = new dawn::LiteralNode();
+        $$->set_integer(int_num);
+    }
+    | FLOAT_NUM {
+        debug_print("literal: FLOAT_NUM");
+        $$ = new dawn::LiteralNode();
+        $$->set_decimal(float_num);
+    }
+    | STRING {
+        debug_print("literal: STRING");
+        $$ = new dawn::LiteralNode();
+        $$->set_str(lex_str, yyleng-2); // These two "'" should be ignored
+    }
+    | TRUE {
+        debug_print("literal: TRUE");
+        $$ = new dawn::LiteralNode();
+        $$->set_boolean(true);
+    }
+    | FALSE {
+        debug_print("literal: FALSE");
+        $$ = new dawn::LiteralNode();
+        $$->set_boolean(false);
+    }

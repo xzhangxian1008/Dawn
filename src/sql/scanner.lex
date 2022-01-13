@@ -48,6 +48,8 @@ string  '.*'
 "}" {return '}';}
 ";" {return ';';}
 "," {return ',';}
+"||" {return OR;}
+"&&" {return AND;}
 {id}    {
             lex_str = new char[yyleng+1]; // ATTENTION! BE CAREFUL OF  THEMEMORY LEAK!
             std::memcpy(lex_str, yytext, yyleng);

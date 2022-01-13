@@ -9,14 +9,14 @@ class AggregateExpression : public ExpressionAbstract {
 public:
     AggregateExpression(AggregationType type, offset_t agg_idx) : type_(type), agg_idx_(agg_idx) {
         switch (type_) {
-            case AggregationType::CountAggregate: 
-            case AggregationType::SumAggregate: 
+            case AggregationType::kCountAggregate: 
+            case AggregationType::kSumAggregate: 
                 val_ = Value(static_cast<integer_t>(0));
                 break;
-            case AggregationType::MinAggregate:
+            case AggregationType::kMinAggregate:
                 val_ = Value(static_cast<integer_t>(INT32_MAX));
                 break;
-            case AggregationType::MaxAggregate:
+            case AggregationType::kMaxAggregate:
                 val_ = Value(static_cast<integer_t>(INT32_MIN));
                 break;
             default:
@@ -32,21 +32,21 @@ public:
 private:
     void perform_aggregation(const Tuple *tuple, const Schema *schema) {
         switch (type_) {
-            case AggregationType::CountAggregate:  {
+            case AggregationType::kCountAggregate:  {
                 ++val_;
                 break;
             }
-            case AggregationType::SumAggregate: {
+            case AggregationType::kSumAggregate: {
                 val_ = ADD(val_.get_type_id(), val_, tuple->get_value(*schema, agg_idx_));
                 break;
             }
-            case AggregationType::MinAggregate: {
-                if (CMP_LESS(val_.get_type_id(), tuple->get_value(*schema, agg_idx_), val_) == CmpResult::TRUE)
+            case AggregationType::kMinAggregate: {
+                if (CMP_LESS(val_.get_type_id(), tuple->get_value(*schema, agg_idx_), val_) == CmpResult::kTrue)
                     val_ = tuple->get_value(*schema, agg_idx_);
                 break;
             }
-            case AggregationType::MaxAggregate: {
-                if (CMP_GREATER(val_.get_type_id(), tuple->get_value(*schema, agg_idx_), val_) == CmpResult::TRUE)
+            case AggregationType::kMaxAggregate: {
+                if (CMP_GREATER(val_.get_type_id(), tuple->get_value(*schema, agg_idx_), val_) == CmpResult::kTrue)
                     val_ = tuple->get_value(*schema, agg_idx_);
                 break;
             }
