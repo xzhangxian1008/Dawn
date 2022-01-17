@@ -170,9 +170,7 @@ public:
     }
 
 private:
-    /**
-     * @brief initialize names, types and primary key
-     */
+    /** initialize names, types and primary key */
     void initialize() const {
         if (initialized_) {
             return;

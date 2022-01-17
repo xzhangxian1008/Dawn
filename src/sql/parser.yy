@@ -50,12 +50,27 @@ dawn::StmtListNode* ast_root;
     dawn::CreateDefListNode* create_def_list_node;
     dawn::CreateNode* create_node;
     dawn::DDLNode* ddl_node;
+    dawn::DMLNode* dml_node;
     dawn::StmtListNode* stmt_list_node;
     dawn::DropNode* drop_node;
     dawn::LiteralNode* literal_node;
     dawn::ValueListNode* value_list_node;
     dawn::ValueNode* value_node;
     dawn::InsertNode* insert_node;
+    dawn::ExprNode* expr_node;
+    dawn::BooleanPrimaryNode* boolean_primary_node;
+    dawn::ComparisonOprNode* comparison_operator_node;
+    dawn::PredicateNode* predicate_node;
+    dawn::BitExprNode* bit_expr_node;
+    dawn::SimpleExprNode* simple_expr_node;
+    dawn::WhereCondNode* where_condition_node;
+    dawn::SelectNode* select;
+    dawn::SelectExprListNode* select_expr_list;
+    dawn::SelectExprNode* select_expr;
+    dawn::TableRefsNode* table_references;
+    dawn::TableRefNode* table_reference;
+    dawn::TableFactorNode* table_factor;
+    dawn::TableNameNode* tb_name;
 }
 
 %token <str_val> ID
@@ -66,7 +81,7 @@ dawn::StmtListNode* ast_root;
     TRUE FALSE NATURAL JOIN
 %token INT_NUM FLOAT_NUM STRING
 
-%left '+' '-' '*' '/' '=' '>' '<' GT_EQ LE_EQ NOT_EQ OR AND
+%left '+' '-' '*' '/' '=' '>' '<' GT_EQ LE_EQ NOT_EQ OR AND NOT
 
 %type <stmt_list_node> stmt_list
 %type <node> stmt
@@ -83,20 +98,27 @@ dawn::StmtListNode* ast_root;
 %type <node> dml
 %type <insert_node> insert
 %type <node> delete
-%type <node> select
+%type <select_node> select
 
 %type <data_type_node> data_type
 %type <id_node> identifier
-%type <node> expr
 %type <literal_node> literal
-%type <node> where_condition
+%type <where_condition_node> where_condition
 %type <value_list_node> value_list
 %type <value_node> value
-%type <node> table_references
-%type <node> table_reference
-%type <node> table_factor
 %type <node> joined_table
-%type <node> tb_name
+%type <expr_node> expr
+%type <boolean_primary_node> boolean_primary
+%type <comparison_operator_node> comparison_operator
+%type <predicate_node> predicate
+%type <bit_expr_node> bit_expr
+%type <simple_expr_node> simple_expr
+%type <select_expr_list_node> select_expr_list
+%type <select_expr_node> select_expr
+%type <table_references_node> table_references
+%type <table_reference_node> table_reference
+%type <table_factor_node> table_factor
+%type <tb_name_node> tb_name
 
 %start sql
 
@@ -302,6 +324,7 @@ where_condition
 expr
     : expr AND expr {debug_print("expr: expr AND expr");}
     | expr OR expr {debug_print("expr: expr OR expr");}
+    | NOT expr {debug_print("expr: NOT expr");}
     | boolean_primary {debug_print("expr: boolean_primary");}
 
 boolean_primary
@@ -313,6 +336,7 @@ boolean_primary
 comparison_operator
     : '=' {debug_print("comparison_operator: =");}
     | '>' {debug_print("comparison_operator: >");}
+    | '<' {debug_print("comparison_operator: <");}
     | GT_EQ {debug_print("comparison_operator: GT_EQ");}
     | LE_EQ {debug_print("comparison_operator: LE_EQ");}
     | NOT_EQ {debug_print("comparison_operator: NOT_EQ");}
@@ -328,8 +352,16 @@ bit_expr
     | simple_expr {debug_print("bit_expr: simple_expr");}
 
 simple_expr
-    : literal {debug_print("simple_expr: literal");}
-    | identifier {debug_print("simple_expr: identifier");}
+    : literal {
+        debug_print("simple_expr: literal");
+        $$ = new dawn::SimpleExprNode(dawn::SimpleExprNode::SimpleExprType::kLiteral);
+        $$->add_child($1);
+    }
+    | identifier {
+        debug_print("simple_expr: identifier");
+        $$ = new dawn::SimpleExprNode(dawn::SimpleExprNode::SimpleExprType::kIdentifier);
+        $$->add_child($1);
+    }
 
 literal
     : INT_NUM {

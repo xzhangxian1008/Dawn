@@ -189,7 +189,7 @@ bool CatalogTable::change_table_name(table_id_t table_id, const string_t &new_na
             return false;
         }
         string_t old_name = iter->second;
-        //find this table's offset in the page
+        // find this table's offset in the page
         offset_t tb_offset = -1;
         int i = 0;
         // int table_count = table_num_;
@@ -223,13 +223,13 @@ bool CatalogTable::change_table_name(table_id_t table_id, const string_t &new_na
                 next_name_offset = *reinterpret_cast<offset_t*>(data_ + next_table_offset);
                 next_name_size = *reinterpret_cast<size_t_*>(data_ + next_table_offset + OFFSET_T_SIZE);
                 memmove(data_ + next_name_offset + difference_abs, data_ + next_name_offset, next_name_size + 1);
-                //update the previous table name's position.
+                // update the previous table name's position.
                 *reinterpret_cast<offset_t*>(data_ + next_table_offset - TABLE_RECORD_SZ) += difference_abs;
-                //update the current table name's position.
+                // update the current table name's position.
                 if(j == table_num_ -1)
                     *reinterpret_cast<offset_t*>(data_ + next_table_offset) += difference_abs;
             }
-            //update the free_space_pointer_.
+            // update the free_space_pointer_.
             free_space_pointer_ += difference_abs;
         }
         else if(difference > 0)
@@ -237,7 +237,7 @@ bool CatalogTable::change_table_name(table_id_t table_id, const string_t &new_na
             offset_t previous_name_offset;
             offset_t previous_table_offset;
             size_t_ previous_name_size;
-            //make sure there is enough space to update table's name.
+            // make sure there is enough space to update table's name.
             if(!check_space(difference_abs))
             {
                 latch_.w_unlock();
@@ -249,13 +249,13 @@ bool CatalogTable::change_table_name(table_id_t table_id, const string_t &new_na
                 previous_name_offset = *reinterpret_cast<offset_t*>(data_ + previous_table_offset);
                 previous_name_size = *reinterpret_cast<size_t_*>(data_ + previous_table_offset + OFFSET_T_SIZE);
                 memmove(data_ + previous_name_offset - difference_abs, data_ + previous_name_offset, previous_name_size + 1);
-                //update the current table name's position.
+                // update the current table name's position.
                 *reinterpret_cast<offset_t*>(data_ + previous_table_offset) -= difference_abs;
             }
-            //update the free_space_pointer_.
+            // update the free_space_pointer_.
             free_space_pointer_ -= difference_abs;
         }
-        //update new name.
+        // update new name.
         size_t_ len = new_name.length();
         offset_t new_name_offset = *reinterpret_cast<offset_t*>(data_ + tb_offset);
         for(int index = 0; index < len; index++)
@@ -263,25 +263,25 @@ bool CatalogTable::change_table_name(table_id_t table_id, const string_t &new_na
             *reinterpret_cast<char*>(data_ + new_name_offset + index) = new_name[index];
         }
         *reinterpret_cast<char*>(data_ + new_name_offset + len) = '\0';
-        //update the new name's size;
+        // update the new name's size;
         *reinterpret_cast<size_t_*>(data_ + tb_offset + OFFSET_T_SIZE) = new_name.length();
         
-        //update the tb_id_to_meta
+        // update the tb_id_to_meta
         auto iter_id_to_meta = tb_id_to_meta_.find(table_id);
         if (iter_id_to_meta == tb_id_to_meta_.end()) 
         {
             iter_id_to_meta->second->set_table_name(new_name);
         }
-        //update the tb_id_to_name_
+        // update the tb_id_to_name_
         auto iter_id_to_name = tb_id_to_name_.find(table_id);
         tb_id_to_name_.erase(iter_id_to_name);
         tb_id_to_name_.insert(std::make_pair(table_id, new_name));
-        //update the tb_name_to_id_
+        // update the tb_name_to_id_
         auto iter_name_to_id = tb_name_to_id_.find(old_name);
         tb_name_to_id_.erase(iter_name_to_id);
         tb_name_to_id_.insert(std::make_pair(new_name, table_id));
 
-        //flush page to disk.
+        // flush page to disk.
         latch_.w_unlock();
         bpm_->flush_page(self_page_id_);
         return true; 

@@ -36,6 +36,7 @@ string  '.*'
 "boolean" {return BOOLEAN;}
 "true" {return TRUE;}
 "false" {return FALSE;}
+"not" {return NOT;}
 ">" {return '>';}
 "<" {return '<';}
 ">=" {return GT_EQ;}

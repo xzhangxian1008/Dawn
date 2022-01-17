@@ -7,6 +7,7 @@
 namespace dawn {
 
 using TableNameNode = IdentifierNode;
+using WhereCondNode = ExprNode;
 
 enum DMLType : int8_t {
     kSelect,
@@ -199,56 +200,254 @@ public:
     }
 };
 
+/**
+ * simple_expr
+ *     : literal (1)
+ *     | identifier (2)
+ * 
+ * (1): It has only one child. 
+ *        - idx 0: LiteralNode
+ * (2): It has only one child.
+ *        - idx 0: IdentifierNode
+ */
 class SimpleExprNode : public DMLNode {
 public:
+    enum SimpleExprType : int8_t { kLiteral, kIdentifier };
+
     DISALLOW_COPY_AND_MOVE(SimpleExprNode);
-    SimpleExprNode() : DMLNode(DMLType::kSimpleExpr) {}
+    SimpleExprNode(SimpleExprType type) 
+        : DMLNode(DMLType::kSimpleExpr), type_(type) {}
+
+    SimpleExprType get_type() const { return type_; }
+
+    // Because it always has only one child, so we return the first child.
+    Node* get_child() const { return at(0); }
+
+private:
+    SimpleExprType type_;
 };
 
+/**
+ * bit_expr:
+ *   bit_expr '+' bit_expr (1)
+ *   bit_expr '-' bit_expr (1)
+ *   bit_expr '*' bit_expr (1)
+ *   bit_expr '/' bit_expr (1)
+ *   simple_expr (2)
+ *   ...
+ * 
+ * (1): It has two children
+ *        - idx 0: BitExprNode
+ *        - idx 1: BitExprNode
+ * (2): It has only one child
+ *        - idx 0: SimpleExprNode
+ */
 class BitExprNode : public DMLNode {
 public:
+    enum BitExprType : int8_t { kPlus, kMinus, kMultiply, kDivide, kSimpleExpr };
+
     DISALLOW_COPY_AND_MOVE(BitExprNode);
-    BitExprNode() : DMLNode(DMLType::kBitExpr) {}
+    BitExprNode(BitExprType type)
+        : DMLNode(DMLType::kBitExpr), type_(type) {}
+
+    BitExprType get_type() const { return type_; }
+private:
+    BitExprType type_;
 };
 
+/**
+ * predicate:
+ *   bit_expr
+ *   ...
+ * 
+ * So far, it has only one child.
+ */
 class PredicateNode : public DMLNode {
 public:
     DISALLOW_COPY_AND_MOVE(PredicateNode);
     PredicateNode() : DMLNode(DMLType::kPredicate) {}
+
+    /** Each production rule of predicate has at least one bit_expr */
+    BitExprNode* get_the_first_bit() const {
+        Node* node = at(0); // Position of the first bit_expr is always at the index 0
+        BitExprNode* bit_expr_node = dynamic_cast<BitExprNode*>(node);
+        assert(bit_expr_node);
+
+        return bit_expr_node;
+    }
 };
 
+/**
+ * comparison_operator: = | > | < | >= | <= | != | <>
+ * It does have any child.
+ */
 class ComparisonOprNode : public DMLNode {
 public:
+    enum ComparisonOprType : int8_t { kEqual, kGreater, kLess, kGreaterEq, kLessEq, kNotEqual };
+
     DISALLOW_COPY_AND_MOVE(ComparisonOprNode);
-    ComparisonOprNode() : DMLNode(DMLType::kComparisonOpr) {}
+    ComparisonOprNode(ComparisonOprType type)
+        : DMLNode(DMLType::kComparisonOpr), type_(type) {}
+
+    ComparisonOprType get_type() const { return type_; }
+private:
+    ComparisonOprType type_;
 };
 
+/**
+ * boolean_primary:
+ *   boolean_primary comparison_operator predicate (1)
+ *   predicate
+ *   ...
+ * 
+ * (1): It has three children
+ *        - idx 0: BooleanPrimaryNode
+ *        - idx 1: ComparisonOprNode
+ *        - idx 2: PredicateNode
+ */
 class BooleanPrimaryNode : public DMLNode {
 public:
     DISALLOW_COPY_AND_MOVE(BooleanPrimaryNode);
-    BooleanPrimaryNode() : DMLNode(DMLType::kBooleanPrimary) {}
+    BooleanPrimaryNode(bool recursive)
+        : DMLNode(DMLType::kBooleanPrimary), recursive_(recursive) {}
+
+    /** True, and this node has a child with BooleanPrimaryNode type */
+    bool is_recursive() const { return recursive_; }
+
+    /**
+     * No matter what production rule it belongs to, this node always
+     * has only one PredicateNode or BooleanPrimaryNode or both of them.
+     * @return Return nullptr if it doesn't have PredicateNode. So far, we only
+     *         implement two production rules and it will not return nullptr.
+     */
+    PredicateNode* get_predicate() const {
+        Node* node;
+        PredicateNode* predicate;
+
+        if (!recursive_)
+            node = at(0);
+        else
+            node = at(2);
+
+        predicate = dynamic_cast<PredicateNode*>(node);
+        assert(predicate);
+        return predicate;
+    }
+
+    /**
+     * The BooleanPrimaryNode has at most only one BooleanPrimaryNode.
+     * @return Return nullptr if it doesn't have BooleanPrimaryNode.
+     */
+    BooleanPrimaryNode* get_boolean_primary() const {
+        if (!recursive_)
+            return nullptr;
+        
+        Node* node = at(0);
+        BooleanPrimaryNode* boolean_primary = dynamic_cast<BooleanPrimaryNode*>(node);
+        assert(boolean_primary);
+        return boolean_primary;
+    }
+
+    /** According to the production rules, this ComparisonOprNode is always at the index 1. */
+    ComparisonOprNode* get_comparison_opr() const {
+        if (!comparison_)
+            return nullptr;
+        
+        Node* node = at(1);
+        ComparisonOprNode* comparison_opr = dynamic_cast<ComparisonOprNode*>(node);
+        assert(comparison_opr);
+        return comparison_opr;
+    }
+
+private:
+    // Indicate if this BooleanPrimaryNode has a child with BooleanPrimaryNode type
+    bool recursive_;
+
+    // Indicate if this BooleanPrimaryNode has a child with ComparisonOprNode type
+    bool comparison_;
 };
 
+/**
+ * expr:
+ *   expr AND expr (1)
+ *   expr OR expr (1)
+ *   boolean_primary
+ * (1): It has two childrean
+ *        - idx 0: ExprNode
+ *        - idx 1: ExprNode
+ */
 class ExprNode : public DMLNode {
 public:
+    enum ExprType : int8_t { kOR, kAND, kNOT, kBooleanPrimary };
+
     DISALLOW_COPY_AND_MOVE(ExprNode);
-    ExprNode() : DMLNode(DMLType::kExpr) {}
+    ExprNode(ExprType type)
+        : DMLNode(DMLType::kExpr), type_(type) {}
+
+    BooleanPrimaryNode* get_boolean_primary() const {
+        if (type_ != ExprType::kBooleanPrimary)
+            return nullptr;
+        
+        Node* node = at(0); // Position of the BooleanPrimaryNode is always at index 0.
+        BooleanPrimaryNode* boolean_primary = dynamic_cast<BooleanPrimaryNode*>(node);
+        assert(boolean_primary);
+        return boolean_primary;
+    }
+
+    std::vector<ExprNode*> get_exprs() const {
+        std::vector<ExprNode*> exprs;
+        switch (type_) {
+        case ExprType::kBooleanPrimary:
+            break;
+        case ExprType::kNOT:
+            exprs.push_back(get_expr(1));
+            break;
+        case ExprType::kOR:
+        case ExprType::kAND:
+            exprs.push_back(get_expr(0));
+            exprs.push_back(get_expr(1));
+            break;
+        default:
+            assert(0); // Invalid
+        }
+        return exprs;
+    }
+
+    ExprType get_type() const { return type_; }
+private:
+    ExprNode* get_expr(size_t idx) const {
+        Node* node = at(idx);
+        ExprNode* expr = dynamic_cast<ExprNode*>(node);
+        assert(expr);
+        return expr;
+    }
+
+    ExprType type_;
 };
 
-class WhereCondNode : public DMLNode {
-public:
-    DISALLOW_COPY_AND_MOVE(WhereCondNode);
-    WhereCondNode() : DMLNode(DMLType::kWhereCond) {}
-};
-
+/**
+ * table_factor:
+ *   tb_name
+ *   ...
+ * 
+ * So far, TableFactor only provides table name.
+ */
 class TableFactor : public DMLNode {
 public:
     DISALLOW_COPY_AND_MOVE(TableFactor);
     TableFactor() : DMLNode(DMLType::kTableFactor) {}
+
+    std::string get_tb_name() const {
+        Node* node = at(0);
+        TableNameNode* table_name = dynamic_cast<TableNameNode*>(node);
+        assert(table_name);
+        return table_name->get_id();
+    }
 };
 
 class TableRefNode : public DMLNode {
 public:
+    enum TableRefType : int8_t { kTableFactor, kJoinTable };
     DISALLOW_COPY_AND_MOVE(TableRefNode);
     TableRefNode() : DMLNode(DMLType::kTableRef) {}
 };
