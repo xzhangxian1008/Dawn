@@ -6,40 +6,14 @@
 
 namespace dawn {
 
-using TableNameNode = IdentifierNode;
-using WhereCondNode = ExprNode;
-
 enum DMLType : int8_t {
-    kSelect,
-    kInsert,
-    kDelete,
-    kValueList,
-    kValue,
-    kConstant,
-    kSelectExprList,
-    kSelectExpr,
-    kTableRefs,
-    kTableRef,
-    kTableFactor,
-    kWhereCond,
-    kExpr,
-    kSimpleExpr,
-    kBitExpr,
-    kPredicate,
-    kComparisonOpr,
-    kBooleanPrimary
+    kSelect, kInsert, kDelete, kValueList, kValue, kConstant, kSelectExprList,
+    kSelectExpr, kTableRefs, kTableRef, kTableFactor, kWhereCond, kExpr, kSimpleExpr,
+    kBitExpr, kPredicate, kComparisonOpr, kBooleanPrimary
 };
 
 enum ExprType : int8_t {
-    kPlus,
-    kMinus,
-    kMultiply,
-    kDivide,
-    kGreater,
-    kLess,
-    kGreaterEq,
-    kLessEq,
-    kEqual
+    kPlus, kMinus, kMultiply, kDivide, kGreater, kLess, kGreaterEq, kLessEq, kEqual
 };
 
 class DMLNode : public Node {
@@ -308,11 +282,13 @@ private:
 class BooleanPrimaryNode : public DMLNode {
 public:
     DISALLOW_COPY_AND_MOVE(BooleanPrimaryNode);
-    BooleanPrimaryNode(bool recursive)
-        : DMLNode(DMLType::kBooleanPrimary), recursive_(recursive) {}
+    BooleanPrimaryNode()
+        : DMLNode(DMLType::kBooleanPrimary), recursive_(false) {}
 
     /** True, and this node has a child with BooleanPrimaryNode type */
     bool is_recursive() const { return recursive_; }
+
+    void set_recursive(bool recursive) { recursive_ = recursive; }
 
     /**
      * No matter what production rule it belongs to, this node always
@@ -359,6 +335,7 @@ public:
         return comparison_opr;
     }
 
+    void set_comparison_opr(bool comparison) { comparison_ = comparison; }
 private:
     // Indicate if this BooleanPrimaryNode has a child with BooleanPrimaryNode type
     bool recursive_;
@@ -425,19 +402,22 @@ private:
     ExprType type_;
 };
 
+using WhereCondNode = ExprNode;
+using TableNameNode = IdentifierNode;
+
 /**
  * table_factor:
  *   tb_name
  *   ...
  * 
- * So far, TableFactor only provides table name.
+ * So far, TableFactorNode only provides table name.
  */
-class TableFactor : public DMLNode {
+class TableFactorNode : public DMLNode {
 public:
-    DISALLOW_COPY_AND_MOVE(TableFactor);
-    TableFactor() : DMLNode(DMLType::kTableFactor) {}
+    DISALLOW_COPY_AND_MOVE(TableFactorNode);
+    TableFactorNode() : DMLNode(DMLType::kTableFactor) {}
 
-    std::string get_tb_name() const {
+    string_t get_tb_name() const {
         Node* node = at(0);
         TableNameNode* table_name = dynamic_cast<TableNameNode*>(node);
         assert(table_name);
@@ -445,6 +425,11 @@ public:
     }
 };
 
+/**
+ * table_reference:
+ *   table_factor
+ *   joined_table(Not support this so far)
+ */
 class TableRefNode : public DMLNode {
 public:
     enum TableRefType : int8_t { kTableFactor, kJoinTable };
@@ -456,31 +441,104 @@ class TableRefsNode : public DMLNode {
 public:
     DISALLOW_COPY_AND_MOVE(TableRefsNode);
     TableRefsNode() : DMLNode(DMLType::kTableRefs) {}
+
+    std::vector<TableRefNode*> get_tb_refs() const {
+        std::vector<Node*> children = get_children();
+        std::vector<TableRefNode*> refs;
+
+        // Convert to the target type
+        for (Node* child : children) {
+            TableRefNode* ref = dynamic_cast<TableRefNode*>(child);
+            assert(ref);
+            refs.push_back(ref);
+        }
+        return refs;
+    }
 };
 
+/**
+ * select_expr:
+ *   col_name
+ *   *
+ */
 class SelectExprNode : public DMLNode {
 public:
+    // More functions will be added
+    enum SelectExprType : int32_t { kColName, kStar };
+
     DISALLOW_COPY_AND_MOVE(SelectExprNode);
-    SelectExprNode() : DMLNode(DMLType::kSelectExpr) {}
+    SelectExprNode(SelectExprType type)
+        : DMLNode(DMLType::kSelectExpr), type_(type) {}
+    
+    SelectExprType get_type() const { return type_; }
+
+    string_t get_col_name() const {
+        if (type_ != SelectExprType::kColName)
+            return "";
+        
+        Node* node = at(0); // Each SelectExprNode has only one child
+        IdentifierNode* col_name = dynamic_cast<IdentifierNode*>(node);
+        assert(col_name);
+        return col_name->get_id();
+    }
+private:
+    SelectExprType type_;
 };
 
 class SelectExprListNode : public DMLNode {
 public:
     DISALLOW_COPY_AND_MOVE(SelectExprListNode);
-    SelectExprListNode() : DMLNode(DMLType::kSelectExprList) {}
+    SelectExprListNode()
+        : DMLNode(DMLType::kSelectExprList), is_star_(false) {}
+
+    bool is_star() const { return is_star_; }
+    void set_star(bool star) { is_star_ = star; }
+
+    /** Empty vector will be returned when there is a '*' in the expression list */
+    std::vector<string_t> get_col_names() const {
+        if (is_star_)
+            return std::vector<string_t>{};
+        
+        std::vector<string_t> col_names;
+        std::vector<Node*> nodes = get_children();
+        for (Node* child : nodes) {
+            SelectExprNode* select_expr = dynamic_cast<SelectExprNode*>(child);
+            assert(select_expr);
+
+            // Ignore some expression that is not kColName
+            if (select_expr->get_type() != SelectExprNode::SelectExprType::kColName)
+                continue;
+            col_names.push_back(select_expr->get_col_name());
+        }
+        return col_names;
+    }
+private:
+    bool is_star_; // True when '*' appear in the select expression list
 };
 
 class SelectNode : public DMLNode {
 public:
     DISALLOW_COPY_AND_MOVE(SelectNode);
-    SelectNode() : DMLNode(DMLType::kSelect) {
+    SelectNode() : DMLNode(DMLType::kSelect) {}
 
+    void set_select_expr_list(SelectExprListNode* select_expr_list) {
+        select_expr_list_ = select_expr_list;
     }
+    void set_table_refs(TableRefsNode* tb_refs) { tb_refs_ = tb_refs; }
+    void set_where_cond(WhereCondNode* where_cond) { where_cond_ = where_cond; }
+
+    SelectExprListNode* get_select_expr_list() const { return select_expr_list_; }
+    TableRefsNode* get_table_refs() const { return tb_refs_; }
+    WhereCondNode* get_where_cond() const { return where_cond_; }
 
     ExecutorAbstract* get_root_node() const {
         // TODO: Construct the tree from ast
         return nullptr;
     }
+private:
+    SelectExprListNode* select_expr_list_;
+    TableRefsNode* tb_refs_;
+    WhereCondNode* where_cond_;
 };
 
 } // namespace dawn

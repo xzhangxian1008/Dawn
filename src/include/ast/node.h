@@ -34,6 +34,7 @@ public:
     NodeType get_type() const { return type_; }
     std::vector<Node*> get_children() const { return children_; }
     Node* at(size_t idx) const { return children_[idx]; }
+    size_t get_child_num() const { return children_.size(); }
 private:
     std::vector<Node*> children_;
     NodeType type_;

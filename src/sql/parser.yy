@@ -59,18 +59,18 @@ dawn::StmtListNode* ast_root;
     dawn::InsertNode* insert_node;
     dawn::ExprNode* expr_node;
     dawn::BooleanPrimaryNode* boolean_primary_node;
-    dawn::ComparisonOprNode* comparison_operator_node;
+    dawn::ComparisonOprNode* comparison_opr_node;
     dawn::PredicateNode* predicate_node;
     dawn::BitExprNode* bit_expr_node;
     dawn::SimpleExprNode* simple_expr_node;
     dawn::WhereCondNode* where_condition_node;
-    dawn::SelectNode* select;
-    dawn::SelectExprListNode* select_expr_list;
-    dawn::SelectExprNode* select_expr;
-    dawn::TableRefsNode* table_references;
-    dawn::TableRefNode* table_reference;
-    dawn::TableFactorNode* table_factor;
-    dawn::TableNameNode* tb_name;
+    dawn::SelectNode* select_node;
+    dawn::SelectExprListNode* select_expr_list_node;
+    dawn::SelectExprNode* select_expr_node;
+    dawn::TableRefsNode* table_references_node;
+    dawn::TableRefNode* table_reference_node;
+    dawn::TableFactorNode* table_factor_node;
+    dawn::TableNameNode* tb_name_node;
 }
 
 %token <str_val> ID
@@ -109,7 +109,7 @@ dawn::StmtListNode* ast_root;
 %type <node> joined_table
 %type <expr_node> expr
 %type <boolean_primary_node> boolean_primary
-%type <comparison_operator_node> comparison_operator
+%type <comparison_opr_node> comparison_operator
 %type <predicate_node> predicate
 %type <bit_expr_node> bit_expr
 %type <simple_expr_node> simple_expr
@@ -174,7 +174,11 @@ dml
         $$->add_child($1);
     }
     | delete {debug_print("dml: delete");}
-    | select {debug_print("dml: select");}
+    | select {
+        debug_print("dml: select");
+        $$ = new dawn::DMLNode(dawn::DMLType::kSelect);
+        $$->add_child($1);
+    }
 
 create
     : CREATE TABLE identifier '(' create_def_list ')' {
@@ -280,35 +284,71 @@ delete
 select
     : SELECT select_expr_list FROM table_references WHERE where_condition {
         debug_print("select: SELECT select_expr FROM table_references WHERE where_condition");
+        $$ = new dawn::SelectNode();
+        $$->set_select_expr_list($2);
+        $$->set_table_refs($4);
+        $$->set_where_cond($6);
     }
 
 select_expr_list
-    : select_expr {debug_print("select_exprs: select_expr");}
-    | select_expr_list ',' select_expr {debug_print("select_exprs: select_expr_list ',' select_expr");}
+    : select_expr {
+        debug_print("select_exprs: select_expr");
+        $$ = new dawn::SelectExprListNode();
+        if ($1->get_type() == dawn::SelectExprNode::SelectExprType::kStar)
+            $$->set_star(true);
+        else
+            $$->add_child($1);
+    }
+    | select_expr_list ',' select_expr {
+        debug_print("select_exprs: select_expr_list ',' select_expr");
+        if ($1->is_star()) {
+            // Do nothing if there is a '*' in the expression list
+        } else {
+            $1->add_child($3);
+            $$ = $1;
+        }
+    }
 
 select_expr
-    : col_name {debug_print("select_expr: col_name");}
+    : col_name {
+        debug_print("select_expr: col_name");
+        $$ = new dawn::SelectExprNode(dawn::SelectExprNode::SelectExprType::kColName);
+        $$->add_child($1);
+    }
     | '*' {
         debug_print("select_expr: *");
+        $$ = new dawn::SelectExprNode(dawn::SelectExprNode::SelectExprType::kStar);
+
     }
 
 // We only support the single table so far.
 table_references
     : table_reference {
         debug_print("table_references: table_reference");
+        $$ = new dawn::TableRefsNode();
+        $$->add_child($1);
     }
     | table_references ',' table_reference {
         debug_print("table_references: table_references ',' table_reference");
+        // We do not support multi tables so far
         // TODO: Cartesian product
     }
 
 // Only support single table so far.
 table_reference
-    : table_factor {debug_print("table_reference: table_factor");}
+    : table_factor {
+        debug_print("table_reference: table_factor");
+        $$ = new dawn::TableRefNode();
+        $$->add_child($1);
+    }
     | joined_table {debug_print("table_reference: joined_table");}
 
 table_factor
-    : tb_name {debug_print("table_factor: tb_name");}
+    : tb_name {
+        debug_print("table_factor: tb_name");
+        $$ = new dawn::TableFactorNode();
+        $$->add_child($1);
+    }
 
 joined_table
     : table_reference NATURAL JOIN table_factor {
@@ -316,40 +356,122 @@ joined_table
     }
 
 tb_name
-    : identifier {debug_print("tb_name: identifier");}
+    : identifier {
+        debug_print("tb_name: identifier");
+        $$ = $1;
+    }
 
 where_condition
-    : expr {debug_print("where_condition: expr");}
+    : expr {
+        debug_print("where_condition: expr");
+        $$ = $1;
+    }
 
 expr
-    : expr AND expr {debug_print("expr: expr AND expr");}
-    | expr OR expr {debug_print("expr: expr OR expr");}
-    | NOT expr {debug_print("expr: NOT expr");}
-    | boolean_primary {debug_print("expr: boolean_primary");}
+    : expr AND expr {
+        debug_print("expr: expr AND expr");
+        $$ = new dawn::ExprNode(dawn::ExprNode::ExprType::kAND);
+        $$->add_child($1);
+        $$->add_child($3);
+    }
+    | expr OR expr {
+        debug_print("expr: expr OR expr");
+        $$ = new dawn::ExprNode(dawn::ExprNode::ExprType::kOR);
+        $$->add_child($1);
+        $$->add_child($3);
+    }
+    | NOT expr {
+        debug_print("expr: NOT expr");
+        $$ = new dawn::ExprNode(dawn::ExprNode::ExprType::kNOT);
+        $$->add_child($2);
+    }
+    | boolean_primary {
+        debug_print("expr: boolean_primary");
+        $$ = new dawn::ExprNode(dawn::ExprNode::ExprType::kBooleanPrimary);
+        $$->add_child($1);
+    }
 
 boolean_primary
     : boolean_primary comparison_operator predicate {
         debug_print("boolean_primary: boolean_primary comparison_operator predicate");
+        $$ = new dawn::BooleanPrimaryNode();
+        $$->set_recursive(true);
+        $$->set_comparison_opr(true);
+        $$->add_child($1);
+        $$->add_child($2);
+        $$->add_child($3);
     }
-    | predicate {debug_print("boolean_primary: predicate");}
+    | predicate {
+        debug_print("boolean_primary: predicate");
+        $$ = new dawn::BooleanPrimaryNode();
+        $$->add_child($1);
+    }
 
 comparison_operator
-    : '=' {debug_print("comparison_operator: =");}
-    | '>' {debug_print("comparison_operator: >");}
-    | '<' {debug_print("comparison_operator: <");}
-    | GT_EQ {debug_print("comparison_operator: GT_EQ");}
-    | LE_EQ {debug_print("comparison_operator: LE_EQ");}
-    | NOT_EQ {debug_print("comparison_operator: NOT_EQ");}
+    : '=' {
+        debug_print("comparison_operator: =");
+        $$ = new dawn::ComparisonOprNode(dawn::ComparisonOprNode::ComparisonOprType::kEqual);
+    }
+    | '>' {
+        debug_print("comparison_operator: >");
+        $$ = new dawn::ComparisonOprNode(dawn::ComparisonOprNode::ComparisonOprType::kGreater);
+    }
+    | '<' {
+        debug_print("comparison_operator: <");
+        $$ = new dawn::ComparisonOprNode(dawn::ComparisonOprNode::ComparisonOprType::kLess);
+    }
+    | GT_EQ {
+        debug_print("comparison_operator: GT_EQ");
+        $$ = new dawn::ComparisonOprNode(dawn::ComparisonOprNode::ComparisonOprType::kGreaterEq);
+    }
+    | LE_EQ {
+        debug_print("comparison_operator: LE_EQ");
+        $$ = new dawn::ComparisonOprNode(dawn::ComparisonOprNode::ComparisonOprType::kLessEq);
+    }
+    | NOT_EQ {
+        debug_print("comparison_operator: NOT_EQ");
+        $$ = new dawn::ComparisonOprNode(dawn::ComparisonOprNode::ComparisonOprType::kNotEqual);
+    }
 
 predicate
-    : bit_expr {debug_print("predicate: bit_expr");}
+    : bit_expr {
+        debug_print("predicate: bit_expr");
+        dawn::PredicateNode* predicate = new dawn::PredicateNode();
+        predicate->add_child($1);
+        $$ = predicate;
+    }
 
 bit_expr
-    : bit_expr '+' bit_expr {debug_print("bit_expr: bit_expr '+' bit_expr");}
-    | bit_expr '-' bit_expr {debug_print("bit_expr: bit_expr '-' bit_expr");}
-    | bit_expr '*' bit_expr {debug_print("bit_expr: bit_expr '*' bit_expr");}
-    | bit_expr '/' bit_expr {debug_print("bit_expr: bit_expr '/' bit_expr");}
-    | simple_expr {debug_print("bit_expr: simple_expr");}
+    : bit_expr '+' bit_expr {
+        debug_print("bit_expr: bit_expr '+' bit_expr");
+        dawn::BitExprNode* bit_expr = new dawn::BitExprNode(dawn::BitExprNode::BitExprType::kPlus);
+        bit_expr->add_child($1);
+        bit_expr->add_child($3);
+    }
+    | bit_expr '-' bit_expr {
+        debug_print("bit_expr: bit_expr '-' bit_expr");
+        dawn::BitExprNode* bit_expr = new dawn::BitExprNode(dawn::BitExprNode::BitExprType::kMinus);
+        bit_expr->add_child($1);
+        bit_expr->add_child($3);
+    }
+    | bit_expr '*' bit_expr {
+        debug_print("bit_expr: bit_expr '*' bit_expr");
+        dawn::BitExprNode* bit_expr = new dawn::BitExprNode(dawn::BitExprNode::BitExprType::kMultiply);
+        bit_expr->add_child($1);
+        bit_expr->add_child($3);
+    }
+    | bit_expr '/' bit_expr {
+        debug_print("bit_expr: bit_expr '/' bit_expr");
+        dawn::BitExprNode* bit_expr = new dawn::BitExprNode(dawn::BitExprNode::BitExprType::kDivide);
+        bit_expr->add_child($1);
+        bit_expr->add_child($3);
+    }
+    | simple_expr {
+        debug_print("bit_expr: simple_expr");
+        dawn::BitExprNode* bit_expr = new dawn::BitExprNode(dawn::BitExprNode::BitExprType::kSimpleExpr);
+        bit_expr->add_child($1);
+        $$ = bit_expr;
+    }
 
 simple_expr
     : literal {
