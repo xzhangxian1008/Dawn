@@ -48,6 +48,14 @@ public:
     inline CatalogTable* get_catalog_table() const { return catalog_table_; }
     inline BufferPoolManager* get_buffer_pool_manager() const { return bpm_; }
 
+    Table* get_table(const string_t& tb_name) const {
+        TableMetaData* tb_meta = catalog_table_->get_table_meta_data(tb_name);
+        if (!tb_meta)
+            return nullptr;
+        
+        return tb_meta->get_table();
+    }
+
     // TODO operation about catalog table
     
     static constexpr offset_t CATALOG_TABLE_PGID_OFFSET = COM_PG_HEADER_SZ;

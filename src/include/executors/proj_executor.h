@@ -1,7 +1,7 @@
 #pragma once
 
 #include "executors/executor_abstr.h"
-#include "plans/expressions/col_value_expr.h"
+#include "sql/expressions/col_value_expr.h"
 #include "table/schema.h"
 #include "util/config.h"
 #include "data/types.h"
@@ -104,6 +104,9 @@ public:
         }
     }
 
+    // TODO: Destructor should delete the following members:
+    // child_, exprs_, agg_exprs_, input_schema_, output_schema_
+    // Maybe type of some members should not be the pointer, such as input_schema_ etc.
     ~ProjectionExecutor() = default;
 
     DISALLOW_COPY_AND_MOVE(ProjectionExecutor);

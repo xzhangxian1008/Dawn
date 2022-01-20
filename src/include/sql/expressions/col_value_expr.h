@@ -1,6 +1,6 @@
 #pragma once
 
-#include "plans/expressions/expr_abstr.h"
+#include "sql/expressions/expr_abstr.h"
 #include <vector>
 
 namespace dawn {

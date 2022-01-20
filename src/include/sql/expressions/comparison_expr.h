@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "plans/expressions/expr_abstr.h"
+#include "sql/expressions/expr_abstr.h"
 #include "data/types.h"
 #include "data/boolean.h"
 

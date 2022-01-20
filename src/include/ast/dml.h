@@ -1,10 +1,17 @@
 #pragma once
 
+#include <map>
+
+#include "manager/db_manager.h"
 #include "ast/node.h"
 #include "data/values.h"
 #include "executors/executor_abstr.h"
+#include "executors/proj_executor.h"
+#include "executors/seq_scan_executor.h"
 
 namespace dawn {
+
+extern std::unique_ptr<DBManager> db_manager;
 
 enum DMLType : int8_t {
     kSelect, kInsert, kDelete, kValueList, kValue, kConstant, kSelectExprList,
@@ -434,7 +441,26 @@ class TableRefNode : public DMLNode {
 public:
     enum TableRefType : int8_t { kTableFactor, kJoinTable };
     DISALLOW_COPY_AND_MOVE(TableRefNode);
-    TableRefNode() : DMLNode(DMLType::kTableRef) {}
+    TableRefNode() : DMLNode(DMLType::kTableRef), type_(TableRefType::kTableFactor) {}
+
+    std::vector<string_t> get_tb_name() const {
+        std::vector<string_t> names;
+
+        if (type_ == TableRefType::kTableFactor) {
+            Node* node = at(0);
+            TableFactorNode* tb_factor = dynamic_cast<TableFactorNode*>(node);
+            assert(tb_factor);
+            names.push_back(tb_factor->get_tb_name());
+        } else if (type_ == TableRefType::kJoinTable) {
+            // TODO
+        } else {
+            assert(0);
+        }
+
+        return names;
+    }
+private:
+    TableRefType type_;
 };
 
 class TableRefsNode : public DMLNode {
@@ -442,7 +468,36 @@ public:
     DISALLOW_COPY_AND_MOVE(TableRefsNode);
     TableRefsNode() : DMLNode(DMLType::kTableRefs) {}
 
-    std::vector<TableRefNode*> get_tb_refs() const {
+    std::vector<TableRefNode*> get_tb_ref() const {
+        return get_table_reference_nodes();
+    }
+
+    /** Get name of tables that should be read in this sql */
+    std::vector<string_t> get_tb_name() const {
+        std::vector<TableRefNode*> nodes = get_table_reference_nodes();
+        std::vector<string_t> ret_names;
+
+        // Collect table names together
+        for (TableRefNode* node : nodes) {
+            std::vector<string_t> names = node->get_tb_name();
+            ret_names.insert(ret_names.end(), names.begin(), names.end());
+        }
+
+        return ret_names;
+    }
+
+    /**
+     * // FIXME? We do not check if this tb_name should be read in this sql.
+     * Get a table's SeqScanExecutor
+     */
+    SeqScanExecutor* get_seq_scan_exec(ExecutorContext *exec_ctx, const string_t& tb_name) const {
+        Catalog* catalog = db_manager->get_catalog();
+        Table* table = catalog->get_table(tb_name);
+
+        return new SeqScanExecutor(exec_ctx, table);
+    }
+private:
+    std::vector<TableRefNode*> get_table_reference_nodes() const {
         std::vector<Node*> children = get_children();
         std::vector<TableRefNode*> refs;
 
@@ -512,8 +567,29 @@ public:
         }
         return col_names;
     }
+
+    /**
+     * Return nullptr when no projection should be added.
+     */
+    ProjectionExecutor* get_projection(
+        const string_t& tb_name,
+        ExecutorContext *exec_ctx, 
+        std::vector<ExpressionAbstract*> exprs,
+        ExecutorAbstract *child,
+        Schema *input_schema) const;
+    
 private:
-    bool is_star_; // True when '*' appear in the select expression list
+    /** True when we need to project tuples */
+    bool check_projection_need() const;
+
+    /** Build expressions for projecting tuples */
+    std::vector<ExpressionAbstract*> build_exprs(const string_t& tb_name, Schema *input_schema) const;
+
+    /** Get name of columns that should be projected. */
+    std::vector<string_t> get_projected_col(const string_t& tb_name) const;
+
+    // True when '*' appear in the select expression list, and we do not care about multi-table so far
+    bool is_star_;
 };
 
 class SelectNode : public DMLNode {
@@ -531,10 +607,7 @@ public:
     TableRefsNode* get_table_refs() const { return tb_refs_; }
     WhereCondNode* get_where_cond() const { return where_cond_; }
 
-    ExecutorAbstract* get_root_node() const {
-        // TODO: Construct the tree from ast
-        return nullptr;
-    }
+    ExecutorAbstract* construct() const;
 private:
     SelectExprListNode* select_expr_list_;
     TableRefsNode* tb_refs_;

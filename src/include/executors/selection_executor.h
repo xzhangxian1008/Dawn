@@ -1,8 +1,8 @@
 #pragma once
 
 #include "executors/executor_abstr.h"
-#include "plans/expressions/expr_abstr.h"
-#include "plans/expressions/comparison_expr.h"
+#include "sql/expressions/expr_abstr.h"
+#include "sql/expressions/comparison_expr.h"
 #include "table/schema.h"
 #include "util/config.h"
 
