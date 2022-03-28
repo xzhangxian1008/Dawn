@@ -1,4 +1,5 @@
 %{
+// This file has been deprecated and we implement another scanner to replace the lex
 #include <string>
 #include <cstring>
 #include "y.tab.h"

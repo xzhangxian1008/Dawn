@@ -518,7 +518,8 @@ private:
  */
 class SelectExprNode : public DMLNode {
 public:
-    // More functions will be added
+    // More aggregation functions will be added.
+    // So far, we only support the projection.
     enum SelectExprType : int32_t { kColName, kStar };
 
     DISALLOW_COPY_AND_MOVE(SelectExprNode);
@@ -572,21 +573,20 @@ public:
      * Return nullptr when no projection should be added.
      */
     ProjectionExecutor* get_projection(
-        const string_t& tb_name,
         ExecutorContext *exec_ctx, 
-        std::vector<ExpressionAbstract*> exprs,
         ExecutorAbstract *child,
         Schema *input_schema) const;
     
 private:
     /** True when we need to project tuples */
-    bool check_projection_need() const;
+    inline bool check_projection_need() const {
+        return is_star_ ? false : true;
+    }
 
     /** Build expressions for projecting tuples */
-    std::vector<ExpressionAbstract*> build_exprs(const string_t& tb_name, Schema *input_schema) const;
+    std::vector<ExpressionAbstract*> build_exprs(Schema *input_schema) const;
 
-    /** Get name of columns that should be projected. */
-    std::vector<string_t> get_projected_col(const string_t& tb_name) const;
+    Schema* build_output_schema() const;
 
     // True when '*' appear in the select expression list, and we do not care about multi-table so far
     bool is_star_;

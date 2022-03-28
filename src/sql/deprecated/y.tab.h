@@ -39,6 +39,14 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 36 "parser.yy" /* yacc.c:1909  */
+
+    #include "ast/node.h"
+    #include "ast/ddl.h"
+    #include "ast/dml.h"
+
+#line 50 "y.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -70,7 +78,10 @@ extern int yydebug;
     STRING = 280,
     GT_EQ = 281,
     LE_EQ = 282,
-    NOT_EQ = 283
+    NOT_EQ = 283,
+    OR = 284,
+    AND = 285,
+    NOT = 286
   };
 #endif
 /* Tokens.  */
@@ -100,19 +111,50 @@ extern int yydebug;
 #define GT_EQ 281
 #define LE_EQ 282
 #define NOT_EQ 283
+#define OR 284
+#define AND 285
+#define NOT 286
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 
 union YYSTYPE
 {
-#line 25 "parser.yy" /* yacc.c:1909  */
+#line 42 "parser.yy" /* yacc.c:1909  */
 
     int int_val;
     char* str_val;
-    int node;
+    dawn::Node* node;
+    dawn::DataTypeNode* data_type_node;
+    dawn::IdentifierNode* id_node;
+    dawn::ColumnDefNode* col_def_node;
+    dawn::CreateDefNode* create_def_node;
+    dawn::CreateDefListNode* create_def_list_node;
+    dawn::CreateNode* create_node;
+    dawn::DDLNode* ddl_node;
+    dawn::DMLNode* dml_node;
+    dawn::StmtListNode* stmt_list_node;
+    dawn::DropNode* drop_node;
+    dawn::LiteralNode* literal_node;
+    dawn::ValueListNode* value_list_node;
+    dawn::ValueNode* value_node;
+    dawn::InsertNode* insert_node;
+    dawn::ExprNode* expr_node;
+    dawn::BooleanPrimaryNode* boolean_primary_node;
+    dawn::ComparisonOprNode* comparison_opr_node;
+    dawn::PredicateNode* predicate_node;
+    dawn::BitExprNode* bit_expr_node;
+    dawn::SimpleExprNode* simple_expr_node;
+    dawn::WhereCondNode* where_condition_node;
+    dawn::SelectNode* select_node;
+    dawn::SelectExprListNode* select_expr_list_node;
+    dawn::SelectExprNode* select_expr_node;
+    dawn::TableRefsNode* table_references_node;
+    dawn::TableRefNode* table_reference_node;
+    dawn::TableFactorNode* table_factor_node;
+    dawn::TableNameNode* tb_name_node;
 
-#line 116 "y.tab.h" /* yacc.c:1909  */
+#line 158 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

@@ -1,4 +1,5 @@
 %{
+// This file has been deprecated and we have replace bison with lemon
 #include <stdio.h>
 #include <iostream>
 #include <assert.h>

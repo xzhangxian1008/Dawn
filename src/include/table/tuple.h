@@ -111,6 +111,10 @@ public:
     }
 
 private:
+    /**
+     * Order of the values in values is important, and
+     * each value in values should be correspond to the schema.
+     */
     void init(std::vector<Value> *values, const Schema &schema);
 
     bool allocated_ = false;

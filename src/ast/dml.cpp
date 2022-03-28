@@ -8,27 +8,31 @@ ExecutorAbstract* SelectNode::construct() const {
 }
 
 ProjectionExecutor* SelectExprListNode::get_projection(
-                        const string_t& tb_name, ExecutorContext *exec_ctx,
-                        std::vector<ExpressionAbstract*> exprs,
-                        ExecutorAbstract *child, Schema *input_schema) const
-{
+                        ExecutorContext *exec_ctx,
+                        ExecutorAbstract *child,
+                        Schema *input_schema) const {
     if (!check_projection_need())
         return nullptr; // No projection should be done
     
 
 }
 
-std::vector<ExpressionAbstract*> SelectExprListNode::build_exprs(
-    const string_t& tb_name, Schema *input_schema) const;
-{
+std::vector<ExpressionAbstract*>
+SelectExprListNode::build_exprs(Schema *input_schema) const {
+    std::vector<string_t> proj_col_names = get_col_names();
+    std::vector<ExpressionAbstract*> exprs;
+    exprs.reserve(proj_col_names.size());
 
+    for (auto name : proj_col_names) {
+        offset_t idx = input_schema->get_column_idx(name);
+        exprs.push_back(new ColumnValueExpression(idx));
+    }
+
+    return exprs;
 }
 
-std::vector<string_t> SelectExprListNode::get_projected_col(const string_t& tb_name) const {
-    // TODO: Distinguish different tables' columns
+Schema* SelectExprListNode::build_output_schema() const {
     
-}
-
 }
 
 } // namespace dawn

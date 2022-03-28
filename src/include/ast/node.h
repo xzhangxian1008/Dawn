@@ -74,6 +74,11 @@ public:
     std::vector<StmtNode*> get_stmt_nodes() const {
         return get_children();
     }
+
+    void set_error() { err_ = true; }
+    bool is_error() const { return err_; }
+private:
+    bool err_ = false; // Set to true when error happens.
 };
 
 } // namespace dawn

@@ -1,13 +1,12 @@
 #!/bin/bash
 
-lex -i scanner.lex
-if test -e "lex.yy.cpp"
-then rm lex.yy.cpp
-fi
-mv lex.yy.c lex.yy.cpp
+./lemon parse.y
 
-yacc parser.yy -d
-if test -e "y.tab.cpp"
-then rm y.tab.cpp
+if test -e "parse.cpp"
+then rm parse.cpp
 fi
-mv y.tab.c y.tab.cpp
+mv parse.c parse.cpp
+
+if test -e "parse.h"
+then mv parse.h ../include/sql/parse.h
+fi

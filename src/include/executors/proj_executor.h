@@ -118,7 +118,7 @@ private:
     ExecutorAbstract *child_;
     std::vector<ExpressionAbstract*> exprs_; // get the columns from input tuple
     Tuple next_tuple_; // in avoid of the construction and deconstruction every time we call the get_next()
-    Schema *input_schema_; // FIXME: Pointer should be managed by deconstructor
+    Schema *input_schema_;
     Schema *output_schema_;
 
     std::vector<ExpressionAbstract*> agg_exprs_; // aggregate operation
