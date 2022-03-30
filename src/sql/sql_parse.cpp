@@ -11,9 +11,6 @@
 #include "table/column.h"
 #include "util/util.h"
 
-extern FILE* yyin;
-int yyparse();
-
 // This is bad because multi sql parsers will use this variable
 // TODO Modify this when we need to run in the multi-thread environment
 extern dawn::StmtListNode* ast_root;

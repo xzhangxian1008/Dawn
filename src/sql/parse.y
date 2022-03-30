@@ -19,8 +19,9 @@ inline void debug_print(std::string info) {
 }
 
 %token_type {dawn::Token}
-%extra_argument {dawn::StmtListNode* ast_root;}
-%name dawn
+%token_prefix TOKEN_
+%extra_argument {dawn::StmtListNode* ast_root}
+%name dawn_
 
 %left PLUS MINUS MULTIPLY DIVIDE EQUAL GREATER LESS.
 %left GT_EQ LE_EQ NOT_EQ OR AND NOT.
@@ -51,9 +52,13 @@ sql ::= stmt_list(A). {
     ast_root = A;
 }
 
+sql ::= INSERT INTO VALUES DELETE FROM WHERE SELECT SINGLE_QUOTES DOUBLE_QUOTES STRING TRUE FALSE LESS_SIGN GREATER_SIGN. {
+    // tmp
+}
+
 stmt_list(A) ::= stmt(B). {
     debug_print("stmt_list: stmt");
-    A = dawn::StmtListNode();
+    A = new dawn::StmtListNode();
     A->add_child(B);
 }
 
@@ -151,6 +156,6 @@ identifier(A) ::= ID(B). {
 }
 
 drop(A) ::= DROP TABLE identifier(B). {
-        debug_print("drop: DROP TABLE identifier");
-        A = new dawn::DropNode(B);
-    }
+    debug_print("drop: DROP TABLE identifier");
+    A = new dawn::DropNode(B);
+}
