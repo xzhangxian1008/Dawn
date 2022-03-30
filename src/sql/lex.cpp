@@ -21,7 +21,12 @@ static std::map<string_t, int> key_words{
     {"where", TOKEN_WHERE}, {"WHERE", TOKEN_WHERE},
     {"select", TOKEN_SELECT}, {"SELECT", TOKEN_SELECT},
     {"true", TOKEN_TRUE}, {"TRUE", TOKEN_TRUE},
-    {"false", TOKEN_FALSE}, {"FALSE", TOKEN_FALSE}
+    {"false", TOKEN_FALSE}, {"FALSE", TOKEN_FALSE},
+    {"natural", TOKEN_NATURAL}, {"NATURAL", TOKEN_NATURAL},
+    {"join", TOKEN_JOIN}, {"JOIN", TOKEN_JOIN},
+    {"or", TOKEN_OR}, {"OR", TOKEN_OR},
+    {"not", TOKEN_NOT}, {"NOT", TOKEN_NOT},
+    {"and", TOKEN_AND}, {"AND", TOKEN_AND}
 };
 
 static std::set<string_t> key_words_prefix{"primary", "PRIMARY"};
@@ -187,8 +192,28 @@ bool Lex::next_token(Token* tk) {
     case ')': { tk->type_ = TOKEN_RIGHT_PARENTHESES; return true;}
     case ';': { tk->type_ = TOKEN_SEMICOLON; return true;}
     case ',': {tk->type_ = TOKEN_COMMA; return true;}
-    case '<': {tk->type_ = TOKEN_LESS_SIGN; return true;}
-    case '>': {tk->type_ = TOKEN_GREATER_SIGN; return true;}
+    case '<': {
+        char next_c = next_char();
+        if (next_c == '=') {
+            tk->type_ = TOKEN_LE_EQ;
+        } else {
+            tk->type_ = TOKEN_LESS_SIGN;
+            back();
+        }
+        return true;
+    }
+    case '>': {
+        char next_c = next_char();
+        if (next_c == '=') {
+            tk->type_ = TOKEN_GT_EQ;
+        } else {
+            tk->type_ = TOKEN_GREATER_SIGN;
+            back();
+        }
+        return true;
+    }
+    case '*': {tk->type_ = TOKEN_STAR; return true;}
+    case '=': {tk->type_ = TOKEN_EQUAL; return true;}
     case '"': case '\'':
         return read_string(tk);
     case 'a' ... 'z':
