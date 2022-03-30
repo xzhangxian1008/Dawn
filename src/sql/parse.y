@@ -21,7 +21,7 @@ inline void debug_print(std::string info) {
 %token_type {dawn::Token}
 %token_prefix TOKEN_
 %extra_argument {dawn::StmtListNode* ast_root}
-%name dawn_
+%name dawn_parse
 
 %left PLUS MINUS MULTIPLY DIVIDE EQUAL GREATER LESS.
 %left GT_EQ LE_EQ NOT_EQ OR AND NOT.
@@ -52,7 +52,7 @@ sql ::= stmt_list(A). {
     ast_root = A;
 }
 
-sql ::= INSERT INTO VALUES DELETE FROM WHERE SELECT SINGLE_QUOTES DOUBLE_QUOTES STRING TRUE FALSE LESS_SIGN GREATER_SIGN. {
+sql ::= INSERT INTO VALUES DELETE FROM WHERE SELECT SINGLE_QUOTES DOUBLE_QUOTES STRING TRUE FALSE LESS_SIGN GREATER_SIGN DECIMAL_NUM. {
     // tmp
 }
 

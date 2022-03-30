@@ -1,7 +1,6 @@
 .vscode
 build
-src/include/parse.h
+src/include/sql/parse.h
 src/sql/parse.cpp
-src/sql/y.tab.cpp
 src/sql/parse.out
 src/sql/lemon

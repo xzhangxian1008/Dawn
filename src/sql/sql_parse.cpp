@@ -10,10 +10,11 @@
 #include "table/schema.h"
 #include "table/column.h"
 #include "util/util.h"
+#include "sql/lex.h"
 
-// This is bad because multi sql parsers will use this variable
-// TODO Modify this when we need to run in the multi-thread environment
-extern dawn::StmtListNode* ast_root;
+void* dawn_parseAlloc(void*(*)(size_t));
+void dawn_parseFree(void*p, void(*freeProc)(void*));
+void dawn_parse(void*, int, dawn::Token, dawn::StmtListNode*);
 
 namespace dawn {
 
@@ -71,33 +72,16 @@ bool insert_data(InsertNode* node) {
     return table->insert_tuple(&tuple, *schema);
 }
 
-/**
- * So far, I have no idea that how to set string as the source for yyin.
- * And this is the temporary method to save sql commands in files.
- * @param file_name file that contains sql commands
- */
-bool sql_execute(std::string file_name) {
-    std::string file_path("file_name");
-    yyin = fopen(file_path.data(),"r");
-    if (yyin == nullptr) {
-        return false;
-    }
+bool sql_execute(Lex& lex) {
+    void* parser = dawn_parseAlloc(malloc);
+    StmtListNode* ast_root = new StmtListNode;
+    Token tk;
 
-    /**
-     * If there are several sqls in the file, all should be
-     * parsed successfully at the same time, or yyparse()
-     * will not return 0.
-     * 
-     * This is bad and we should execute as many as possible.
-     * The best way to handle this is to parse sql with string
-     * , not file.
-     */
-    if (yyparse() != 0) {
-        return false;
+    while (lex.next_token(&tk)) {
+        dawn_parse(parser, tk.type_, tk, ast_root);
     }
 
     bool success = false;
-
     std::vector<StmtNode*> stmt_nodes = ast_root->get_stmt_nodes();
     for (StmtNode* stmt : stmt_nodes) {
         if (DDLNode* ddl_node = dynamic_cast<DDLNode*>(stmt)) {
@@ -138,6 +122,7 @@ bool sql_execute(std::string file_name) {
         }
     }
 
+    dawn_parseFree(parser, free);
     delete ast_root;
     return success;
 }

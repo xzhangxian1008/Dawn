@@ -1,9 +1,10 @@
 #include "sql/lex.h"
 #include <stdlib.h>
+#include "util/util.h"
 
 namespace dawn {
 
-std::map<string_t, int> key_words{
+static std::map<string_t, int> key_words{
     {"create", TOKEN_CREATE}, {"CREATE", TOKEN_CREATE},
     {"table", TOKEN_TABLE}, {"TABLE", TOKEN_TABLE},
     {"primary key", TOKEN_PRIMARY_KEY}, {"PRIMARY KEY", TOKEN_PRIMARY_KEY},
@@ -23,6 +24,8 @@ std::map<string_t, int> key_words{
     {"false", TOKEN_FALSE}, {"FALSE", TOKEN_FALSE}
 };
 
+static std::set<string_t> key_words_prefix{"primary", "PRIMARY"};
+
 bool Lex::is_key_word(Token* tk) const {
     string_t str(buf_.data());
     auto iter = key_words.find(str);
@@ -33,6 +36,17 @@ bool Lex::is_key_word(Token* tk) const {
     return true;
 }
 
+bool Lex::check_special_key_word_prefix(Token* tk) {
+    buf_.push_back(0);
+    string_t str(buf_.data());
+
+    auto iter = key_words_prefix.find(str);
+    if (iter == key_words_prefix.end()) {
+        return false; // Can't be matched with any prefix of special key words
+    }
+    buf_.pop_back();
+    return true;
+}
 
 bool Lex::is_special_key_word(Token* tk) {
     char c = next_char();
@@ -91,6 +105,10 @@ bool Lex::read_id(Token* tk) {
             buf_.push_back(c);
             continue;
         case ' ':
+            if (!check_special_key_word_prefix(tk)) {
+                back();
+                goto out;
+            }
             if (is_special_key_word(tk)) return true;
             return false;
         default:
@@ -121,9 +139,8 @@ bool Lex::read_number(Token* tk) {
         case '.': {
             char next_c = peek_next();
             if (next_c >= '0' && next_c <= '9') {
-                tk->type_ = TOKEN_DECIMAL;
                 buf_.push_back('.');
-                continue;
+                return read_decimal(tk);
             }
             return false;
         }
@@ -138,7 +155,22 @@ out:
     char* buf_data = buf_.data();
     tk->val_.decimal_ = atof(buf_data);
 
-    if (tk->type_ != TOKEN_DECIMAL) tk->type_ = TOKEN_INT;
+    if (tk->type_ != TOKEN_DECIMAL) tk->type_ = TOKEN_INT_NUM;
+    return true;
+}
+
+bool Lex::read_decimal(Token* tk) {
+    while (true) {
+        char c = next_char();
+        if (c >= '0' && c <= '9') buf_.push_back(c);
+        else {
+            back();
+            break;
+        }
+    }
+    buf_.push_back(0);
+    tk->val_.decimal_ = atof(buf_.data());
+    tk->type_ = TOKEN_DECIMAL_NUM;
     return true;
 }
 
