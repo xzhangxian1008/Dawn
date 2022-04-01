@@ -28,6 +28,8 @@ public:
     DISALLOW_COPY_AND_MOVE(DMLNode);
     DMLNode(DMLType type) : type_(type), Node(NodeType::kDML) {}
 
+    ~DMLNode() override {}
+
     /** We have to dynamic_cast this node in the outside */
     Node* get_node() const { return at(0); }
 
@@ -597,6 +599,12 @@ public:
     DISALLOW_COPY_AND_MOVE(SelectNode);
     SelectNode() : DMLNode(DMLType::kSelect) {}
 
+    ~SelectNode() override {
+        if (select_expr_list_) delete select_expr_list_;
+        if (tb_refs_) delete tb_refs_;
+        if (where_cond_) delete where_cond_;
+    }
+
     void set_select_expr_list(SelectExprListNode* select_expr_list) {
         select_expr_list_ = select_expr_list;
     }
@@ -609,9 +617,15 @@ public:
 
     ExecutorAbstract* construct() const;
 private:
-    SelectExprListNode* select_expr_list_;
-    TableRefsNode* tb_refs_;
-    WhereCondNode* where_cond_;
+    SelectExprListNode* select_expr_list_ = nullptr;
+    TableRefsNode* tb_refs_ = nullptr;
+    WhereCondNode* where_cond_ = nullptr;
+};
+
+class DeleteNode : public DMLNode {
+public:
+    DISALLOW_COPY_AND_MOVE(DeleteNode);
+    DeleteNode() : DMLNode(DMLType::kDelete) {}
 };
 
 } // namespace dawn

@@ -28,6 +28,7 @@ inline void debug_print(std::string info) {
 %left GT_EQ LE_EQ NOT_EQ OR AND NOT.
 
 %syntax_error {
+    debug_print("Error Happends");
     ast_root->set_error();
 }
 
@@ -63,12 +64,14 @@ inline void debug_print(std::string info) {
 %type predicate {dawn::PredicateNode*}
 %type bit_expr {dawn::BitExprNode*}
 %type simple_expr {dawn::SimpleExprNode*}
+%type delete {dawn::DeleteNode*}
 
 //////////////////////////////// Rules Begin ////////////////////////////////
 
 sql ::= stmt_list(A). {
     debug_print("sql: stmt_list");
-    ast_root = A;
+    *ast_root = std::move(*A);
+    delete A;
 }
 
 stmt_list(A) ::= stmt(B). {
@@ -84,17 +87,17 @@ stmt_list(A) ::= stmt_list(B) SEMICOLON stmt(C). {
 }
 
 stmt(A) ::= ddl(B). {
-    debug_print("sql: ddl");
+    debug_print("stmt: ddl");
     A = B;
 }
 
 stmt(A) ::= dml(B). {
-    debug_print("sql: dml");
+    debug_print("stmt: dml");
     A = B;
 }
 
 stmt(A) ::= empty_stmt. {
-    debug_print("sql: empty_stmt");
+    debug_print("stmt: empty_stmt");
     A = new dawn::StmtNode(dawn::NodeType::kEmptyStmt);
 }
 
@@ -102,30 +105,35 @@ empty_stmt ::= . {debug_print("empty_stmt");}
 
 ddl(A) ::= create(B). {
     debug_print("ddl: create");
-    A = new dawn::DDLNode(dawn::DDLType::kCreateTable);
-    A->add_child(B);
+    // A = new dawn::DDLNode(dawn::DDLType::kCreateTable);
+    // A->add_child(B);
+    A = B;
 }
 
 ddl(A) ::= drop(B). {
     debug_print("ddl: drop");
-    A = new dawn::DDLNode(dawn::DDLType::kDropTable);
-    A->add_child(B);
+    // A = new dawn::DDLNode(dawn::DDLType::kDropTable);
+    // A->add_child(B);
+    A = B;
 }
 
 dml(A) ::= insert(B). {
     debug_print("dml: insert");
-    A = new dawn::DMLNode(dawn::DMLType::kInsert);
-    A->add_child(B);
+    // A = new dawn::DMLNode(dawn::DMLType::kInsert);
+    // A->add_child(B);
+    A = B;
 }
 
-dml ::= delete. {
+dml(A) ::= delete(B). {
     debug_print("dml: delete");
+    A = B;
 }
 
 dml(A) ::= select(B). {
     debug_print("dml: select");
-    A = new dawn::DMLNode(dawn::DMLType::kSelect);
-    A->add_child(B);
+    // A = new dawn::DMLNode(dawn::DMLType::kSelect);
+    // A->add_child(B);
+    A = B;
 }
 
 create(A) ::= CREATE TABLE identifier(B) LEFT_PARENTHESES create_def_list(C) RIGHT_PARENTHESES. {
@@ -219,8 +227,13 @@ value(A) ::= literal(B). {
     A = new dawn::ValueNode(B);
 }
 
-delete ::= DELETE FROM identifier WHERE where_condition. {
+delete(A) ::= DELETE FROM identifier(B) WHERE where_condition(C). {
     debug_print("delete: DELETE FROM identifier WHERE where_condition");
+    
+    // The following codes are expedient for tackling the memory leak
+    A = new dawn::DeleteNode();
+    A->add_child(B);
+    A->add_child(C);
 }
 
 select(A) ::= SELECT select_expr_list(B) FROM table_references(C) WHERE where_condition(D). {

@@ -1,16 +1,4 @@
-#include <string>
-#include <vector>
-#include <memory>
-
-#include "ast/node.h"
-#include "ast/ddl.h"
-#include "ast/dml.h"
-#include "manager/db_manager.h"
-#include "meta/catalog.h"
-#include "table/schema.h"
-#include "table/column.h"
-#include "util/util.h"
-#include "sql/lex.h"
+#include "sql/sql_parse.h"
 
 void* dawn_parseAlloc(void*(*)(size_t));
 void dawn_parseFree(void*p, void(*freeProc)(void*));
@@ -68,7 +56,11 @@ bool insert_data(InsertNode* node) {
 
     // construct Tuple from InsertNode
     std::vector<Value> values =  node->get_values();
+    for (auto value : values) {
+        LOG(value.to_string());
+    }
     Tuple tuple(&values, *schema);
+
     return table->insert_tuple(&tuple, *schema);
 }
 
@@ -81,9 +73,20 @@ bool sql_execute(Lex& lex) {
         dawn_parse(parser, tk.type_, tk, ast_root);
     }
 
+    dawn_parse(parser, 0, tk, ast_root);
+
     bool success = false;
+
+    if (ast_root->is_error()) {
+        dawn_parseFree(parser, free);
+        delete ast_root;
+        return success;
+    }
+    
     std::vector<StmtNode*> stmt_nodes = ast_root->get_stmt_nodes();
     for (StmtNode* stmt : stmt_nodes) {
+        if (stmt->get_type() == NodeType::kEmptyStmt) continue;
+
         if (DDLNode* ddl_node = dynamic_cast<DDLNode*>(stmt)) {
             DDLType ddl_type = ddl_node->get_ddl_type();
             switch (ddl_type) {
@@ -103,11 +106,11 @@ bool sql_execute(Lex& lex) {
                 // invalid ddl type
                 assert(0);
             }
-        } else if (DMLNode* dml_node = dynamic_cast<DMLNode*>(dml_node)) {
+        } else if (DMLNode* dml_node = dynamic_cast<DMLNode*>(stmt)) {
             DMLType dml_type = dml_node->get_dml_type();
             switch (dml_type) {
             case DMLType::kInsert:{
-                InsertNode* node = dynamic_cast<InsertNode*>(ddl_node);
+                InsertNode* node = dynamic_cast<InsertNode*>(dml_node);
                 assert(node);
                 success = insert_data(node);
                 break;

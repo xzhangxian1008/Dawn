@@ -28,6 +28,8 @@ public:
     DISALLOW_COPY_AND_MOVE(DDLNode);
     DDLNode(DDLType type) : type_(type), Node(NodeType::kDDL) {}
 
+    ~DDLNode() override {}
+
     /** We have to dynamic_cast this node in the outside */
     Node* get_node() const { return at(0); }
 
@@ -107,6 +109,8 @@ public:
     {
         add_child(primary_key);
     }
+
+    ~CreateDefNode() override {}
 
     string_t get_col_name() const {
         Node* node = at(0);

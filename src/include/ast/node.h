@@ -35,7 +35,7 @@ public:
     std::vector<Node*> get_children() const { return children_; }
     Node* at(size_t idx) const { return children_[idx]; }
     size_t get_child_num() const { return children_.size(); }
-private:
+protected:
     std::vector<Node*> children_;
     NodeType type_;
 };
@@ -68,8 +68,17 @@ using StmtNode = Node;
 
 class StmtListNode : public Node {
 public:
-    DISALLOW_COPY_AND_MOVE(StmtListNode);
+    DISALLOW_COPY(StmtListNode);
     StmtListNode() : Node(NodeType::kStmtList) {}
+
+    ~StmtListNode() override {}
+
+    StmtListNode& operator=(StmtListNode&& node) {
+        this->err_ = node.err_;
+        this->type_ = node.type_;
+        this->children_ = std::move(node.children_);
+        return *this;
+    }
 
     std::vector<StmtNode*> get_stmt_nodes() const {
         return get_children();
