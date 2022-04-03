@@ -56,9 +56,6 @@ bool insert_data(InsertNode* node) {
 
     // construct Tuple from InsertNode
     std::vector<Value> values =  node->get_values();
-    for (auto value : values) {
-        LOG(value.to_string());
-    }
     Tuple tuple(&values, *schema);
 
     return table->insert_tuple(&tuple, *schema);

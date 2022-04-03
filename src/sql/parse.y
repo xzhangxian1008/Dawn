@@ -10,7 +10,7 @@
 #include "util/config.h"
 #include "sql/lex.h"
 
-static bool debug = true;
+static bool debug = false;
 
 inline void debug_print(std::string info) {
     if (debug) {

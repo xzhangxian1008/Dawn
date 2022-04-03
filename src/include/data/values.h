@@ -56,10 +56,11 @@ public:
 
     void construct(const char* val, int size) {
         type_id_ = TypeId::kChar;
-        value_.char_ = new char[size+1];
-        memset(value_.char_, 0, size + 1);
-        memcpy(value_.char_, val, size);
-        value_.char_[size] = '\0'; // remind us that there needs a string end
+        str_len_ = size;
+        value_.char_ = new char[str_len_+1];
+        memset(value_.char_, 0, str_len_ + 1);
+        memcpy(value_.char_, val, str_len_);
+        value_.char_[str_len_] = '\0'; // remind us that there needs a string end
     }
 
     // deep copy
@@ -270,7 +271,7 @@ public:
                 return string_t("kInvalid VALUE");
         }
     }
-private:
+private: // should private
     union {
         boolean_t boolean;
         integer_t integer;

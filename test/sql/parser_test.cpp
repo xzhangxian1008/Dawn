@@ -77,7 +77,7 @@ public:
  * Test List:
  *   1. Check if we can parse "parser_test0" successfully.
  */
-TEST_F(ParserTests, DISABLED_ParserTest0) {
+TEST_F(ParserTests, ParserTest0) {
     FILE* file = fopen("./test/parser_test0","r");
     ASSERT_NE(file, nullptr);
 
@@ -107,7 +107,7 @@ TEST_F(ParserTests, DISABLED_ParserTest0) {
  *   2. Ensure the tables are stored in the disk and can be read
  *      after we reboot the DB.
  */
-TEST_F(ParserTests, DISABLED_ParserTest1) {
+TEST_F(ParserTests, ParserTest1) {
     std::string file_path("./test/parser_test1");
     std::string tb_name("books");
 
@@ -159,7 +159,7 @@ TEST_F(ParserTests, DISABLED_ParserTest1) {
  *      Return true when delete an nonexistent table
  *   2. Drop table and reboot db, this table should no longer be found
  */
-TEST_F(ParserTests, DISABLED_ParserTest2) {
+TEST_F(ParserTests, ParserTest2) {
     std::string file_path("./test/parser_test2");
 
     // Test 1

@@ -87,7 +87,7 @@ bool Lex::read_string(Token* tk) {
             tk->type_ = TOKEN_STRING;
             tk->build_str(buf_.data(), buf_.size());
             return true;
-        } else if ("\\") {
+        } else if (c == '\\') {
             c = next_char();
             buf_.push_back(c);
         } else {
@@ -157,8 +157,7 @@ bool Lex::read_number(Token* tk) {
 
 out:
     buf_.push_back(0); // add 0 for number string as the end for futher conversion
-    char* buf_data = buf_.data();
-    tk->val_.decimal_ = atof(buf_data);
+    tk->val_.integer_ = atof(buf_.data());
 
     if (tk->type_ != TOKEN_DECIMAL) tk->type_ = TOKEN_INT_NUM;
     return true;
