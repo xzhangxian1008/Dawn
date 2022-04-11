@@ -43,12 +43,12 @@ void print__(const T& firstArg, const Types&... args) {
 
 // TODO add switch、time and so on
 inline void log__(std::string file_name, std::string func_name, int line, std::string info) {
-    std::string out = file_name + " " + func_name + ", line " + std::to_string(line) + ": " + info;
+    std::string out = "Log: " + file_name + " " + func_name + ", line " + std::to_string(line) + ": " + info;
     std::cout << out << std::endl;
 }
 
 inline void fatal__(std::string file_name, std::string func_name, int line, std::string info) {
-    std::string out = file_name + " " + func_name + ", line " + std::to_string(line) + ": " + info;
+    std::string out = "Fatal: " + file_name + " " + func_name + ", line " + std::to_string(line) + ": " + info;
     std::cout << out << std::endl;
     exit(-1);
 }

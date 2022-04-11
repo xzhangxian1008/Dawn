@@ -101,4 +101,9 @@ offset_t constexpr LK_HA_PG_SLOT_NUM = (PAGE_SIZE - COM_PG_HEADER_SZ) / PGID_T_S
 /** total slot number the link hash function has */
 offset_t constexpr Lk_HA_TOTAL_SLOT_NUM = LK_HA_PG_SLOT_NUM * LK_HA_PG_SLOT_NUM;
 
+constexpr size_t MAX_EVENT_NUMBER = 1024;
+
+/** Thread number in the Server */
+constexpr size_t SERVER_THD_NUMBER = 3;
+
 } // namespace dawn

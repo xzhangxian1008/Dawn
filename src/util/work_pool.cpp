@@ -2,7 +2,7 @@
 
 namespace dawn {
 
-void WorkPool::add_task(std::function<void()> task) {
+void WorkPool::add_task(Task* task) {
     {
         std::unique_lock<std::mutex> ul(mt_);
         tasks_.push(task);
@@ -13,7 +13,7 @@ void WorkPool::add_task(std::function<void()> task) {
 
 void WorkPool::add_thread() {
     threads_.emplace_back([this] {
-        std::function<void()> task;
+        Task* task;
 
         while (true) {
             {
@@ -26,7 +26,7 @@ void WorkPool::add_thread() {
                 tasks_.pop();
                 busy_num_++;
             }
-            task();
+            task->run();
             {
                 std::unique_lock<std::mutex> ul(mt_);
                 busy_num_--;

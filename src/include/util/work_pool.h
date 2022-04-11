@@ -7,13 +7,16 @@
 #include <thread>
 
 #include "util/util.h"
+#include "task.h"
 
 namespace dawn {
 
-using TaskQueue = std::queue<std::function<void()>>;
+using TaskQueue = std::queue<Task*>;
 
 class WorkPool {
 public:
+    DISALLOW_COPY_AND_MOVE(WorkPool);
+
     WorkPool(int thread_num) : 
         thread_num_(thread_num), busy_num_(0), is_running_(false) {}
     
@@ -50,7 +53,7 @@ public:
         return thread_num_;
     }
 
-    void add_task(std::function<void()> task);
+    void add_task(Task* task);
 
     void wait_until_all_finished() {
         std::unique_lock<std::mutex> ul(mt_);
