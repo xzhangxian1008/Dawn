@@ -21,8 +21,8 @@ class Server {
 public:
     DISALLOW_COPY_AND_MOVE(Server);
 
-    Server(const string_t &address, int port)
-        : address_(address), port_(port), wp_(SERVER_THD_NUMBER) {
+    Server(const string_t &addr, int port)
+        : address_(addr), port_(port), wp_(SERVER_THD_NUMBER) {
         int ret = 0;
         struct sockaddr_in address;
 
@@ -57,7 +57,7 @@ public:
 private:
     int setnonblocking(int fd);
     void addfd(int fd, bool enable_et);
-    void process_epoll(epoll_event* events, int number, int epollfd);
+    void process_epoll(epoll_event* events, int number);
 
     string_t address_;
     int port_;

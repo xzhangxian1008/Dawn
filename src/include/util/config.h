@@ -106,4 +106,7 @@ constexpr size_t MAX_EVENT_NUMBER = 1024;
 /** Thread number in the Server */
 constexpr size_t SERVER_THD_NUMBER = 3;
 
+/** Define the buffer size when receiving data from network */
+constexpr size_t RECV_BUFFER_SIZE = 32; // Set a lower number for test
+
 } // namespace dawn

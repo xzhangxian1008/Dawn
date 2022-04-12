@@ -1,4 +1,5 @@
 #include "sql/sql_parse.h"
+#include "server/message.h"
 
 void* dawn_parseAlloc(void*(*)(size_t));
 void dawn_parseFree(void*p, void(*freeProc)(void*));
@@ -61,10 +62,12 @@ bool insert_data(InsertNode* node) {
     return table->insert_tuple(&tuple, *schema);
 }
 
-bool sql_execute(Lex& lex) {
+// TODO change the return type to ResponaseMsg
+ResponseMsg sql_execute(Lex& lex) {
     void* parser = dawn_parseAlloc(malloc);
     StmtListNode* ast_root = new StmtListNode;
     Token tk;
+    ResponseMsg resp_msg(MsgType::Unparsed);
 
     while (lex.next_token(&tk)) {
         dawn_parse(parser, tk.type_, tk, ast_root);
@@ -77,7 +80,7 @@ bool sql_execute(Lex& lex) {
     if (ast_root->is_error()) {
         dawn_parseFree(parser, free);
         delete ast_root;
-        return success;
+        return resp_msg;
     }
     
     std::vector<StmtNode*> stmt_nodes = ast_root->get_stmt_nodes();
@@ -91,12 +94,14 @@ bool sql_execute(Lex& lex) {
                 CreateNode* node = dynamic_cast<CreateNode*>(ddl_node);
                 assert(node);
                 success = create_table(node);
+                resp_msg.set_type(MsgType::SqlCreateTb);
                 break;
             }
             case DDLType::kDropTable:{
                 DropNode* node = dynamic_cast<DropNode*>(ddl_node);
                 assert(node);
                 success = drop_table(node);
+                resp_msg.set_type(MsgType::SqlDropTb);
                 break;
             }
             default:
@@ -110,6 +115,7 @@ bool sql_execute(Lex& lex) {
                 InsertNode* node = dynamic_cast<InsertNode*>(dml_node);
                 assert(node);
                 success = insert_data(node);
+                resp_msg.set_type(MsgType::SqlInsert);
                 break;
             }
             default:
@@ -124,7 +130,9 @@ bool sql_execute(Lex& lex) {
 
     dawn_parseFree(parser, free);
     delete ast_root;
-    return success;
+
+    resp_msg.set_status(success);
+    return resp_msg;
 }
     
 } // namespace dawn

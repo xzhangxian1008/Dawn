@@ -48,7 +48,7 @@ public:
         sql_.reset(sql);
     }
 
-    Lex(std::unique_ptr<string_t> sql) : sql_(std::move(sql)) {}
+    Lex(std::unique_ptr<string_t>&& sql) : sql_(std::move(sql)) {}
 
     ~Lex() {
         fclose(input_file_);
