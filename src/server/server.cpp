@@ -1,4 +1,4 @@
-#include <pair>
+#include <utility>
 
 #include "server/server.h"
 #include "util/util.h"
@@ -29,15 +29,18 @@ void Server::process_epoll(epoll_event* events, int number) {
         if (sock_fd == listen_fd_) {
             struct sockaddr_in client_address;
             socklen_t client_addr_length = sizeof(client_address);
+
+            std::lock_guard lg(mut_);
             int conn_fd = accept(listen_fd_, (struct sockaddr*) &client_address, &client_addr_length);
             addfd(conn_fd, true);
 
-            conn_.insert(std::make_pair<int, Task*>(conn_fd, new HandleClientMsgTask(conn_fd)));
+            conn_.insert(std::make_pair(conn_fd, new HandleClientMsgTask(conn_fd)));
         }
         else if (events[i].events & EPOLLIN) {
+            std::lock_guard lg(mut_);
             auto iter = conn_.find(sock_fd);
             if (iter == conn_.end()) {
-                FATAL("Encounter a fd that has never seen before.")
+                FATAL("Encounter a fd that has never seen before.");
             }
 
             wp_.add_task(iter->second);
@@ -61,7 +64,7 @@ void Server::run() {
             break;
         }
     
-        process_epoll(epoll_event, ret);
+        process_epoll(events, ret);
     }
 
     close(listen_fd_);

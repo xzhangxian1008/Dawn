@@ -9,6 +9,11 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <map>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+#include <queue>
+#include <future>
 
 #include "util/config.h"
 #include "manager/db_manager.h"
@@ -16,7 +21,6 @@
 
 namespace dawn {
 
-// TODO Start a thread to collect closed fds
 class Server {
 public:
     DISALLOW_COPY_AND_MOVE(Server);
@@ -42,15 +46,57 @@ public:
         assert(ret != -1);
 
         wp_.start_up();
+
+        fd_collect_thd_ = std::thread([this]{
+            std::vector<decltype(conn_.begin())> delete_vec;
+            while (true) {
+                delete_vec.clear();
+                std::lock_guard<std::mutex> lg(mut_);
+
+                auto iter = conn_.begin();
+                while (iter != conn_.end()) {
+                    if (iter->second->is_finish()) {
+                        delete iter->second;
+                        delete_vec.push_back(iter);
+                    }
+                }
+
+                // Delete task from the map
+                while (!delete_vec.empty()) {
+                    iter = delete_vec.back();
+                    delete_vec.pop_back();
+                    conn_.erase(iter);
+                }
+
+                if (shutdown_)
+                    break;
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
+        });
     }
 
     ~Server() {
-        wp_.wait_until_all_finished();
-        
-        auto iter = conn_.begin();
-        while (iter != conn_.end()) {
-            delete iter->second;
+        {
+            std::lock_guard lg(mut_);
+            wp_.wait_until_all_finished();
+            
+            auto iter = conn_.begin();
+            while (iter != conn_.end()) {
+                // Wait for the end of the task
+                while (true) {
+                    if (iter->second->is_finish()) {
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+                delete iter->second;
+            }
+
+            shutdown_ = true;
         }
+
+        fd_collect_thd_.join();
     }
     
     void run();
@@ -68,7 +114,14 @@ private:
     // Values refers to a task related with this connection
     std::map<int, Task*> conn_;
 
+    // Protect the conn_
+    std::mutex mut_;
+
     WorkPool wp_;
+    std::thread fd_collect_thd_;
+
+    bool shutdown_ = false;
+    
 };
 
 } // namespace dawn

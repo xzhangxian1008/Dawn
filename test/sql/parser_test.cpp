@@ -119,7 +119,7 @@ TEST_F(ParserTests, ParserTest1) {
         {
             // Creating table should be successful
             std::unique_ptr<Lex> lex = build_lex(file_path.c_str());
-            EXPECT_TRUE(sql_execute(*lex));
+            EXPECT_TRUE(sql_execute(*lex).is_success());
         }
 
         // check if table exists in the db
@@ -131,7 +131,7 @@ TEST_F(ParserTests, ParserTest1) {
         {
             // Create the same table again and it should be fail
             std::unique_ptr<Lex> lex = build_lex(file_path.c_str());
-            EXPECT_FALSE(sql_execute(*lex));
+            EXPECT_FALSE(sql_execute(*lex).is_success());
 
             db_manager.reset(nullptr); // Shutdown
         }
@@ -176,7 +176,7 @@ TEST_F(ParserTests, ParserTest2) {
         {
             // Drop table
             std::unique_ptr<Lex> lex = build_lex(file_path.c_str());
-            EXPECT_TRUE(sql_execute(*lex));
+            EXPECT_TRUE(sql_execute(*lex).is_success());
         }
 
         // Ensure that we can't find it
@@ -216,6 +216,7 @@ TEST_F(ParserTests, ParserTest2) {
  *      find this data successfully,
  *      reinsert the same data into table unsuccessfully,
  *      reboot db and find this data successfully.
+ *   
  */
 TEST_F(ParserTests, ParserTest3) {
     std::string file_path("./test/parser_test3");
@@ -242,7 +243,7 @@ TEST_F(ParserTests, ParserTest3) {
             {
                 // Insert data into table, ought to be successfully
                 std::unique_ptr<Lex> lex = build_lex(file_path.c_str());
-                ASSERT_TRUE(sql_execute(*lex));
+                ASSERT_TRUE(sql_execute(*lex).is_success());
             }
 
             // Find this data.
@@ -269,7 +270,7 @@ TEST_F(ParserTests, ParserTest3) {
             {
                 // Reinsert data into table, ought to be unsuccessful
                 std::unique_ptr<Lex> lex = build_lex(file_path.c_str());
-                EXPECT_FALSE(sql_execute(*lex));
+                EXPECT_FALSE(sql_execute(*lex).is_success());
             }
 
             db_manager.reset(nullptr); // Shutdown

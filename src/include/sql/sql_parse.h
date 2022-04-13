@@ -13,7 +13,8 @@
 #include "table/column.h"
 #include "util/util.h"
 #include "sql/lex.h"
+#include "server/message.h"
 
 namespace dawn {
-bool sql_execute(Lex& lex);
+ResponseMsg sql_execute(Lex& lex);
 } // namespace dawn

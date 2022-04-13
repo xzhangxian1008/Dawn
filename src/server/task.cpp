@@ -1,29 +1,29 @@
 #include <memory>
-#include <pair>
 #include <unistd.h>
 
 #include "server/task.h"
 #include "sql/lex.h"
 #include "sql/sql_parse.h"
+#include "server/message.h"
 
 namespace dawn {
 
-void HandleClientMsgTask::run() override {
+void HandleClientMsgTask::run() {
     while(true) {
         memset(buffer_, '\0', RECV_BUFFER_SIZE);
-        int ret = recv(sockfd, buf, RECV_BUFFER_SIZE-1, 0);
+        int ret = recv(fd_, buffer_, RECV_BUFFER_SIZE-1, 0);
         if(ret < 0) {
             if((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
                 // Read later
                 break;
             }
-            close( sockfd );
-            // TODO close fd in parent thread and set fd to -1
+            LOG("Finish here");
+            finish_ = true;
             break;
         }
         else if (ret == 0) {
-            // close( sockfd );
-            // TODO close the fd in parent thread and set fd to -1
+            finish_ = true;
+            break;
         }
         
         size_t_ semi_pos = search_semicolon();
@@ -39,7 +39,7 @@ void HandleClientMsgTask::run() override {
             tmp_.clear();
 
             // Push the remaining chars into tmp_
-            for (size_t i = push_num; i < ret; i++) {
+            for (int i = push_num; i < ret; i++) {
                 tmp_.push_back(buffer_[i]);
             }
         }
@@ -47,7 +47,7 @@ void HandleClientMsgTask::run() override {
 }
 
 void HandleClientMsgTask::handle_sql() {
-    tmp_.push(0);
+    tmp_.push_back(0);
     std::unique_ptr<string_t> sql = std::make_unique<string_t>(tmp_.data());
     Lex lex(std::move(sql));
 
@@ -60,7 +60,7 @@ void HandleClientMsgTask::handle_sql() {
 }
 
 size_t_ HandleClientMsgTask::search_semicolon() const {
-    for (int i = 0; i < RECV_BUFFER_SIZE - 1; i++) {
+    for (size_t i = 0; i < RECV_BUFFER_SIZE - 1; i++) {
         if (buffer_[i] == ';') {
             return i;
         }

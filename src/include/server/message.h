@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pair>
+#include <utility>
 
 #include "utility"
 
@@ -17,11 +17,19 @@ enum MsgType {
 
 class ResponseMsg {
 public:
-    ResponseMsg(MsgType type) : type_(type) { set_prefix(); }
+    ResponseMsg(MsgType type) : type_(type), success_(false) { set_prefix(); }
 
     inline void set_type(MsgType type) {
         type_ = type;
         set_prefix();
+    }
+
+    inline MsgType get_type() const {
+        return type_;
+    }
+
+    inline bool is_success() const {
+        return success_;
     }
 
     inline void append_msg(const string_t& msg) {
@@ -29,6 +37,7 @@ public:
     }
 
     inline void set_status(bool success) {
+        success_ = success;
         if (success) {
             prefix_.append("OK. ");
         } else {
@@ -54,7 +63,7 @@ private:
             prefix_ = string_t("Create Table ");
             break;
         case MsgType::Unparsed:
-            prefix_ = string_t("Sql is invalid.")
+            prefix_ = string_t("Sql is invalid.");
             break;
         default:
             break;
@@ -64,6 +73,7 @@ private:
     MsgType type_;
     string_t prefix_;
     string_t msg_;
+    bool success_;
 };
 
 } // namespace dawn

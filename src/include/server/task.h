@@ -16,10 +16,10 @@ public:
 
     Task() = default;
     virtual ~Task() {};
-    virtual void run();
+    virtual void run() = 0;
+    virtual bool is_finish() const = 0;
 };
 
-// TODO Notify the parent thread to clear the closed fd
 class HandleClientMsgTask : public Task {
 public:
     DISALLOW_COPY_AND_MOVE(HandleClientMsgTask);
@@ -30,8 +30,12 @@ public:
 
     ~HandleClientMsgTask() override {
         if (fd_ != -1) {
-            // TODO close fd in parent thread
+            close(fd_);
         }
+    }
+
+    bool is_finish() const override {
+        return finish_;
     }
 
     void run() override;
@@ -41,7 +45,6 @@ private:
     size_t_ search_semicolon() const;
 
     void handle_sql();
-
     void response();
 
     /** Refer to the connection with a client */
@@ -52,6 +55,8 @@ private:
 
     /** Receive data and put them into this buffer */
     char buffer_[RECV_BUFFER_SIZE];
+
+    bool finish_ = false;
 };
 
 } // dawn

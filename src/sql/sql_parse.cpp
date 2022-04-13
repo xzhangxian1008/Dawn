@@ -1,5 +1,4 @@
 #include "sql/sql_parse.h"
-#include "server/message.h"
 
 void* dawn_parseAlloc(void*(*)(size_t));
 void dawn_parseFree(void*p, void(*freeProc)(void*));
