@@ -11,6 +11,7 @@
 
 #include "util/config.h"
 #include "sql/parse.h"
+#include "util/util.h"
 
 namespace dawn {
 
@@ -44,14 +45,18 @@ public:
             sql->append(buf);
         }
 
-        sql_len_ = sql->length();
         sql_.reset(sql);
+        sql_len_ = sql_->length();
     }
 
-    Lex(std::unique_ptr<string_t>&& sql) : sql_(std::move(sql)) {}
+    Lex(std::unique_ptr<string_t>&& sql) : sql_(std::move(sql)) {
+        sql_len_ = sql_->length();
+    }
 
     ~Lex() {
-        fclose(input_file_);
+        if (input_file_ != nullptr) {
+            fclose(input_file_);
+        }
     }
 
     bool next_token(Token* tk);
@@ -89,7 +94,7 @@ private:
     bool read_string(Token* tk);
     bool read_decimal(Token* tk);
 
-    FILE* input_file_;
+    FILE* input_file_ = nullptr;
     std::unique_ptr<string_t> sql_;
     size_t_ sql_len_;
     size_t_ pos_ = -1;

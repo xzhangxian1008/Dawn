@@ -39,28 +39,26 @@ public:
     inline void set_status(bool success) {
         success_ = success;
         if (success) {
-            prefix_.append("OK. ");
+            prefix_.append(" OK.");
         } else {
-            prefix_.append("FAIL. ");
+            prefix_.append(" FAIL.");
         }
     }
 
-    /** @return const char* refers to a buffer and size_t is the buffer size */
-    inline std::pair<const char*, size_t> get_response_msg() const {
-        string_t return_msg = prefix_ + msg_;
-        return std::make_pair<const char*, size_t>(return_msg.data(), return_msg.length());
+    inline string_t get_response_msg() const {
+        return prefix_ + msg_;
     }
 private:
     void set_prefix() {
         switch (type_) {
         case MsgType::SqlDelete:
-            prefix_ = string_t("Delete ");
+            prefix_ = string_t("Delete");
             break;
         case MsgType::SqlInsert:
-            prefix_ = string_t("Insert ");
+            prefix_ = string_t("Insert");
             break;
         case MsgType::SqlCreateTb:
-            prefix_ = string_t("Create Table ");
+            prefix_ = string_t("Create Table");
             break;
         case MsgType::Unparsed:
             prefix_ = string_t("Sql is invalid.");

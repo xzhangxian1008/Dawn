@@ -9,6 +9,7 @@
 namespace dawn {
 
 void HandleClientMsgTask::run() {
+    LOG("HandleClientMsgTask runs...");
     while(true) {
         memset(buffer_, '\0', RECV_BUFFER_SIZE);
         int ret = recv(fd_, buffer_, RECV_BUFFER_SIZE-1, 0);
@@ -29,6 +30,8 @@ void HandleClientMsgTask::run() {
         size_t_ semi_pos = search_semicolon();
         size_t push_num = semi_pos == -1 ? ret : semi_pos + 1;
 
+        PRINT("HandleClientMsgTask receives msg: ", string_t(buffer_));
+
         for (size_t i = 0; i < push_num; i++) {
             tmp_.push_back(buffer_[i]);
         }
@@ -44,6 +47,7 @@ void HandleClientMsgTask::run() {
             }
         }
     }
+    LOG("HandleClientMsgTask exits...");
 }
 
 void HandleClientMsgTask::handle_sql() {
@@ -52,9 +56,9 @@ void HandleClientMsgTask::handle_sql() {
     Lex lex(std::move(sql));
 
     ResponseMsg resp_msg = sql_execute(lex);
-    std::pair<const char*, int> msg = resp_msg.get_response_msg();
+    string_t msg = resp_msg.get_response_msg();
 
-    if (write(fd_, msg.first, msg.second) < msg.second) {
+    if (write(fd_, msg.data(), msg.length()) < msg.length()) {
         LOG("Write fail");
     }
 }
