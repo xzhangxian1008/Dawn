@@ -26,12 +26,12 @@ void Server::addfd(int fd, bool enable_et) {
 bool Server::process_epoll(epoll_event* events, int number) {
     for (int i = 0; i < number; i++) {
         int sock_fd = events[i].data.fd;
-        LOG("HERE");
+        // LOG("HERE");
 
         if (sock_fd == pipe_fd_[0]) {
-            LOG("HERE");
+            // LOG("HERE");
             std::lock_guard lg(mut_);
-            LOG("HERE");
+            // LOG("HERE");
             shutdown_ = true;
             return false;
         }
@@ -43,19 +43,19 @@ bool Server::process_epoll(epoll_event* events, int number) {
             int conn_fd = accept(listen_fd_, (struct sockaddr*) &client_address, &client_addr_length);
             addfd(conn_fd, true);
 
-            LOG("Receive client");
+            // LOG("Receive client");
             conn_.insert(std::make_pair(conn_fd, new HandleClientMsgTask(conn_fd)));
         }
         else if (events[i].events & EPOLLIN) {
-            LOG("HERE");
+            // LOG("HERE");
             std::lock_guard lg(mut_);
-            LOG("HERE");
+            // LOG("HERE");
             auto iter = conn_.find(sock_fd);
             if (iter == conn_.end()) {
                 FATAL("Encounter a fd that has never seen before.");
             }
 
-            LOG("Dispatch EPOLLIN task");
+            // LOG("Dispatch EPOLLIN task");
             wp_.add_task(iter->second);
         }
         else {
@@ -74,10 +74,10 @@ void Server::run() {
         addfd(listen_fd_, true);
         addfd(pipe_fd_[0], true);
 
-        LOG("Server enters into epoll_wait...");
+        // LOG("Server enters into epoll_wait...");
         while(true) {
             int ret = epoll_wait(epoll_fd_, events, MAX_EVENT_NUMBER, -1);
-            LOG("epoll is waked up");
+            // LOG("epoll is waked up");
             if (ret < 0) {
                 LOG("Epoll failure");
                 break;
@@ -94,11 +94,10 @@ void Server::run() {
 
 void Server::shutdown() {
     if (shutdown_) return;
-LOG("shutdown");
+    
+    wp_.wait_until_all_finished();
     {
-        std::lock_guard lg(mut_);
-        wp_.wait_until_all_finished();
-        LOG("shutdown");
+        std::unique_lock<std::mutex> ul(mut_);
         auto iter = conn_.begin();
         while (iter != conn_.end()) {
             // Wait for the end of the task
@@ -106,28 +105,30 @@ LOG("shutdown");
                 if (iter->second->is_finish()) {
                     break;
                 }
-                LOG("shutdown");
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                ul.unlock();
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                ul.lock();
             }
             delete iter->second;
-        }
-LOG("shutdown");
-        // Delete listen_fd_ from epoll
-        struct epoll_event event;
-        if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, listen_fd_, &event) != 0) {
-            FATAL("epoll_ctl error");
-        }
-LOG("shutdown");
-        // Deny any client that tries to connect to the server
-        close(listen_fd_);
-LOG("shutdown");
-        char c = 'c';
-        if (write(pipe_fd_[1], &c, 1) != 0) {
-            FATAL("Pipe Error");
+            auto tmp_iter = iter;
+            iter++;
+            conn_.erase(tmp_iter);
         }
     }
 
-    LOG("shutdown");
+    // Delete listen_fd_ from epoll
+    struct epoll_event event;
+    if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, listen_fd_, &event) != 0) {
+        FATAL("epoll_ctl error");
+    }
+
+    // Deny any client that tries to connect to the server
+    close(listen_fd_);
+    char c = 'c';
+    // TODO close pipe_fd_ and delete it from epoll
+    if (write(pipe_fd_[1], &c, 1) != 1) {
+        FATAL("Pipe Error");
+    }
 
     std::unique_lock<std::mutex> ul(mut_, std::defer_lock);
     while (true) {
@@ -139,7 +140,10 @@ LOG("shutdown");
         ul.unlock();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-LOG("shutdown");
+
+    close(pipe_fd_[0]);
+    close(pipe_fd_[1]);
+
     if (fd_collect_thd_.joinable()) {
         fd_collect_thd_.join();
     } else {

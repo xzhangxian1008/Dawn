@@ -9,28 +9,29 @@
 namespace dawn {
 
 void HandleClientMsgTask::run() {
-    LOG("HandleClientMsgTask runs...");
+    // LOG("HandleClientMsgTask runs...");
     while(true) {
         memset(buffer_, '\0', RECV_BUFFER_SIZE);
         int ret = recv(fd_, buffer_, RECV_BUFFER_SIZE-1, 0);
         if(ret < 0) {
             if((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
                 // Read later
+                // LOG("Read later");
                 break;
             }
-            LOG("Finish here");
-            finish_ = true;
+            finish_.store(true);
             break;
         }
         else if (ret == 0) {
-            finish_ = true;
+            finish_.store(true);
+            // LOG("ret == 0");
             break;
         }
         
         size_t_ semi_pos = search_semicolon();
         size_t push_num = semi_pos == -1 ? ret : semi_pos + 1;
 
-        PRINT("HandleClientMsgTask receives msg: ", string_t(buffer_));
+        // PRINT("HandleClientMsgTask receives msg: ", string_t(buffer_));
 
         for (size_t i = 0; i < push_num; i++) {
             tmp_.push_back(buffer_[i]);
@@ -47,7 +48,7 @@ void HandleClientMsgTask::run() {
             }
         }
     }
-    LOG("HandleClientMsgTask exits...");
+    // LOG("HandleClientMsgTask exits...");
 }
 
 void HandleClientMsgTask::handle_sql() {
@@ -58,7 +59,7 @@ void HandleClientMsgTask::handle_sql() {
     ResponseMsg resp_msg = sql_execute(lex);
     string_t msg = resp_msg.get_response_msg();
 
-    if (write(fd_, msg.data(), msg.length()) < msg.length()) {
+    if (write(fd_, msg.data(), msg.length()) < static_cast<ssize_t>(msg.length())) {
         LOG("Write fail");
     }
 }

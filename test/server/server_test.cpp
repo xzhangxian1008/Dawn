@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include <vector>
 #include <string>
+#include <utility>
 
 #include "manager/db_manager.h"
 #include "server/server.h"
@@ -29,13 +30,26 @@ public:
     const int server_port = 9999;
 };
 
+bool send_sql(Client& client, std::vector<std::string>& sql) {
+    size_t size = sql.size();
+    bool success = false;
+    for (size_t i = 0; i < size; i++) {
+        if (i == size - 1) {
+            // last msg, need to wait for db's response
+            success = client.send(sql[i], true);
+        } else {
+            client.send(sql[i]);
+        }
+    }
+    return success;
+}
+
 /**
  * Test DB's basic sql functions with single client.
  * Test list:
- *   1. Invalid sql
- *   2. CREATE TABLE
- *   3. DROP TABLE
- *   4. INSERT INTO table
+ *   1. CREATE TABLE
+ *   2. DROP TABLE
+ *   3. INSERT INTO table
  */
 TEST_F(SingleClient, BasicSql) {
     db_manager = std::make_unique<DBManager>(meta, true);
@@ -47,46 +61,47 @@ TEST_F(SingleClient, BasicSql) {
         s.run();
     });
 
+    std::vector<std::vector<std::string>> sql {
+        // test 1
+        std::vector<std::string> { "CREATE TABLE books (", "id INT,",
+        "book_name CHAR(10),", "price DECIMAL,", "discount BOOLEAN,",
+        "PRIMARY KEY(id)", ");" },
+        // test 2
+        std::vector<std::string> {
+            "INSERT INTO books ", "VALUES (",
+            "1,", "'1234',", "23.33,","true", ");"
+        },
+        // test 3
+        std::vector<std::string> {
+            "DROP TABLE books;"
+        },
+    };
+
+    std::vector<std::string> expect_response {
+        // test 1
+        "Create Table OK.",
+        // test 2
+        "Insert OK.",
+        // test 3
+        "Drop Table OK.",
+    };
+
+    size_t test_num = sql.size();
+
     // Wait for the startup of the server
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-    do {
-        // test 1
-    } while (false);
-
-    do {
-        // test 2
+    for (size_t idx = 0; idx < test_num; idx++) {
+        PRINT("Run test", idx + 1, "...");
         Client client(server_addr, server_port);
-        std::vector<std::string> sql = {
-            "CREATE TABLE books (", "id INT,", "book_name CHAR(10),",
-            "price DECIMAL,", "discount BOOLEAN,", "PRIMARY KEY(id)", ");"
-        };
+        bool success = send_sql(client, sql[idx]);
 
-        size_t size = sql.size();
-        bool ret = false;
-        for (size_t i = 0; i < size; i++) {
-            if (i == size - 1) {
-                // last msg, need to wait for db's response
-                ret = client.send(sql[i], true);
-            } else {
-                client.send(sql[i]);
-            }
-        }
-
-        EXPECT_TRUE(ret);
-        if (ret == false) break;
+        EXPECT_TRUE(success);
+        if (success == false) continue;
 
         std::string resp = client.get_db_response();
-        EXPECT_EQ(resp, std::string("Create Table OK."));
-    } while (false);
-
-    do {
-        // test 3
-    } while (false);
-
-    do {
-        // test 4
-    } while (false);
+        EXPECT_EQ(resp, expect_response[idx]);
+    }
 
     s.shutdown();
 

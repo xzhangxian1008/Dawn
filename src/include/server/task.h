@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <vector>
 #include <string>
+#include <atomic>
 
 #include "util/util.h"
 
@@ -24,7 +25,7 @@ class HandleClientMsgTask : public Task {
 public:
     DISALLOW_COPY_AND_MOVE(HandleClientMsgTask);
 
-    HandleClientMsgTask(int fd) : fd_(fd) {
+    HandleClientMsgTask(int fd) : fd_(fd), finish_(false) {
         tmp_.reserve(RECV_BUFFER_SIZE / 4);
     }
 
@@ -35,7 +36,7 @@ public:
     }
 
     bool is_finish() const override {
-        return finish_;
+        return finish_.load();
     }
 
     void run() override;
@@ -56,7 +57,7 @@ private:
     /** Receive data and put them into this buffer */
     char buffer_[RECV_BUFFER_SIZE];
 
-    bool finish_ = false;
+    std::atomic_bool finish_;
 };
 
 } // dawn

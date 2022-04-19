@@ -42,11 +42,13 @@ public:
         if (connect(sock_fd_, (SA *) &servaddr, sizeof(servaddr)) != 0) {
             dawn::FATAL("connect fail");
         }
+
+        // dawn::LOG("Client starts up");
     }
 
     ~Client() {
-        dawn::LOG("Client closes sock_fd_");
         close(sock_fd_);
+        // dawn::LOG("Client leaves away");
     }
 
     /**
@@ -82,40 +84,10 @@ public:
                         // read later
                         std::this_thread::sleep_for(std::chrono::milliseconds(100));
                         count--;
-                        dawn::LOG("count--");
+                        // dawn::LOG("count--");
                         continue;
                     }
-                    switch (errno)
-                    {
-                    case EBADF:
-                        dawn::LOG("EBADF");
-                        break;
-                    case ECONNREFUSED:
-                        dawn::LOG("ECONNREFUSED");
-                        break;
-                    case EFAULT:
-                        dawn::LOG("EFAULT");
-                        break;
-                    case EINTR:
-                        dawn::LOG("EINTR");
-                        break;
-                    case EINVAL:
-                        dawn::LOG("EINVAL");
-                        break;
-                    case ENOMEM:
-                        dawn::LOG("ENOMEM");
-                        break;
-                    case ENOTCONN:
-                        dawn::LOG("ENOTCONN");
-                        break;
-                    case ENOTSOCK:
-                        dawn::LOG("ENOTSOCK");
-                        break;
-                    
-                    default:
-                    dawn::LOG("default");
-                        break;
-                    }
+
                     dawn::FATAL("client ret < 0");
                 } else if (ret == 0) {
                     dawn::FATAL("client ret == 0");

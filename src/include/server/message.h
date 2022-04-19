@@ -60,6 +60,9 @@ private:
         case MsgType::SqlCreateTb:
             prefix_ = string_t("Create Table");
             break;
+        case MsgType::SqlDropTb:
+            prefix_ = string_t("Drop Table");
+            break;
         case MsgType::Unparsed:
             prefix_ = string_t("Sql is invalid.");
             break;
